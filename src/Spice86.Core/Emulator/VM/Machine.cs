@@ -22,7 +22,7 @@ using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Mouse;
 using Spice86.Core.Emulator.InterruptHandlers.SystemClock;
 using Spice86.Core.Emulator.InterruptHandlers.Timer;
-using Spice86.Core.Emulator.InterruptHandlers.VGA;
+using Spice86.Core.Emulator.InterruptHandlers.Vga;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
@@ -203,6 +203,12 @@ public class Machine : IDisposable {
     /// </summary>
     public DmaController DmaController { get; }
 
+    
+    private readonly ExpandedMemoryManager emm;
+    private readonly ExtendedMemoryManager xmm;
+
+    internal ExtendedMemoryManager ExtendedMemory => this.xmm;
+
     /// <summary>
     /// Gets the current DOS environment variables.
     /// </summary>
@@ -242,6 +248,10 @@ public class Machine : IDisposable {
         Memory = new Memory(ram, machineCreationOptions.Configuration);
         BiosDataArea = new BiosDataArea(Memory);
         Cpu = new Cpu(this, machineCreationOptions.LoggerService, machineCreationOptions.ExecutionFlowRecorder, machineCreationOptions.RecordData);
+
+        xmm = new(this);
+        emm = new(this);
+        Memory.Ems = emm;
 
         // Breakpoints
         MachineBreakpoints = new MachineBreakpoints(this, machineCreationOptions.LoggerService);
