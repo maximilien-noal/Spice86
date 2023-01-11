@@ -124,4 +124,7 @@ public class Configuration {
     /// </summary>
     [Option(nameof(Ems), Default = false, Required = false, HelpText = "Enable EMS")]
     public bool Ems { get; init; }
+
+    [Option(nameof(Xms), Default = false, Required = false, HelpText = "Enable XMS")]
+    public bool Xms { get; init; }
 }
