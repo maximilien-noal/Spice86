@@ -22,10 +22,12 @@ using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Mouse;
 using Spice86.Core.Emulator.InterruptHandlers.SystemClock;
 using Spice86.Core.Emulator.InterruptHandlers.Timer;
+using Spice86.Core.Emulator.InterruptHandlers.VGA;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
+using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
@@ -243,10 +245,13 @@ public class Machine : IDisposable {
         Memory = new Memory(ram, machineCreationOptions.Configuration);
         BiosDataArea = new BiosDataArea(Memory);
         Cpu = new Cpu(this, machineCreationOptions.LoggerService, machineCreationOptions.ExecutionFlowRecorder, machineCreationOptions.RecordData);
-        if(configuration.Xms) {
+        if(machineCreationOptions.Configuration.Xms && machineCreationOptions.Configuration.Ems) {
+            throw new UnrecoverableException("Cannot have XMS and EMS at the same time");
+        }
+        if(machineCreationOptions.Configuration.Xms) {
             Xms = new(this);
         }
-        if(configuration.Ems) {
+        if(machineCreationOptions.Configuration.Ems) {
             Ems = new(this);
         }
         
