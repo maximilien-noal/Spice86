@@ -354,7 +354,6 @@ public class Machine : IDisposable {
             Register((ICallback)Ems);
         }
     }
-    
     public void Register(IDeviceCallbackProvider callbackProvider) {
         int id = DeviceCallbackProviders.Count;
         callbackProvider.CallbackAddress = this.Memory.AddCallbackHandler((byte)id, callbackProvider.IsHookable);
