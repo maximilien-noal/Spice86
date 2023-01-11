@@ -7,6 +7,7 @@ using Spice86.Core.CLI;
 using Spice86.Core.Emulator;
 using Spice86.Core.Emulator.Callback;
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.Devices;
 using Spice86.Core.Emulator.Devices.DirectMemoryAccess;
 using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Core.Emulator.Devices.Input.Joystick;
@@ -215,10 +216,15 @@ public class Machine : IDisposable {
     /// The OPL3 FM Synth chip.
     /// </summary>
     public OPL3FM OPL3FM { get; }
+    
+    public IVgaFunctionality VgaFunctions { get; }
+    
+    public SortedList<uint, IDeviceCallbackProvider> DeviceCallbackProviders { get; } = new();
 
     /// <summary>
     /// The code invoked when emulation pauses.
     /// </summary>
+
     public event Action? Paused;
 
     /// <summary>
@@ -339,15 +345,28 @@ public class Machine : IDisposable {
         _dmaThread = new Thread(DmaLoop) {
             Name = "DMAThread"
         };
-        
+        if(Xms is not null) {
+            Register((IDeviceCallbackProvider)Xms);
+            Register((ICallback)Xms);
+        }
         if(machineCreationOptions.Configuration.Ems) {
             Ems = new(this, machineCreationOptions.LoggerService);
-            Register(Ems);
+            Register((ICallback)Ems);
         }
     }
+    
+    public void Register(IDeviceCallbackProvider callbackProvider) {
+        int id = DeviceCallbackProviders.Count;
+        callbackProvider.CallbackAddress = this.Memory.AddCallbackHandler((byte)id, callbackProvider.IsHookable);
+        DeviceCallbackProviders.Add((uint)id, callbackProvider);
 
-    public IVgaFunctionality VgaFunctions { get; set; }
-
+        Span<byte> machineCode = stackalloc byte[3];
+        machineCode[0] = 0x0F;
+        machineCode[1] = 0x56;
+        machineCode[2] = (byte)id;
+        callbackProvider.SetRaiseCallbackInstruction(machineCode);
+    }
+    
     /// <summary>
     /// Registers a callback, such as an interrupt handler.
     /// </summary>
