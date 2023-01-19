@@ -2,6 +2,7 @@
 
 using System;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Shared.Emulator.Memory;
 
 /// <summary>
 /// Defines a virtual device which is accessed via a callback function.

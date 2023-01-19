@@ -8,6 +8,9 @@ using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.InterruptHandlers;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Emulator.Errors;
+using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Interfaces;
 
 using System;
 using System.Collections.Generic;
@@ -24,9 +27,8 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     private readonly LinkedList<XmsBlock> xms = new();
     private readonly SortedList<int, int> handles = new();
 
-    public ExtendedMemoryManager(Machine machine) : base(machine) {
+    public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
         callbackAddress = new(0, 0);
-        _machine = machine;
         InitializeMemoryMap();
         FillDispatchTable();
     }
@@ -34,7 +36,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// <summary>
     /// Specifies the starting physical address of XMS.
     /// </summary>
-    public const uint XmsBaseAddress = Memory.ConvMemorySize + 65536 + 0x4000 + 1024 * 1024;
+    public const uint XmsBaseAddress = Memory.StartOfHighMemoryArea + 65536 + 0x4000 + 1024 * 1024;
 
     /// <summary>
     /// Total number of handles available at once.
@@ -52,7 +54,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// <summary>
     /// Gets the total amount of extended memory.
     /// </summary>
-    public int ExtendedMemorySize => _machine.Memory.MemorySize - (int)XmsBaseAddress;
+    public int ExtendedMemorySize => _machine.Memory.Size - (int)XmsBaseAddress;
 
     public override byte Index => 0x43;
 
@@ -151,12 +153,12 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     }
 
     public void GlobalDisableA20() {
-        _machine.Memory.EnableA20 = false;
+        _machine.Memory.A20Gate.IsEnabled = false;
         _state.AX = 1; // Success
     }
 
     public void GlobalEnableA20() {
-        _machine.Memory.EnableA20 = true;
+        _machine.Memory.A20Gate.IsEnabled = true;
         _state.AX = 1; // Success
     }
 
@@ -164,11 +166,11 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
         _state.AX = (ushort)(a20EnableCount > 0 ? (short)1 : (short)0);
     }
 
-    public byte ReadByte(int port) => _machine.Memory.EnableA20 ? (byte)0x02 : (byte)0x00;
+    public byte ReadByte(int port) => _machine.Memory.A20Gate.IsEnabled ? (byte)0x02 : (byte)0x00;
 
     public ushort ReadWord(int port) => throw new NotSupportedException();
 
-    public void WriteByte(int port, byte value) => _machine.Memory.EnableA20 = (value & 0x02) != 0;
+    public void WriteByte(int port, byte value) => _machine.Memory.A20Gate.IsEnabled = (value & 0x02) != 0;
 
     public void WriteWord(int port, ushort value) => throw new NotSupportedException();
 
@@ -239,7 +241,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// </summary>
     public void EnableLocalA20() {
         if (a20EnableCount == 0) {
-            _machine.Memory.EnableA20 = true;
+            _machine.Memory.A20Gate.IsEnabled = true;
         }
         a20EnableCount++;
         _state.AX = 1; // Success
@@ -250,7 +252,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// </summary>
     public void DisableLocalA20() {
         if (a20EnableCount == 1) {
-            _machine.Memory.EnableA20 = false;
+            _machine.Memory.A20Gate.IsEnabled = false;
         }
 
         if (a20EnableCount > 0) {
@@ -268,7 +270,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
             throw new UnrecoverableException($"XMS already initialized, in {nameof(InitializeMemoryMap)}");
         }
 
-        uint memoryAvailable = (uint)_machine.Memory.MemorySize - XmsBaseAddress;
+        uint memoryAvailable = (uint)_machine.Memory.Size - XmsBaseAddress;
         xms.AddFirst(new XmsBlock(0, 0, memoryAvailable, false));
     }
 
@@ -425,8 +427,8 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// Copies a block of memory.
     /// </summary>
     public void MoveExtendedMemoryBlock() {
-        bool a20State = _machine.Memory.EnableA20;
-        _machine.Memory.EnableA20 = true;
+        bool a20State = _machine.Memory.A20Gate.IsEnabled;
+        _machine.Memory.A20Gate.IsEnabled = true;
 
         XmsMoveData moveData;
         unsafe {
@@ -475,7 +477,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
         }
 
         _state.AX = 1; // Success.
-        _machine.Memory.EnableA20 = a20State;
+        _machine.Memory.A20Gate.IsEnabled = a20State;
     }
 
     /// <summary>
@@ -483,7 +485,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// </summary>
     public void QueryAnyFreeExtendedMemory() {
         _state.EAX = LargestFreeBlock / 1024u;
-        _state.ECX = (uint)(_machine.Memory.MemorySize - 1);
+        _state.ECX = (uint)(_machine.Memory.Size - 1);
         _state.EDX = (uint)(TotalFreeMemory / 1024);
 
         if (_state.EAX == 0) {

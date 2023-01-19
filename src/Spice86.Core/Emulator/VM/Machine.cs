@@ -20,7 +20,6 @@ using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Bios;
 using Spice86.Core.Emulator.InterruptHandlers.Dos.Ems;
 using Spice86.Core.Emulator.InterruptHandlers.Dos;
-using Spice86.Core.Emulator.InterruptHandlers.Dos.Ems;
 using Spice86.Core.Emulator.InterruptHandlers.Dos.Xms;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Mouse;
@@ -254,15 +253,8 @@ public class Machine : IDisposable {
         Memory = new Memory(ram, machineCreationOptions.Configuration);
         BiosDataArea = new BiosDataArea(Memory);
         Cpu = new Cpu(this, machineCreationOptions.LoggerService, machineCreationOptions.ExecutionFlowRecorder, machineCreationOptions.RecordData);
-        if(machineCreationOptions.Configuration.Xms && machineCreationOptions.Configuration.Ems) {
-            throw new UnrecoverableException("Cannot have XMS and EMS at the same time");
-        }
         if(machineCreationOptions.Configuration.Xms) {
-            Xms = new(this);
-        }
-        if(machineCreationOptions.Configuration.Ems) {
-            Xms ??= new(this);
-            Ems = new(this);
+            Xms = new(this, machineCreationOptions.LoggerService);
         }
         
         // Breakpoints
