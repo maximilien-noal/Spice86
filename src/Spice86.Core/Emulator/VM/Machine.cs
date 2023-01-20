@@ -342,8 +342,8 @@ public class Machine : IDisposable {
             Name = "DMAThread"
         };
         if(Xms is not null) {
-            Register((IDeviceCallbackProvider)Xms);
             Register((ICallback)Xms);
+            Register((IDeviceCallbackProvider)Xms);
         }
         if(machineCreationOptions.Configuration.Ems) {
             Ems = new(this, machineCreationOptions.LoggerService);
@@ -379,6 +379,7 @@ public class Machine : IDisposable {
         machineCode[11] = 0xCB;
         machineCode[12] = (byte)id;
         callbackProvider.SetRaiseCallbackInstruction(machineCode);
+        callbackProvider.FinishDeviceInitialization();
     }
     
     /// <summary>

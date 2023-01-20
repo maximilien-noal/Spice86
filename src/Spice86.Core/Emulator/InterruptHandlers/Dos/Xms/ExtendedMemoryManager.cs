@@ -27,7 +27,6 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
 
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
         _callbackAddress = new(0, 0);
-        InitializeMemoryMap();
         FillDispatchTable();
     }
 
@@ -82,6 +81,10 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
         _dispatchTable.Add(0x88, new Callback(0x88, QueryAnyFreeExtendedMemory));
         _dispatchTable.Add(0x89, new Callback(0x89, () => AllocateAnyExtendedMemory(_state.EDX)));
         _dispatchTable.Add(0x2F, new Callback(0x2F, RunXmsInterruptCallback));
+    }
+
+    public void FinishDeviceInitialization() {
+        InitializeMemoryMap();
     }
 
     public override void Run() {
