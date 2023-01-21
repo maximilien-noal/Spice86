@@ -27,6 +27,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
         _dispatchTable.Add(0xC0, new Callback(0xC0, Unsupported));
         _dispatchTable.Add(0xC2, new Callback(0xC2, Unsupported));
         _dispatchTable.Add(0xC4, new Callback(0xC4, Unsupported));
+        _dispatchTable.Add(0x87, new Callback(0x87, CopyExtendedMemory));
         _dispatchTable.Add(0x88, new Callback(0x88, GetExtendedMemorySize));
     }
 
@@ -84,6 +85,18 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// </summary>
     public void GetExtendedMemorySize() {
         _state.AX = 0;
+    }
+
+    public void CopyExtendedMemory() {
+        bool enabled = _memory.A20Gate.IsEnabled;
+        _machine.Memory.A20Gate.IsEnabled = true;
+        uint bytes = _state.ECX;
+        uint data = _state.ESI;
+        long source = _memory.UInt32[data + 0x12 ] & 0x00FFFFFF + _memory.UInt8[data + 0x16] << 24;
+        long dest = _memory.UInt32[data + 0x1A] & 0x00FFFFFF + _memory.UInt8[data + 0x1E] << 24;
+        _state.EAX = (_state.EAX & 0xFFFF) | (_state.EAX & 0xFFFF0000);
+        _memory.MemCopy((uint)source, (uint)dest, bytes);
+        _memory.A20Gate.IsEnabled = enabled;
     }
 
     private void Unsupported() {
