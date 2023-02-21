@@ -12,6 +12,25 @@ public sealed class BiosDataArea {
     /// <param name="memory">The memory bus.</param>
     public BiosDataArea(Memory memory) {
         _memory = memory;
+        VideoMode = 0x03;
+        ScreenRows = 24;
+        ScreenColumns = 80;
+        CurrentVideoPage = 0;
+        CharacterPointHeight = 16;
+        CrtControllerBaseAddress = 0x03D4;
+        BiosConfiguration = 0;
+        DisplayCombinationCode = 0x08; // VGA with color monitor
+
+        // TODO: Update this when machines using other values are implemented (eg. Hercules Monochrome)
+        // CGA/EGA/VGA/TANDY/PC Jr -> startup with 80x25 text color mode
+        BiosConfiguration |= 0x20;
+        
+        // PS/2 Mouse
+        BiosConfiguration |= 0x04;
+        
+        // Gameport
+        // TODO: Implement Gameport
+        BiosConfiguration |= 0x1000;
     }
     
     /// <summary>
@@ -20,6 +39,14 @@ public sealed class BiosDataArea {
     public ushort EquipmentListFlags {
         get => _memory.UInt16[MemoryMap.BiosDataSegment, 0x0010];
         set => _memory.UInt16[MemoryMap.BiosDataSegment, 0x0010] = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the value of the BIOS configuration descriptor
+    /// </summary>
+    public ushort BiosConfiguration {
+        get => _memory.UInt16[MemoryMap.BiosConfigurationSegment, 0];
+        set => _memory.UInt16[MemoryMap.BiosConfigurationSegment, 0] = value;
     }
 
     /// <summary>
@@ -119,7 +146,7 @@ public sealed class BiosDataArea {
     /// <summary>
     /// Gets or sets the character point height.
     /// </summary>
-    public ushort CharacterHeight {
+    public ushort CharacterPointHeight {
         get => _memory.UInt16[MemoryMap.BiosDataSegment, 0x0085];
         set => _memory.UInt16[MemoryMap.BiosDataSegment, 0x0085] = value;
     }

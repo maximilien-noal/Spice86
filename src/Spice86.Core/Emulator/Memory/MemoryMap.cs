@@ -8,6 +8,11 @@ public static class MemoryMap {
     /// Segment that contains a list of addresses of interrupt handlers.
     /// </summary>
     public const int InterruptVectorSegment = 0x0000;
+
+    /// <summary>
+    /// Segment containing the BIOS data configuration descriptor.
+    /// </summary>
+    public const int BiosConfigurationSegment = 0x410;
     
     /// <summary>
     /// Segment of the VGA static functionality table.
