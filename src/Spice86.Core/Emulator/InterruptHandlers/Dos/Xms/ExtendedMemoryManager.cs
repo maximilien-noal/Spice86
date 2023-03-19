@@ -13,6 +13,7 @@ using Spice86.Shared.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Provides DOS applications with XMS memory.
@@ -35,7 +36,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// <summary>
     /// Specifies the starting physical address of XMS.
     /// </summary>
-    public const uint XmsBaseAddress = Memory.StartOfHighMemoryArea + 65536 + 0x4000 + 1024 * 1024;
+    public const uint XmsBaseAddress = 1024 * 1024 + 65536 + 0x4000 + 1024 * 1024;
 
     /// <summary>
     /// Total number of handles available at once.
@@ -416,59 +417,55 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
 
     /// <summary>
     /// Copies a block of memory.
+    /// TODO: Verify this works
     /// </summary>
-    public void MoveExtendedMemoryBlock() {
+    public unsafe void MoveExtendedMemoryBlock() {
         bool a20State = _machine.Memory.A20Gate.IsEnabled;
         _machine.Memory.A20Gate.IsEnabled = true;
 
-        XmsMoveData moveData;
-        unsafe {
-            moveData = *(XmsMoveData*)_machine.Memory.GetPointer(_state.DS, _state.SI);
-        }
+        var moveDataSpan = _machine.Memory.GetSpan(_state.DS, _state.SI);
+        fixed (byte* moveDataPtr = moveDataSpan) {
+            XmsMoveData moveData = *(XmsMoveData*)moveDataPtr;
+            Span<byte> srcPtr = new byte[] { };
+            Span<byte> destPtr = new byte[] { };
 
-        IntPtr srcPtr = IntPtr.Zero;
-        IntPtr destPtr = IntPtr.Zero;
-
-        if (moveData.SourceHandle == 0) {
-            SegmentedAddress srcAddress = moveData.SourceAddress;
-            srcPtr = _machine.Memory.GetPointer(srcAddress.Segment, srcAddress.Offset);
-        } else {
-            if (TryGetBlock(moveData.SourceHandle, out XmsBlock srcBlock)) {
-                srcPtr = _machine.Memory.GetPointer((int)(XmsBaseAddress + srcBlock.Offset + moveData.SourceOffset));
+            if (moveData.SourceHandle == 0) {
+                SegmentedAddress srcAddress = moveData.SourceAddress;
+                srcPtr = _machine.Memory.GetSpan(srcAddress.Segment, srcAddress.Offset);
+            } else {
+                if (TryGetBlock(moveData.SourceHandle, out XmsBlock srcBlock)) {
+                    srcPtr = _machine.Memory.GetSpan((int)(XmsBaseAddress + srcBlock.Offset + moveData.SourceOffset),
+                        0);
+                }
             }
-        }
 
-        if (moveData.DestHandle == 0) {
-            SegmentedAddress destAddress = moveData.DestAddress;
-            destPtr = _machine.Memory.GetPointer(destAddress.Segment, destAddress.Offset);
-        } else {
-            if (TryGetBlock(moveData.DestHandle, out XmsBlock destBlock)) {
-                destPtr = _machine.Memory.GetPointer((int)(XmsBaseAddress + destBlock.Offset + moveData.DestOffset));
+            if (moveData.DestHandle == 0) {
+                SegmentedAddress destAddress = moveData.DestAddress;
+                destPtr = _machine.Memory.GetSpan(destAddress.Segment, destAddress.Offset);
+            } else {
+                if (TryGetBlock(moveData.DestHandle, out XmsBlock destBlock)) {
+                    destPtr = _machine.Memory.GetSpan((int)(XmsBaseAddress + destBlock.Offset + moveData.DestOffset),
+                        0);
+                }
             }
-        }
 
-        if (srcPtr == IntPtr.Zero) {
-            _state.BL = 0xA3; // Invalid source handle.
-            _state.AX = 0; // Didn't work.
-            return;
-        }
-        if (destPtr == IntPtr.Zero) {
-            _state.BL = 0xA5; // Invalid destination handle.
-            _state.AX = 0; // Didn't work.
-            return;
-        }
-
-        unsafe {
-            byte* src = (byte*)srcPtr.ToPointer();
-            byte* dest = (byte*)destPtr.ToPointer();
-
-            for (uint i = 0; i < moveData.Length; i++) {
-                dest[i] = src[i];
+            if (srcPtr.Length == 0) {
+                _state.BL = 0xA3; // Invalid source handle.
+                _state.AX = 0; // Didn't work.
+                return;
             }
-        }
 
-        _state.AX = 1; // Success.
-        _machine.Memory.A20Gate.IsEnabled = a20State;
+            if (destPtr.Length == 0) {
+                _state.BL = 0xA5; // Invalid destination handle.
+                _state.AX = 0; // Didn't work.
+                return;
+            }
+
+            srcPtr.CopyTo(destPtr);
+
+            _state.AX = 1; // Success.
+            _machine.Memory.A20Gate.IsEnabled = a20State;
+        }
     }
 
     /// <summary>
