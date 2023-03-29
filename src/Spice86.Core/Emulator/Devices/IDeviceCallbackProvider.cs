@@ -22,10 +22,7 @@ public interface IDeviceCallbackProvider
     /// <summary>
     /// Notifies the handler what machine code can be used to invoke itself. Default interface member.
     /// </summary>
-    /// <param name="machineCode">Machine code sequence used to invoke the handler.</param>
-    void SetRaiseCallbackInstruction(ReadOnlySpan<byte> machineCode)
-    {
-    }
+    void SetRaiseCallbackInstruction();
 
     /// <summary>
     /// Calls the handler's final init code after it has been registered by the Machine. Default interface member.

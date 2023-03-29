@@ -19,7 +19,6 @@ using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Bios;
 using Spice86.Core.Emulator.InterruptHandlers.Dos.Ems;
-using Spice86.Core.Emulator.InterruptHandlers.Dos;
 using Spice86.Core.Emulator.InterruptHandlers.Dos.Xms;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Mouse;
@@ -34,6 +33,7 @@ using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared;
 using Spice86.Shared.Interfaces;
 
 /// <summary>
@@ -228,7 +228,6 @@ public class Machine : IDisposable {
     /// <summary>
     /// The code invoked when emulation pauses.
     /// </summary>
-
     public event Action? Paused;
 
     /// <summary>
@@ -353,35 +352,7 @@ public class Machine : IDisposable {
         }
     }
     public void Register(IDeviceCallbackProvider callbackProvider) {
-        int id = DeviceCallbackProviders.Count;
-        //TODO: Fix this
-        //callbackProvider.CallbackAddress = this.Memory.AddCallbackHandler((byte)id, callbackProvider.IsHookable);
-        DeviceCallbackProviders.Add((uint)id, callbackProvider);
-
-        // EB06909090909090CDFFCB
-        // 0000:0000 EB06                            JMP 0008
-        // 0000:0002 90                              NOP
-        // 0000:0003 90                              NOP
-        // 0000:0004 90                              NOP
-        // 0000:0005 90                              NOP
-        // 0000:0006 90                              NOP
-        // 0000:0007 90                              NOP
-        // 0000:0008 CDFF                            INT FF
-        // 0000:000A CB                              RETF
-        Span<byte> machineCode = stackalloc byte[12];
-        machineCode[0] = 0xEB;
-        machineCode[2] = 0x06;
-        machineCode[3] = 0x90;
-        machineCode[4] = 0x90;
-        machineCode[5] = 0x90;
-        machineCode[6] = 0x90;
-        machineCode[7] = 0x90;
-        machineCode[8] = 0x90;
-        machineCode[9] = 0xCD;
-        machineCode[10] = 0xFF;
-        machineCode[11] = 0xCB;
-        machineCode[12] = (byte)id;
-        callbackProvider.SetRaiseCallbackInstruction(machineCode);
+        callbackProvider.SetRaiseCallbackInstruction();
         callbackProvider.FinishDeviceInitialization();
     }
     
