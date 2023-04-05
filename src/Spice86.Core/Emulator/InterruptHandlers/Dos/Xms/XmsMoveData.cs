@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 
 using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared;
 
 /// <summary>
 /// In-memory structure with information about an XMS move request.

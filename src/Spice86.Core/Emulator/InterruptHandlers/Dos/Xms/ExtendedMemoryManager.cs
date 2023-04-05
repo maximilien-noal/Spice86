@@ -9,6 +9,9 @@ using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
+using Spice86.Shared;
+using Spice86.Shared.Emulator.Errors;
+using Spice86.Shared.Interfaces;
 
 using System;
 using System.Collections.Generic;
