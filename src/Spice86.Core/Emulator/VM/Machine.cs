@@ -7,7 +7,6 @@ using Spice86.Core.CLI;
 using Spice86.Core.Emulator;
 using Spice86.Core.Emulator.Callback;
 using Spice86.Core.Emulator.CPU;
-using Spice86.Core.Emulator.Devices;
 using Spice86.Core.Emulator.Devices.DirectMemoryAccess;
 using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Core.Emulator.Devices.Input.Joystick;
@@ -339,16 +338,11 @@ public class Machine : IDisposable {
         if(machineCreationOptions.Configuration.Xms) {
             Xms = new(this, machineCreationOptions.LoggerService);
             Register((ICallback)Xms);
-            Register((ITwoPassesInitializationDevice)Xms);
         }
         if(machineCreationOptions.Configuration.Ems) {
             Ems = new(this, machineCreationOptions.LoggerService);
             Register((ICallback)Ems);
         }
-    }
-
-    public void Register(ITwoPassesInitializationDevice callbackProvider) {
-        callbackProvider.FinishDeviceInitialization();
     }
     
     /// <summary>

@@ -22,7 +22,7 @@ using System.Linq;
 /// <summary>
 /// Provides DOS applications with XMS memory.
 /// </summary>
-public sealed class ExtendedMemoryManager : InterruptHandler, ITwoPassesInitializationDevice {
+public sealed class ExtendedMemoryManager : InterruptHandler {
     private int _a20EnableCount;
     private readonly LinkedList<XmsBlock> _xmsBlocksLinkedList = new();
     private readonly SortedList<int, int> _xmsHandles = new();
@@ -32,6 +32,7 @@ public sealed class ExtendedMemoryManager : InterruptHandler, ITwoPassesInitiali
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
         var device = new CharacterDevice(DeviceAttributes.Ioctl, "XMS_Handler", loggerService);
         _machine.Dos.AddDevice(device, InterruptHandlerSegment, 0x10);
+        _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, 0, false));
         FillDispatchTable();
     }
 
@@ -82,10 +83,6 @@ public sealed class ExtendedMemoryManager : InterruptHandler, ITwoPassesInitiali
         _dispatchTable.Add(0x88, new Callback(0x88, QueryAnyFreeExtendedMemory));
         _dispatchTable.Add(0x89, new Callback(0x89, () => AllocateAnyExtendedMemory(_state.EDX)));
         _dispatchTable.Add(0x2F, new Callback(0x2F, RunXmsInterruptCallback));
-    }
-
-    public void FinishDeviceInitialization() {
-        InitializeMemoryMap();
     }
 
     public override void Run() {
@@ -252,18 +249,7 @@ public sealed class ExtendedMemoryManager : InterruptHandler, ITwoPassesInitiali
         }
         _state.AX = 1; // Success
     }
-
-    /// <summary>
-    /// Initializes the internal memory map.
-    /// </summary>
-    /// <exception cref="UnrecoverableException">If xms is already initialized</exception>
-    public void InitializeMemoryMap() {
-        if (_xmsBlocksLinkedList.Count != 0) {
-            throw new UnrecoverableException($"XMS already initialized, in {nameof(InitializeMemoryMap)}");
-        }
-        _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, 0, false));
-    }
-
+    
     /// <summary>
     /// Returns all of the free blocks in the map sorted by size in ascending order.
     /// </summary>
