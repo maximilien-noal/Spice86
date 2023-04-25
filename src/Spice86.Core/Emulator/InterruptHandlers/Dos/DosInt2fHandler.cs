@@ -6,6 +6,8 @@ using Serilog.Events;
 
 using Spice86.Core.Emulator.Callback;
 using Spice86.Core.Emulator.InterruptHandlers;
+using Spice86.Core.Emulator.InterruptHandlers.Dos.Xms;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Utils;
 
@@ -29,8 +31,30 @@ public class DosInt2fHandler : InterruptHandler {
     private void FillDispatchTable() {
         _dispatchTable.Add(0x16, new Callback(0x16, () => ClearCFAndCX(true)));
         _dispatchTable.Add(0x15, new Callback(0x15, SendDeviceDriverRequest));
-        _dispatchTable.Add(0x43, new Callback(0x43, () => ClearCFAndCX(true)));
+        _dispatchTable.Add(0x43, new Callback(0x43, GetXmsDriverInformation));
         _dispatchTable.Add(0x46, new Callback(0x46, () => ClearCFAndCX(true)));
+    }
+
+    private void GetXmsDriverInformation() {
+        if (_machine.Xms is null) {
+            return;
+        }
+        switch (_state.AL) {
+            //Is XMS Driver installed
+            case 0:
+                _state.AL = 0x80;
+                break;
+            //Get XMS Callback address
+            case 0x10:
+                _state.ES = ExtendedMemoryManager.InterruptHandlerSegmentAddress;
+                _state.BX = ExtendedMemoryManager.InterruptHandlerSegmentOffset;
+                break;
+            default:
+                if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                    _loggerService.Warning("{MethodName}: value {AL} not supported", nameof(GetXmsDriverInformation), _state.AL);
+                }
+                break;
+        }
     }
 
     /// <summary>

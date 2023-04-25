@@ -21,6 +21,9 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     private readonly LinkedList<XmsBlock> _xmsBlocksLinkedList = new();
     private readonly SortedList<int, int> _xmsHandles = new();
     
+    public const ushort InterruptHandlerSegmentAddress = 0xC83F;
+    public const ushort InterruptHandlerSegmentOffset = 0x10;
+    
     public override ushort? InterruptHandlerSegment => 0xC83F;
 
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
