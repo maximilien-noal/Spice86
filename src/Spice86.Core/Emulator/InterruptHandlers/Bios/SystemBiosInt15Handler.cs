@@ -84,7 +84,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// Reports extended memory size in AX.
     /// </summary>
     public void GetExtendedMemorySize() {
-        _state.AX = 0;
+        _state.AX = 8192;
     }
 
     public void CopyExtendedMemory() {
@@ -92,7 +92,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
         _machine.Memory.A20Gate.IsEnabled = true;
         uint bytes = _state.ECX;
         uint data = _state.ESI;
-        long source = _memory.UInt32[data + 0x12 ] & 0x00FFFFFF + _memory.UInt8[data + 0x16] << 24;
+        long source = _memory.UInt32[data + 0x12] & 0x00FFFFFF + _memory.UInt8[data + 0x16] << 24;
         long dest = _memory.UInt32[data + 0x1A] & 0x00FFFFFF + _memory.UInt8[data + 0x1E] << 24;
         _state.EAX = (_state.EAX & 0xFFFF) | (_state.EAX & 0xFFFF0000);
         _memory.MemCopy((uint)source, (uint)dest, bytes);
