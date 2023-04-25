@@ -208,11 +208,9 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     /// <param name="block">On success, contains information about the block.</param>
     /// <returns>True if handle was found; otherwise false.</returns>
     public bool TryGetBlock(int handle, out XmsBlock block) {
-        foreach (XmsBlock b in _xmsBlocksLinkedList) {
-            if (b.IsUsed && b.Handle == handle) {
-                block = b;
-                return true;
-            }
+        foreach (XmsBlock b in _xmsBlocksLinkedList.Where(b => b.IsUsed && b.Handle == handle)) {
+            block = b;
+            return true;
         }
 
         block = default;
