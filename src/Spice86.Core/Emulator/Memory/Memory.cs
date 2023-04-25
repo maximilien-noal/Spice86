@@ -398,12 +398,14 @@ public class Memory {
     private void Write(uint address, byte value) {
         address = A20Gate.TransformAddress(address);
         MonitorWriteAccess(address, value);
+        address = IsA20Enabled ? address | 0x000FFFFFu : address;
         _memoryDevices[address].Write(address, value);
     }
 
     private byte Read(uint address) {
         address = A20Gate.TransformAddress(address);
         MonitorReadAccess(address);
+        address = IsA20Enabled ? address | 0x000FFFFFu : address;
         return _memoryDevices[address].Read(address);
     }
 
