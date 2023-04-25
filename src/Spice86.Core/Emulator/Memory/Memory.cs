@@ -425,10 +425,5 @@ public class Memory {
     }
 
     private record DeviceRegistration(uint StartAddress, uint EndAddress, IMemoryDevice Device);
-
-    public void EnableOrDisableA20Gate(bool status) {
-        IsA20Enabled = status;
-    }
-
 }
 
