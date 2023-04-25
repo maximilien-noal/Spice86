@@ -84,7 +84,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// Reports extended memory size in AX.
     /// </summary>
     public void GetExtendedMemorySize() {
-        _state.AX = 8192;
+        _state.AX = (ushort) (_memory.A20Gate.IsEnabled ? 0 : _machine.Xms?.ExtendedMemorySize ?? 0);
     }
 
     public void CopyExtendedMemory() {
