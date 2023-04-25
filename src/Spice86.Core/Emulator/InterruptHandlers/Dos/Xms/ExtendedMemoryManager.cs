@@ -5,6 +5,8 @@ using Spice86.Core.Emulator.Callback;
 using Spice86.Core.Emulator.Devices;
 using Spice86.Core.Emulator.InterruptHandlers;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.OperatingSystem.Devices;
+using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
@@ -20,17 +22,18 @@ using System.Linq;
 /// <summary>
 /// Provides DOS applications with XMS memory.
 /// </summary>
-public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
+public sealed class ExtendedMemoryManager : InterruptHandler, ITwoPassesInitializationDevice {
     private int _a20EnableCount;
     private readonly LinkedList<XmsBlock> _xmsBlocksLinkedList = new();
     private readonly SortedList<int, int> _xmsHandles = new();
+    
+    public override ushort? InterruptHandlerSegment => 0xC83F;
 
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
-        CallbackAddress = new(0, 0);
+        var device = new CharacterDevice(DeviceAttributes.Ioctl, "XMS_Handler", loggerService);
+        _machine.Dos.AddDevice(device, InterruptHandlerSegment, 0x10);
         FillDispatchTable();
     }
-
-    public bool IsHookable => true;
 
     /// <summary>
     /// Specifies the starting physical address of XMS.
@@ -46,18 +49,18 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     /// Gets the largest free block of memory in bytes.
     /// </summary>
     public uint LargestFreeBlock => GetFreeBlocks().FirstOrDefault().Length;
+    
     /// <summary>
     /// Gets the total amount of free memory in bytes.
     /// </summary>
     public long TotalFreeMemory => GetFreeBlocks().Sum(b => b.Length);
+    
     /// <summary>
     /// Gets the total amount of extended memory.
     /// </summary>
     public int ExtendedMemorySize => _machine.Memory.Size - (int)XmsBaseAddress;
 
     public override byte Index => 0x43;
-
-    public SegmentedAddress CallbackAddress { get; set; }
 
     private void FillDispatchTable() {
         _dispatchTable.Add(0x00, new Callback(0x00, GetVersionNumber));
@@ -80,36 +83,6 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
         _dispatchTable.Add(0x89, new Callback(0x89, () => AllocateAnyExtendedMemory(_state.EDX)));
         _dispatchTable.Add(0x2F, new Callback(0x2F, RunXmsInterruptCallback));
     }
-    
-    /// <summary>
-    /// 0000:0000 EB06                            JMP 0008 <br/>
-    /// 0000:0002 90                              NOP <br/>
-    /// 0000:0003 90                              NOP <br/>
-    /// 0000:0004 90                              NOP <br/>
-    /// 0000:0005 90                              NOP <br/>
-    /// 0000:0006 90                              NOP <br/>
-    /// 0000:0007 90                              NOP <br/>
-    /// 0000:0008 CD43                            INT 43 <br/>
-    /// 0000:000A CB                              RETF <br/>
-    /// </summary>
-    public void SetRaiseCallbackInstruction() {
-        uint startAddress = 0x1198;
-        foreach (byte item in new byte[] {
-            0xEB,
-            0x06,
-            0x90,
-            0x90,
-            0x90,
-            0x90,
-            0x90,
-            0x90,
-            0xCD,
-            Index,
-            0xCB}) {
-            _memory.SetUint8(startAddress, item);
-            startAddress++;
-        }
-    }
 
     public void FinishDeviceInitialization() {
         InitializeMemoryMap();
@@ -127,8 +100,8 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
                 break;
 
             case XmsHandlerFunctions.GetCallbackAddress:
-                _state.BX = CallbackAddress.Offset;
-                _state.ES = CallbackAddress.Segment;
+                _state.ES = 0xC83F;
+                _state.BX = 0x10;
                 break;
 
             default:
@@ -137,7 +110,7 @@ public class ExtendedMemoryManager : InterruptHandler, IDeviceCallbackProvider {
     }
 
     public void GetVersionNumber() {
-        _state.AX = 0x0300; // Return version 3.00
+        _state.AX = 0x0200; // Return version 2.00
         _state.BX = 0; // Internal version
         _state.DX = 1; // HMA exists
     }

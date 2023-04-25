@@ -25,15 +25,11 @@ using Spice86.Core.Emulator.InterruptHandlers.Input.Mouse;
 using Spice86.Core.Emulator.InterruptHandlers.SystemClock;
 using Spice86.Core.Emulator.InterruptHandlers.Timer;
 using Spice86.Core.Emulator.InterruptHandlers.VGA;
-using Spice86.Core.Emulator.InterruptHandlers.VGA;
-using Spice86.Core.Emulator.InterruptHandlers.VGA;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
-using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
-using Spice86.Shared;
 using Spice86.Shared.Interfaces;
 
 /// <summary>
@@ -222,8 +218,6 @@ public class Machine : IDisposable {
     public OPL3FM OPL3FM { get; }
     
     public IVgaFunctionality VgaFunctions { get; }
-    
-    public SortedList<uint, IDeviceCallbackProvider> DeviceCallbackProviders { get; } = new();
 
     /// <summary>
     /// The code invoked when emulation pauses.
@@ -342,17 +336,18 @@ public class Machine : IDisposable {
         _dmaThread = new Thread(DmaLoop) {
             Name = "DMAThread"
         };
-        if(Xms is not null) {
+        if(machineCreationOptions.Configuration.Xms) {
+            Xms = new(this, machineCreationOptions.LoggerService);
             Register((ICallback)Xms);
-            Register((IDeviceCallbackProvider)Xms);
+            Register((ITwoPassesInitializationDevice)Xms);
         }
         if(machineCreationOptions.Configuration.Ems) {
             Ems = new(this, machineCreationOptions.LoggerService);
             Register((ICallback)Ems);
         }
     }
-    public void Register(IDeviceCallbackProvider callbackProvider) {
-        callbackProvider.SetRaiseCallbackInstruction();
+
+    public void Register(ITwoPassesInitializationDevice callbackProvider) {
         callbackProvider.FinishDeviceInitialization();
     }
     
