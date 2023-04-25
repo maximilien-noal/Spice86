@@ -2,17 +2,11 @@
 
 using Spice86.Core;
 using Spice86.Core.Emulator.Callback;
-using Spice86.Core.Emulator.Devices;
 using Spice86.Core.Emulator.InterruptHandlers;
-using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.VM;
-using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
-using Spice86.Shared.Interfaces;
-using Spice86.Shared;
-using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Interfaces;
 
 using System;
@@ -126,13 +120,13 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
         if (LargestFreeBlock <= ushort.MaxValue * 1024u) {
             _state.AX = (ushort)(LargestFreeBlock / 1024u);
         } else {
-            _state.AX = unchecked(ushort.MaxValue);
+            _state.AX = ushort.MaxValue;
         }
 
         if (TotalFreeMemory <= ushort.MaxValue * 1024u) {
             _state.DX = (ushort)(TotalFreeMemory / 1024);
         } else {
-            _state.DX = unchecked(ushort.MaxValue);
+            _state.DX = ushort.MaxValue;
         }
 
         if (_state.AX == 0 && _state.DX == 0) {
