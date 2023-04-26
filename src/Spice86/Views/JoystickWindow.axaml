@@ -20,12 +20,11 @@
                         <Button Grid.Row="1" Grid.Column="0" MinWidth="40" Content="Left"></Button>
                         <Button Grid.Row="1" Grid.Column="2" MinWidth="40" Content="Right"></Button>
                 </Grid>
-                <Grid ColumnDefinitions="*, *, *"
-                      RowDefinitions="*,*,*">
-                        <Button Grid.Row="0" Grid.Column="1" MinWidth="40" Content="Button 1"></Button>
-                        <Button Grid.Row="2" Grid.Column="1" MinWidth="40" Content="Button 2"></Button>
-                        <Button Grid.Row="1" Grid.Column="0" MinWidth="40" Content="Button 3"></Button>
-                        <Button Grid.Row="1" Grid.Column="2" MinWidth="40" Content="Button 4"></Button>
-                </Grid>
+                <WrapPanel Orientation="Vertical">
+                        <Button MinWidth="40" Content="Button 1"></Button>
+                        <Button MinWidth="40" Content="Button 2"></Button>
+                        <Button MinWidth="40" Content="Button 3"></Button>
+                        <Button MinWidth="40" Content="Button 4"></Button>
+                </WrapPanel>
         </UniformGrid>
 </Window>

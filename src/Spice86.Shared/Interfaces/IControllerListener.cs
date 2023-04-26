@@ -1,4 +1,6 @@
-namespace Spice86.Shared.Interfaces; 
+namespace Spice86.Shared.Interfaces;
+
+using Spice86.Shared.Emulator.Joystick;
 
 public interface IControllerListener {
     /// <summary>
