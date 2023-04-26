@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Spice86.Views.JoystickWindow"
+        xmlns:vm="using:Spice86.ViewModels"
+        Icon="/Icon/Spice86.ico"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Title="Joystick" MinWidth="600" MinHeight="200" Width="600" Height="200">
+        <Design.DataContext>
+                <vm:JoystickViewModel />
+        </Design.DataContext>
+        <UniformGrid>
+                <Grid ColumnDefinitions="*, *, *"
+                      RowDefinitions="*,*,*">
+                        <Button Grid.Row="0" Grid.Column="1" MinWidth="40" Content="Up"></Button>
+                        <Button Grid.Row="2" Grid.Column="1" MinWidth="40" Content="Down"></Button>
+                        <Button Grid.Row="1" Grid.Column="0" MinWidth="40" Content="Left"></Button>
+                        <Button Grid.Row="1" Grid.Column="2" MinWidth="40" Content="Right"></Button>
+                </Grid>
+                <Grid ColumnDefinitions="*, *, *"
+                      RowDefinitions="*,*,*">
+                        <Button Grid.Row="0" Grid.Column="1" MinWidth="40" Content="Button 1"></Button>
+                        <Button Grid.Row="2" Grid.Column="1" MinWidth="40" Content="Button 2"></Button>
+                        <Button Grid.Row="1" Grid.Column="0" MinWidth="40" Content="Button 3"></Button>
+                        <Button Grid.Row="1" Grid.Column="2" MinWidth="40" Content="Button 4"></Button>
+                </Grid>
+        </UniformGrid>
+</Window>

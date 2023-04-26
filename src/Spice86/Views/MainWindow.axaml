@@ -36,7 +36,8 @@
 					<MenuItem Header="Debug Window" IsEnabled="{Binding IsMachineRunning}" Command="{Binding ShowDebugWindowCommand}" />
 					<MenuItem Header="Color Palette" IsEnabled="{Binding IsMachineRunning}" Command="{Binding ShowColorPaletteCommand}" />
 					<MenuItem Header="Performance" IsEnabled="{Binding IsMachineRunning}" Command="{Binding ShowPerformanceCommand}" />
-					<MenuItem Header="{Binding CurrentLogLevel, StringFormat='Log Level ({0})'}">
+					<MenuItem Header="Joystick" Command="{Binding ShowJoystickCommand}" />
+						<MenuItem Header="{Binding CurrentLogLevel, StringFormat='Log Level ({0})'}">
 						<MenuItem Header="Silent" Command="{Binding SetLogLevel}" CommandParameter="Silent"></MenuItem>
 						<MenuItem Header="Verbose" Command="{Binding SetLogLevel}" CommandParameter="Verbose"></MenuItem>
 						<MenuItem Header="Debug" Command="{Binding SetLogLevel}" CommandParameter="Debug"></MenuItem>

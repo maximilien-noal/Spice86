@@ -45,6 +45,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDispo
     private PaletteWindow? _paletteWindow;
     private PerformanceWindow? _performanceWindow;
     private string _lastExecutableDirectory = string.Empty;
+    private JoystickWindow? _joystickWindow;
 
     private bool _closeAppOnEmulatorExit;
 
@@ -118,6 +119,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDispo
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ShowPerformanceCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ShowJoystickCommand))]
     [NotifyCanExecuteChangedFor(nameof(ShowDebugWindowCommand))]
     [NotifyCanExecuteChangedFor(nameof(ShowColorPaletteCommand))]
     [NotifyCanExecuteChangedFor(nameof(PauseCommand))]
@@ -150,6 +152,18 @@ public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDispo
                 _loggerService)
                     .DumpAll();
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsMachineRunning))]
+    public void ShowJoystick() {
+        if (_joystickWindow != null) {
+            _joystickWindow.Activate();
+        } else if(_programExecutor is not null) {
+            _joystickWindow = new JoystickWindow(new JoystickViewModel(_programExecutor.Machine));
+            _joystickWindow.Closed += (_, _) => _joystickWindow = null;
+            _joystickWindow.Show();
+        }
+
     }
 
     [RelayCommand(CanExecute = nameof(IsMachineRunning))]
