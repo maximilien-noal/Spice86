@@ -8,9 +8,9 @@ using Spice86.Shared.Interfaces;
 /// Joystick implementation. Emulates an unplugged joystick for now.
 /// </summary>
 public class Joystick : DefaultIOPortHandler {
-    private const int JoystickPositionAndStatus = 0x201;
+    public const int JoystickPositionAndStatus = 0x201;
 
-    private byte _joystickPositionAndStatusValue = 0xFF;
+    public byte JoystickPositionAndStatusValue { get; private set; } = 0xFF;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Joystick"/>
@@ -29,7 +29,7 @@ public class Joystick : DefaultIOPortHandler {
     /// <inheritdoc />
     public override byte ReadByte(int port) {
         return port switch {
-            JoystickPositionAndStatus => _joystickPositionAndStatusValue,
+            JoystickPositionAndStatus => JoystickPositionAndStatusValue,
             _ => base.ReadByte(port),
         };
     }
@@ -38,7 +38,7 @@ public class Joystick : DefaultIOPortHandler {
     public override void WriteByte(int port, byte value) {
         switch (port) {
             case JoystickPositionAndStatus:
-                _joystickPositionAndStatusValue = value;
+                JoystickPositionAndStatusValue = value;
                 break;
             default:
                 base.WriteByte(port, value);

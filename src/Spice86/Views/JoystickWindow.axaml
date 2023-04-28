@@ -8,23 +8,23 @@
         Icon="/Icon/Spice86.ico"
         CanResize="True"
         WindowStartupLocation="CenterOwner"
-        Title="Joystick" MinWidth="600" MinHeight="200" Width="600" Height="200">
+        Title="Digital Gamepad Joystick Debugger" MinWidth="600" MinHeight="200" Width="600" Height="200">
         <Design.DataContext>
                 <vm:JoystickViewModel />
         </Design.DataContext>
-        <UniformGrid>
-                <Grid ColumnDefinitions="*, *, *"
+        <Grid ColumnDefinitions="*,*">
+                <Grid Grid.Column="0" ColumnDefinitions="*, *, *"
                       RowDefinitions="*,*,*">
-                        <Button Grid.Row="0" Grid.Column="1" MinWidth="40" Content="Up"></Button>
-                        <Button Grid.Row="2" Grid.Column="1" MinWidth="40" Content="Down"></Button>
-                        <Button Grid.Row="1" Grid.Column="0" MinWidth="40" Content="Left"></Button>
-                        <Button Grid.Row="1" Grid.Column="2" MinWidth="40" Content="Right"></Button>
+                        <ToggleButton Grid.Row="0" Grid.Column="1" Command="{Binding UpCommand}" Margin="5" MinWidth="40" Content="Up" />
+                        <ToggleButton Grid.Row="2" Grid.Column="1" Command="{Binding DownCommand}" Margin="5" MinWidth="40" Content="Down" />
+                        <ToggleButton Grid.Row="1" Grid.Column="0" Command="{Binding LeftCommand}" Margin="5" MinWidth="40" Content="Left" />
+                        <ToggleButton Grid.Row="1" Grid.Column="2" Command="{Binding RightCommand}" Margin="5" MinWidth="40" Content="Right" />
                 </Grid>
-                <WrapPanel Orientation="Vertical">
-                        <Button MinWidth="40" Content="Button 1"></Button>
-                        <Button MinWidth="40" Content="Button 2"></Button>
-                        <Button MinWidth="40" Content="Button 3"></Button>
-                        <Button MinWidth="40" Content="Button 4"></Button>
-                </WrapPanel>
-        </UniformGrid>
+                <StackPanel Grid.Column="1" Orientation="Vertical">
+                        <ToggleButton Margin="5" MinWidth="40" Content="Button 1" Command="{Binding Button1Command}" />
+                        <ToggleButton Margin="5" MinWidth="40" Content="Button 2" Command="{Binding Button2Command}"/>
+                        <ToggleButton Margin="5" MinWidth="40" Content="Button 3" Command="{Binding Button3Command}"/>
+                        <ToggleButton Margin="5" MinWidth="40" Content="Button 4" Command="{Binding Button4Command}"/>
+                </StackPanel>
+        </Grid>
 </Window>
