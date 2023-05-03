@@ -42,10 +42,10 @@ public class DosInt2fHandler : InterruptHandler {
             case 0:
                 _state.AL = 0x80;
                 break;
-            //Get XMS Callback address
+            //Get XMS Control Function Address
             case 0x10:
-                _state.ES = ExtendedMemoryManager.InterruptHandlerSegmentAddress;
-                _state.BX = ExtendedMemoryManager.InterruptHandlerSegmentOffset;
+                _state.ES = ExtendedMemoryManager.InterruptHandlerSegmentValue;
+                _state.BX = 0;
                 break;
             default:
                 if (_loggerService.IsEnabled(LogEventLevel.Warning)) {

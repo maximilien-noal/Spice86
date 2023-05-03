@@ -427,5 +427,16 @@ public class Memory {
     }
 
     private record DeviceRegistration(uint StartAddress, uint EndAddress, IMemoryDevice Device);
+
+    /// <summary>
+    /// Copies machine at the specific address in main memory (below <see cref="MemoryBusSize"/>)
+    /// </summary>
+    /// <param name="physicalAddress">The physical address where the code starts</param>
+    /// <param name="machineCode">The x86 machine code to write</param>
+    public void InstallMachineCodeCallback(uint physicalAddress, params byte[] machineCode) {
+        for (int i = 0; i < machineCode.Length; i++) {
+            _ram.Write((uint) (physicalAddress + i), machineCode[i]);
+        }
+    }
 }
 

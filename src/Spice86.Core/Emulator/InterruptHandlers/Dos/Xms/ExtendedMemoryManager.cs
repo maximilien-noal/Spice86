@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
+using Spice86.Shared.Utils;
 
 using System;
 using System.Collections.Generic;
@@ -21,14 +22,20 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     private readonly LinkedList<XmsBlock> _xmsBlocksLinkedList = new();
     private readonly SortedList<int, int> _xmsHandles = new();
     
-    public const ushort InterruptHandlerSegmentAddress = 0xC83F;
-    public const ushort InterruptHandlerSegmentOffset = 0x10;
+    public const ushort InterruptHandlerSegmentValue = 0xD000;
     
-    public override ushort? InterruptHandlerSegment => 0xC83F;
+    public override ushort? InterruptHandlerSegment => InterruptHandlerSegmentValue;
 
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
+        _memory.InstallMachineCodeCallback(MemoryUtils.ToPhysicalAddress(InterruptHandlerSegmentValue, 0),
+            0xEB, // jump near
+            0x03, // offset
+            0x90, // NOP
+            0x90, // NOP
+            0x90 // NOP
+            );
         var device = new CharacterDevice(DeviceAttributes.Ioctl, "XMS_Handler", loggerService);
-        _machine.Dos.AddDevice(device, InterruptHandlerSegment, 0x10);
+        _machine.Dos.AddDevice(device, InterruptHandlerSegment, 3);
         _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, 0, false));
         FillDispatchTable();
     }
@@ -36,7 +43,7 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     /// <summary>
     /// Specifies the starting physical address of XMS.
     /// </summary>
-    public const uint XmsBaseAddress = 1024 * 1024 + 65536 + 0x4000 + 1024 * 1024;
+    public const uint XmsBaseAddress = 0x10FFF0;
 
     /// <summary>
     /// Total number of handles available at once.
@@ -94,8 +101,8 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
                 break;
 
             case XmsHandlerFunctions.GetCallbackAddress:
-                _state.ES = 0xC83F;
-                _state.BX = 0x10;
+                _state.ES = 0xD000;
+                _state.BX = 0x0;
                 break;
 
             default:
