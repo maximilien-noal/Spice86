@@ -3,6 +3,7 @@
 using Spice86.Core;
 using Spice86.Core.Emulator.Callback;
 using Spice86.Core.Emulator.InterruptHandlers;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.VM;
@@ -26,17 +27,21 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     
     public override ushort? InterruptHandlerSegment => InterruptHandlerSegmentValue;
 
+    /// <summary>
+    /// The size of available XMS Memory, in bytes.
+    /// </summary>
+    public const uint XmsMemorySize = 8 * 1024 * 1024;
+
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
-        _memory.InstallMachineCodeCallback(MemoryUtils.ToPhysicalAddress(InterruptHandlerSegmentValue, 0),
-            0xEB, // jump near
-            0x03, // offset
-            0x90, // NOP
-            0x90, // NOP
-            0x90 // NOP
-            );
-        var device = new CharacterDevice(DeviceAttributes.Ioctl, "XMS_Handler", loggerService);
-        _machine.Dos.AddDevice(device, InterruptHandlerSegment, 3);
-        _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, 0, false));
+        _memory.LoadData(MemoryUtils.ToPhysicalAddress(InterruptHandlerSegmentValue, 0),
+            new byte[]{
+                0xEB, // jump near
+                0x03, // offset
+                0x90, // NOP
+                0x90, // NOP
+                0x90 // NOP
+            });
+        _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, XmsMemorySize, false));
         FillDispatchTable();
     }
 
@@ -86,28 +91,11 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
         _dispatchTable.Add(0x0E, new Callback(0x0E, GetHandleInformation));
         _dispatchTable.Add(0x88, new Callback(0x88, QueryAnyFreeExtendedMemory));
         _dispatchTable.Add(0x89, new Callback(0x89, () => AllocateAnyExtendedMemory(_state.EDX)));
-        _dispatchTable.Add(0x2F, new Callback(0x2F, RunXmsInterruptCallback));
     }
 
     public override void Run() {
         byte operation = _state.AH;
         Run(operation);
-    }
-
-    public void RunXmsInterruptCallback() {
-        switch (_state.AL) {
-            case XmsHandlerFunctions.InstallationCheck:
-                _state.AL = 0x80;
-                break;
-
-            case XmsHandlerFunctions.GetCallbackAddress:
-                _state.ES = 0xD000;
-                _state.BX = 0x0;
-                break;
-
-            default:
-                throw new NotImplementedException($"XMS interrupt handler function {_state.AL:X2}h not implemented.");
-        }
     }
 
     public void GetVersionNumber() {
