@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
 
@@ -18,7 +19,7 @@ using System.Linq;
 /// <summary>
 /// Provides DOS applications with XMS memory.
 /// </summary>
-public sealed class ExtendedMemoryManager : InterruptHandler {
+public sealed class ExtendedMemoryManager : InterruptHandler, IMemoryDevice {
     private int _a20EnableCount;
     private readonly LinkedList<XmsBlock> _xmsBlocksLinkedList = new();
     private readonly SortedList<int, int> _xmsHandles = new();
@@ -32,6 +33,8 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
     /// </summary>
     public const uint XmsMemorySize = 8 * 1024 * 1024;
 
+    public Ram XmsRam { get; private set; } = new(XmsMemorySize);
+
     public ExtendedMemoryManager(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
         _memory.LoadData(MemoryUtils.ToPhysicalAddress(InterruptHandlerSegmentValue, 0),
             new byte[]{
@@ -41,6 +44,7 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
                 0x90, // NOP
                 0x90 // NOP
             });
+        _memory.RegisterMapping(XmsBaseAddress, XmsMemorySize, this);
         _xmsBlocksLinkedList.AddFirst(new XmsBlock(0, 0, XmsMemorySize, false));
         FillDispatchTable();
     }
@@ -455,5 +459,19 @@ public sealed class ExtendedMemoryManager : InterruptHandler {
         } else {
             _state.BL = 0;
         }
+    }
+
+    public uint Size => XmsMemorySize;
+    
+    public byte Read(uint address) {
+        return XmsRam.Read(address - XmsBaseAddress);
+    }
+
+    public void Write(uint address, byte value) {
+        XmsRam.Write(address - XmsBaseAddress, value);
+    }
+
+    public Span<byte> GetSpan(int address, int length) {
+        return XmsRam.GetSpan((int) (address - XmsBaseAddress), length);
     }
 }

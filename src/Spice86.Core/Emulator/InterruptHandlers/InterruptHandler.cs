@@ -22,6 +22,14 @@ public abstract class InterruptHandler : IndexBasedDispatcher, ICallback {
     protected readonly Cpu _cpu;
 
     /// <summary>
+    /// The emulator machine.
+    /// </summary>
+    /// <remarks>
+    /// Protected visibility because it is used by almost all implementations.
+    /// </remarks>
+    protected Machine _machine;
+
+    /// <summary>
     /// The memory bus.
     /// </summary>
     protected Memory _memory;
@@ -37,6 +45,7 @@ public abstract class InterruptHandler : IndexBasedDispatcher, ICallback {
     /// <param name="machine">The emulator machine.</param>
     /// <param name="loggerService">The logger service implementation.</param>
     protected InterruptHandler(Machine machine, ILoggerService loggerService) : base(machine, loggerService) {
+        _machine = machine;
         _memory = machine.Memory;
         _cpu = machine.Cpu;
         _state = _cpu.State;

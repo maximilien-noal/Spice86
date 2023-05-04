@@ -217,7 +217,7 @@ public class Machine : IDisposable {
     public OPL3FM OPL3FM { get; }
     
     public IVgaFunctionality VgaFunctions { get; }
-
+    
     /// <summary>
     /// The code invoked when emulation pauses.
     /// </summary>
