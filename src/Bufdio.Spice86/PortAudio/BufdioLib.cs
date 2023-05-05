@@ -1,11 +1,13 @@
-﻿namespace Bufdio.Spice86;
+﻿namespace Bufdio.Spice86.PortAudio;
+
+using Bufdio.Spice86.Platform;
+using Bufdio.Spice86.PortAudio.Engines.Extensions;
+using Bufdio.Spice86.PortAudio.Exceptions;
+
 using System;
 using System.Collections.Generic;
 
-using Bufdio.Spice86.Bindings.PortAudio;
-using Bufdio.Spice86.Exceptions;
-using Bufdio.Spice86.Utilities;
-using Bufdio.Spice86.Utilities.Extensions;
+using PaBinding = Bufdio.Spice86.PortAudio.Bindings.PortAudio.PaBinding;
 
 /// <summary>
 /// Provides functionalities to retrieve, configure and manage current Bufdio environment

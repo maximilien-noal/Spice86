@@ -1,13 +1,11 @@
-﻿namespace Bufdio.Spice86.Utilities;
+﻿namespace Bufdio.Spice86.Platform;
+
 using System;
 using System.Runtime.InteropServices;
 
 internal sealed class LibraryLoader : IDisposable {
     private IntPtr _handle = IntPtr.Zero;
     private bool _disposed;
-
-    public LibraryLoader() {
-    }
 
     public bool Initialize(string libraryName) {
         ArgumentException.ThrowIfNullOrEmpty(libraryName);

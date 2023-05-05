@@ -1,4 +1,4 @@
-﻿namespace Bufdio.Spice86;
+﻿namespace Bufdio.Spice86.PortAudio;
 
 /// <summary>
 /// A structure containing information about audio device capabilities.

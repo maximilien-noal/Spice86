@@ -1,4 +1,5 @@
-﻿namespace Bufdio.Spice86.Utilities;
+﻿namespace Bufdio.Spice86.Platform;
+
 using System.Runtime.InteropServices;
 
 internal static class PlatformInfo

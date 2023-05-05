@@ -1,4 +1,6 @@
-﻿namespace Bufdio.Spice86.Engines;
+﻿namespace Bufdio.Spice86.PortAudio.Engines;
+
+using Bufdio.Spice86.PortAudio;
 
 /// <summary>
 /// Represents configuration class that can be passed to audio engine.

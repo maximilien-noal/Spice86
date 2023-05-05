@@ -1,4 +1,5 @@
-﻿namespace Bufdio.Spice86.Exceptions;
+﻿namespace Bufdio.Spice86.PortAudio.Exceptions;
+
 using System;
 
 /// <summary>

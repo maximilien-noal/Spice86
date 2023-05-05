@@ -1,7 +1,6 @@
 ﻿namespace Spice86.ViewModels;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Diagnostics;
@@ -22,20 +21,20 @@ using CommunityToolkit.Mvvm.Input;
 using MessageBox.Avalonia.BaseWindows.Base;
 using MessageBox.Avalonia.Enums;
 
-using Spice86.Keyboard;
 using Spice86.Views;
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator;
 using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Shared.Emulator.Keyboard;
 using Spice86.Shared.Interfaces;
+using Spice86.Wrappers;
 
 using Key = Spice86.Shared.Emulator.Keyboard.Key;
 
 /// <inheritdoc cref="Spice86.Shared.Interfaces.IGui" />
 public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDisposable {
     private readonly ILoggerService _loggerService;
-    private readonly AvaloniaKeyScanCodeConverter _avaloniaKeyScanCodeConverter = new();
+    private readonly AvaloniaKeyScanCodeTranslator _avaloniaKeyScanCodeTranslator = new();
     [ObservableProperty]
     private Configuration _configuration = new();
     private bool _disposed;
@@ -54,8 +53,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDispo
     internal void OnKeyUp(KeyEventArgs e) => KeyUp?.Invoke(this, 
         new((Key) e.Key, 
             false,
-            _avaloniaKeyScanCodeConverter.GetKeyReleasedScancode((Key)e.Key),
-            _avaloniaKeyScanCodeConverter.GetAsciiCode(_avaloniaKeyScanCodeConverter.GetKeyReleasedScancode((Key)e.Key))));
+            _avaloniaKeyScanCodeTranslator.GetKeyReleasedScancode((Key)e.Key),
+            _avaloniaKeyScanCodeTranslator.GetAsciiCode(_avaloniaKeyScanCodeTranslator.GetKeyReleasedScancode((Key)e.Key))));
 
     private ProgramExecutor? _programExecutor;
 
@@ -67,8 +66,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IGui, IDispo
     internal void OnKeyDown(KeyEventArgs e) => KeyDown?.Invoke(this, 
         new((Key) e.Key, 
             true,
-            _avaloniaKeyScanCodeConverter.GetKeyPressedScancode((Key)e.Key),
-            _avaloniaKeyScanCodeConverter.GetAsciiCode(_avaloniaKeyScanCodeConverter.GetKeyPressedScancode((Key)e.Key))));
+            _avaloniaKeyScanCodeTranslator.GetKeyPressedScancode((Key)e.Key),
+            _avaloniaKeyScanCodeTranslator.GetAsciiCode(_avaloniaKeyScanCodeTranslator.GetKeyPressedScancode((Key)e.Key))));
 
     [ObservableProperty]
     private string _statusMessage = "Emulator: not started.";

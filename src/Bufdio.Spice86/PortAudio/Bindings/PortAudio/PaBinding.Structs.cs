@@ -1,4 +1,4 @@
-﻿namespace Bufdio.Spice86.Bindings.PortAudio;
+namespace Bufdio.Spice86.PortAudio.Bindings.PortAudio;
 
 using System;
 using System.Runtime.InteropServices;

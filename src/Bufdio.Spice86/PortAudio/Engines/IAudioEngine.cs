@@ -1,4 +1,5 @@
-﻿namespace Bufdio.Spice86.Engines;
+﻿namespace Bufdio.Spice86.PortAudio.Engines;
+
 using System;
 
 /// <summary>

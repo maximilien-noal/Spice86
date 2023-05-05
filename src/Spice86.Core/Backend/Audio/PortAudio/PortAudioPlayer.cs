@@ -1,6 +1,7 @@
 namespace Spice86.Core.Backend.Audio.PortAudio;
 using Bufdio.Spice86;
-using Bufdio.Spice86.Engines;
+using Bufdio.Spice86.PortAudio;
+using Bufdio.Spice86.PortAudio.Engines;
 
 internal sealed class PortAudioPlayer : AudioPlayer {
     private readonly IAudioEngine _engine;

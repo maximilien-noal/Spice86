@@ -1,8 +1,10 @@
-﻿namespace Bufdio.Spice86.Utilities.Extensions;
+﻿namespace Bufdio.Spice86.PortAudio.Engines.Extensions;
+
+using Bufdio.Spice86.PortAudio.Exceptions;
+
 using System.Runtime.InteropServices;
 
-using Bufdio.Spice86.Bindings.PortAudio;
-using Bufdio.Spice86.Exceptions;
+using PaBinding = Bufdio.Spice86.PortAudio.Bindings.PortAudio.PaBinding;
 
 internal static class PortAudioExtensions
 {

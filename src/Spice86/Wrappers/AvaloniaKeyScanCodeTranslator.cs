@@ -1,14 +1,13 @@
-﻿namespace Spice86.Keyboard;
+﻿namespace Spice86.Wrappers;
 
 using Spice86.Shared.Emulator.Keyboard;
-using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;
 
 /// <summary>
 /// A utility class that provides mapping from AvaloniaUI <see cref="Key"/> values to keyboard scan codes.
 /// </summary>
-public class AvaloniaKeyScanCodeConverter {
+public class AvaloniaKeyScanCodeTranslator {
     /// <summary>
     /// A dictionary that maps <see cref="Key"/> values to their corresponding keyboard scan codes.
     /// </summary>
@@ -22,7 +21,7 @@ public class AvaloniaKeyScanCodeConverter {
     /// <summary>
     /// Initializes static members of the <see cref="AvaloniaKeyScanCodeConverter"/> class.
     /// </summary>
-    static AvaloniaKeyScanCodeConverter() {
+    static AvaloniaKeyScanCodeTranslator() {
         // Some keys are not supported by AvaloniaUI so not putting them.
         _keyPressedScanCode = new Dictionary<Key, byte>()
         {

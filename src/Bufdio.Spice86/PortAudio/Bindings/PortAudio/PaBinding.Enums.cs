@@ -1,4 +1,4 @@
-﻿namespace Bufdio.Spice86.Bindings.PortAudio;
+﻿namespace Bufdio.Spice86.PortAudio.Bindings.PortAudio;
 
 internal static partial class PaBinding {
     public enum PaSampleFormat : long {
