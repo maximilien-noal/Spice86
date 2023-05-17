@@ -4,6 +4,7 @@ using System.Threading;
 
 using Serilog.Events;
 
+using Spice86.Core.Backend;
 using Spice86.Core.Backend.Audio;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
@@ -319,7 +320,7 @@ public sealed class SoundBlaster : DefaultIOPortHandler, IDmaDevice8, IDmaDevice
     }
 
     private void AudioPlayback() {
-        using AudioPlayer? player = Audio.CreatePlayer(48000, 2048);
+        using AudioPlayer? player = AudioPlayerAccess.CreatePlayer(48000, 2048);
         if (player is null) {
             return;
         }
@@ -340,7 +341,7 @@ public sealed class SoundBlaster : DefaultIOPortHandler, IDmaDevice8, IDmaDevice
                 length = LinearUpsampler.Resample8Mono(_dsp.SampleRate, sampleRate, buffer, writeBuffer);
             }
 
-            Audio.WriteFullBuffer(player, writeBuffer.AsSpan(0, length));
+            AudioPlayerAccess.WriteFullBuffer(player, writeBuffer.AsSpan(0, length));
 
             if (_pausePlayback) {
                 while (_pausePlayback) {
@@ -355,7 +356,7 @@ public sealed class SoundBlaster : DefaultIOPortHandler, IDmaDevice8, IDmaDevice
                 Array.Clear(writeBuffer, 0, writeBuffer.Length);
                 int count = (_pauseDuration / (1024 / 2)) + 1;
                 for (int i = 0; i < count; i++) {
-                    Audio.WriteFullBuffer(player, writeBuffer.AsSpan(0, 1024));
+                    AudioPlayerAccess.WriteFullBuffer(player, writeBuffer.AsSpan(0, 1024));
                 }
 
                 _pauseDuration = 0;

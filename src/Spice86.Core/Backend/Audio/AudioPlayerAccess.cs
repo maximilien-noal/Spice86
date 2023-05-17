@@ -1,12 +1,11 @@
-﻿namespace Spice86.Core.Emulator.Sound;
+﻿namespace Spice86.Core.Backend.Audio;
 
 using Spice86.Core.Backend.Audio.PortAudio;
-using Spice86.Core.Backend.Audio;
 
 /// <summary>
 /// Provides static methods to create an audio player and write full buffers of audio data to it.
 /// </summary>
-internal static class Audio {
+internal static class AudioPlayerAccess {
     /// <summary>
     /// Creates an instance of an <see cref="AudioPlayer"/> with the specified sample rate, frames per buffer, and suggested latency.
     /// </summary>

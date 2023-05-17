@@ -1,5 +1,6 @@
 ﻿namespace Spice86.Core.Emulator.Devices.Sound;
 
+using Spice86.Core.Backend;
 using Spice86.Core.Backend.Audio;
 using Spice86.Core.Emulator;
 using Spice86.Core.Emulator.IOPorts;
@@ -37,7 +38,7 @@ public sealed class OPL3FM : DefaultIOPortHandler, IDisposable {
     /// <param name="configuration">The emulator configuration.</param>
     /// <param name="loggerService">The logger service implementation.</param>
     public OPL3FM(Machine machine, Configuration configuration, ILoggerService loggerService) : base(machine, configuration, loggerService) {
-        _audioPlayer = Audio.CreatePlayer(48000, 2048);
+        _audioPlayer = AudioPlayerAccess.CreatePlayer(48000, 2048);
         if (_audioPlayer is not null) {
             _synth = new FmSynthesizer(_audioPlayer.Format.SampleRate);
         }
@@ -145,7 +146,7 @@ public sealed class OPL3FM : DefaultIOPortHandler, IDisposable {
         Span<float> playBuffer = stackalloc float[length];
         FillBuffer(buffer, playBuffer, expandToStereo);
         while (!_endThread) {
-            Audio.WriteFullBuffer(_audioPlayer, playBuffer);
+            AudioPlayerAccess.WriteFullBuffer(_audioPlayer, playBuffer);
             FillBuffer(buffer, playBuffer, expandToStereo);
         }
     }

@@ -1,5 +1,6 @@
 ﻿namespace Spice86.Core.Emulator.Sound.PCSpeaker;
 
+using Spice86.Core.Backend;
 using Spice86.Core.Backend.Audio;
 using Spice86.Core.Emulator.Sound;
 
@@ -166,7 +167,7 @@ public sealed class InternalSpeaker : IDisposable {
     /// Generates the PC speaker waveform.
     /// </summary>
     private async Task GenerateWaveformAsync() {
-        using AudioPlayer? player = Audio.CreatePlayer();
+        using AudioPlayer? player = AudioPlayerAccess.CreatePlayer();
         if (player is null) {
             return;
         }
@@ -193,7 +194,7 @@ public sealed class InternalSpeaker : IDisposable {
                 }
 
                 while (periods > 0) {
-                    Audio.WriteFullBuffer(player, writeBuffer.AsSpan(0, samples));
+                    AudioPlayerAccess.WriteFullBuffer(player, writeBuffer.AsSpan(0, samples));
                     periods--;
                 }
 

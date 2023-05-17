@@ -6,6 +6,7 @@ using System.Linq;
 
 using Mt32emu;
 
+using Spice86.Core.Backend;
 using Spice86.Shared.Interfaces;
 using Spice86.Core.Backend.Audio;
 using Spice86.Core.Emulator.Sound;
@@ -30,7 +31,7 @@ internal sealed class Mt32Player : IDisposable {
             throw new ArgumentNullException(nameof(romsPath));
         }
 
-        _audioPlayer = Audio.CreatePlayer();
+        _audioPlayer = AudioPlayerAccess.CreatePlayer();
         if (_audioPlayer is null) {
             return;
         }
