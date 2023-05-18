@@ -4,10 +4,8 @@ using Bufdio.Spice86.Platform;
 
 using System;
 
-internal static partial class PaBinding
-{
-    public static void InitializeBindings(LibraryLoader loader)
-    {
+internal static partial class PaBinding {
+    public static void InitializeBindings(LibraryLoader loader) {
         _initialize = loader.LoadFunc<Initialize>(nameof(Pa_Initialize));
         _terminate = loader.LoadFunc<Terminate>(nameof(Pa_Terminate));
 
@@ -25,40 +23,19 @@ internal static partial class PaBinding
         _closeStream = loader.LoadFunc<CloseStream>(nameof(Pa_CloseStream));
     }
 
-    public static int Pa_Initialize()
-    {
-        return _initialize();
-    }
+    public static int Pa_Initialize() => _initialize();
 
-    public static int Pa_Terminate()
-    {
-        return _terminate();
-    }
+    public static int Pa_Terminate() => _terminate();
 
-    public static IntPtr Pa_GetVersionInfo()
-    {
-        return _getVersionInfo();
-    }
+    public static IntPtr Pa_GetVersionInfo() => _getVersionInfo();
 
-    public static IntPtr Pa_GetErrorText(int code)
-    {
-        return _getErrorText(code);
-    }
+    public static IntPtr Pa_GetErrorText(int code) => _getErrorText(code);
 
-    public static int Pa_GetDefaultOutputDevice()
-    {
-        return _getDefaultOutputDevice();
-    }
+    public static int Pa_GetDefaultOutputDevice() => _getDefaultOutputDevice();
 
-    public static IntPtr Pa_GetDeviceInfo(int device)
-    {
-        return _getDeviceInfo(device);
-    }
+    public static IntPtr Pa_GetDeviceInfo(int device) => _getDeviceInfo(device);
 
-    public static int Pa_GetDeviceCount()
-    {
-        return _getDeviceCount();
-    }
+    public static int Pa_GetDeviceCount() => _getDeviceCount();
 
     public static int Pa_OpenStream(
         IntPtr stream,
@@ -68,8 +45,7 @@ internal static partial class PaBinding
         long framesPerBuffer,
         PaStreamFlags streamFlags,
         PaStreamCallback? streamCallback,
-        IntPtr userData)
-    {
+        IntPtr userData) {
         return _openStream(
             stream,
             inputParameters,
@@ -82,23 +58,11 @@ internal static partial class PaBinding
         );
     }
 
-    public static int Pa_StartStream(IntPtr stream)
-    {
-        return _startStream(stream);
-    }
+    public static int Pa_StartStream(IntPtr stream) => _startStream(stream);
 
-    public static int Pa_WriteStream(IntPtr stream, IntPtr buffer, long frames)
-    {
-        return _writeStream(stream, buffer, frames);
-    }
+    public static int Pa_WriteStream(IntPtr stream, IntPtr buffer, long frames) => _writeStream(stream, buffer, frames);
 
-    public static int Pa_AbortStream(IntPtr stream)
-    {
-        return _abortStream(stream);
-    }
+    public static int Pa_AbortStream(IntPtr stream) => _abortStream(stream);
 
-    public static int Pa_CloseStream(IntPtr stream)
-    {
-        return _closeStream(stream);
-    }
+    public static int Pa_CloseStream(IntPtr stream) => _closeStream(stream);
 }

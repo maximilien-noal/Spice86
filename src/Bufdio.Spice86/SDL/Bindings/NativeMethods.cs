@@ -1,4 +1,4 @@
-namespace Bufdio.Spice86.SDL;
+namespace Bufdio.Spice86.SDL.Bindings;
 
 using System;
 using System.Runtime.InteropServices;
@@ -9,8 +9,13 @@ using System.Runtime.InteropServices;
 public static class NativeMethods {
     private const string Sdl2Library = "sdl2";
 
+    /// <summary>
+    /// Function to initialize the SDL library.
+    /// </summary>
+    /// <param name="flags">Indicate which subsystem, or combination of subsystems, to initialize</param>
+    /// <returns>A status code indicating if initialization was OK or not.</returns>
     [DllImport(Sdl2Library, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int SDL_InitSubSystem(SDLInitFlags flags);
+    public static extern int SDL_Init(SDLInitFlags flags);
 
     [DllImport(Sdl2Library, CallingConvention = CallingConvention.Cdecl)]
     public static extern int SDL_NumJoysticks();
@@ -26,9 +31,6 @@ public static class NativeMethods {
 
     [DllImport(Sdl2Library, CallingConvention = CallingConvention.Cdecl)]
     public static extern byte SDL_GameControllerGetButton(int gamecontroller, SDLControllerButton button);
-
-    [DllImport(Sdl2Library, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SDL_PumpEvents();
 
     [DllImport(Sdl2Library, CallingConvention = CallingConvention.Cdecl)]
     public static extern int SDL_PollEvent(out SDLEvent e);

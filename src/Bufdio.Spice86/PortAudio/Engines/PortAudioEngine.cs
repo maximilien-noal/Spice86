@@ -35,7 +35,7 @@ public sealed class PortAudioEngine : IAudioEngine {
             channelCount = _options.Channels,
             device = _options.Device.DeviceIndex,
             hostApiSpecificStreamInfo = IntPtr.Zero,
-            sampleFormat = BufdioLib.Constants.PaSampleFormat,
+            sampleFormat = PortAudioLib.Constants.PaSampleFormat,
             suggestedLatency = _options.Latency
         };
 

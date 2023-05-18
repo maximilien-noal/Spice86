@@ -31,7 +31,7 @@ public readonly record struct AudioEngineOptions
     /// <param name="latency">Desired output latency.</param>
     public AudioEngineOptions(int channels, int sampleRate, double latency)
     {
-        Device = BufdioLib.DefaultOutputDevice;
+        Device = PortAudioLib.DefaultOutputDevice;
         Channels = FallbackChannelCount(Device, channels);
         SampleRate = sampleRate;
         Latency = latency;
@@ -45,7 +45,7 @@ public readonly record struct AudioEngineOptions
     /// <param name="sampleRate">Desired output sample rate.</param>
     public AudioEngineOptions(int channels, int sampleRate)
     {
-        Device = BufdioLib.DefaultOutputDevice;
+        Device = PortAudioLib.DefaultOutputDevice;
         Channels = FallbackChannelCount(Device, channels);
         SampleRate = sampleRate;
         Latency = Device.DefaultLowOutputLatency;
@@ -57,7 +57,7 @@ public readonly record struct AudioEngineOptions
     /// </summary>
     public AudioEngineOptions()
     {
-        Device = BufdioLib.DefaultOutputDevice;
+        Device = PortAudioLib.DefaultOutputDevice;
         Channels = FallbackChannelCount(Device, 2);
         SampleRate = 48000;
         Latency = Device.DefaultLowOutputLatency;

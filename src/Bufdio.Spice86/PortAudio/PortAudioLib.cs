@@ -13,7 +13,7 @@ using PaBinding = Bufdio.Spice86.PortAudio.Bindings.PortAudio.PaBinding;
 /// Provides functionalities to retrieve, configure and manage current Bufdio environment
 /// that affects the whole library configuration.
 /// </summary>
-public static class BufdioLib {
+public static class PortAudioLib {
     internal static class Constants {
         public const PaBinding.PaSampleFormat PaSampleFormat = PaBinding.PaSampleFormat.paFloat32;
     }
@@ -55,7 +55,7 @@ public static class BufdioLib {
     /// Will returns immediately if already initialized.
     /// </summary>
     /// <param name="portAudioPath">
-    /// Path to port audio native libary, eg: portaudio.dll, libportaudio.so, libportaudio.dylib.
+    /// Path to port audio native library, eg: portaudio.dll, libportaudio.so, libportaudio.dylib.
     /// </param>
     /// <exception cref="BufdioException">Thrown when output device is not available.</exception>
     public static bool InitializePortAudio(string? portAudioPath = default) {

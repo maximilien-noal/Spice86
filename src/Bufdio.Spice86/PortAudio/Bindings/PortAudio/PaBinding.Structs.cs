@@ -5,8 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class PaBinding {
     [StructLayout(LayoutKind.Sequential)]
-    public struct PaStreamParameters
-    {
+    public struct PaStreamParameters {
         public int device;
         public int channelCount;
         public PaSampleFormat sampleFormat;
