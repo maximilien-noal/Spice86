@@ -24,16 +24,16 @@ internal sealed class PortAudioPlayer : AudioPlayer {
             }
             if (OperatingSystem.IsWindows()) {
                 const string path = "libportaudio.dll";
-                _loadedNativeLib = BufdioLib.InitializePortAudio(path);
+                _loadedNativeLib = PortAudioLib.InitializePortAudio(path);
             } else {
                 //rely on system-provided libportaudio.
-                _loadedNativeLib = BufdioLib.InitializePortAudio();
+                _loadedNativeLib = PortAudioLib.InitializePortAudio();
             }
         }
     }
 
     public static PortAudioPlayer? Create(int sampleRate, int framesPerBuffer, double? suggestedLatency = null) {
-        if (!_loadedNativeLib && !BufdioLib.IsPortAudioInitialized) {
+        if (!_loadedNativeLib && !PortAudioLib.IsPortAudioInitialized) {
             LoadNativeLib();
         }
         if(!_loadedNativeLib) {

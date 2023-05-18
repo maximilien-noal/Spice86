@@ -13,7 +13,7 @@ public class Joystick : DefaultIOPortHandler {
 
     public GameportState GameportState { get; private set; } = new();
     
-    public const uint GamePortStateTimeoutInTimerTicks = 500;
+    public const uint GamePortStateTimeoutInTimerTicks = 100;
 
     public long TimerTicksOnLastGamePortWrite { get; private set; }
 
@@ -33,11 +33,14 @@ public class Joystick : DefaultIOPortHandler {
 
     /// <inheritdoc />
     public override byte ReadByte(int port) {
-        return port switch {
+        LastGamePortReadValue = port switch {
             GetSetJoystickStatus => GetGameportStateValue(),
             _ => base.ReadByte(port),
         };
+        return LastGamePortReadValue;
     }
+
+    public byte LastGamePortReadValue { get; private set; }
 
     public byte GetGameportStateValue() {
         long numberOfTicks = _machine.Timer.NumberOfTicks;

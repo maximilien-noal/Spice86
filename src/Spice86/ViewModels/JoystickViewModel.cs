@@ -26,9 +26,13 @@ public partial class JoystickViewModel : ObservableObject {
         }
     }
 
+    [ObservableProperty]
+    private byte? _lastGamePortReadValue;
+
     [RelayCommand]
     public void UpdateData() {
         Data = _machine?.Joystick.GameportState.Value;
+        LastGamePortReadValue = _machine?.Joystick.LastGamePortReadValue;
         LastUpdate = DateTimeOffset.Now;
     }
 
@@ -42,28 +46,28 @@ public partial class JoystickViewModel : ObservableObject {
 
     [RelayCommand]
     public void Up() {
-        _gameportState.Joystick1XAxis = 0xFF;
+        _gameportState.Joystick1YAxis = false;
         UpdateData();
         _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
     }
 
     [RelayCommand]
     public void Down() {
-        _gameportState.Joystick1XAxis = 0;
+        _gameportState.Joystick1YAxis = true;
         UpdateData();
         _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
     }
 
     [RelayCommand]
     public void Left() {
-        _gameportState.Joystick1YAxis = 0;
+        _gameportState.Joystick1XAxis = false;
         UpdateData();
         _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
     }
 
     [RelayCommand]
     public void Right() {
-        _gameportState.Joystick1YAxis = 0xFF;
+        _gameportState.Joystick1XAxis = true;
         UpdateData();
         _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
     }

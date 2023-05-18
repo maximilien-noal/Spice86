@@ -35,7 +35,7 @@ internal sealed class GeneralMidiDevice : MidiDevice {
     private IntPtr _midiOutHandle;
 
     public GeneralMidiDevice() {
-        _audioPlayer = Audio.CreatePlayer(48000, 2048);
+        _audioPlayer = AudioPlayerAccess.CreatePlayer(48000, 2048);
         _playbackThread = new Thread(RenderThreadMethod) {
             Name = "GeneralMIDIAudio"
         };
@@ -67,7 +67,7 @@ internal sealed class GeneralMidiDevice : MidiDevice {
                 _fillBufferEvent.WaitOne(Timeout.Infinite);
             }
             FillBuffer(synthesizer, data);
-            Audio.WriteFullBuffer(_audioPlayer, data);
+            AudioPlayerAccess.WriteFullBuffer(_audioPlayer, data);
             data.Clear();
         }
     }
