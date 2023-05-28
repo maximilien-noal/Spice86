@@ -367,7 +367,7 @@ public class VgaFunctionality : IVgaFunctionality {
     /// <inheritdoc />
     public void SetScanLines(byte lines) {
         WriteMaskedToCrtController(GetCrtControllerPort(), 0x09, 0x1F, lines - 1);
-        _biosDataArea.CharacterHeight = lines;
+        _biosDataArea.CharacterPointHeight = lines;
         ushort vde = GetVde();
         byte rows = (byte)(vde / lines);
         _biosDataArea.ScreenRows = (byte)(rows - 1);
@@ -649,7 +649,7 @@ public class VgaFunctionality : IVgaFunctionality {
             _ => 25
         };
         _biosDataArea.ScreenRows = (byte)(rows - 1);
-        _biosDataArea.CharacterHeight = height;
+        _biosDataArea.CharacterPointHeight = height;
     }
 
     private ushort SetBiosDataArea(int modeId, ModeFlags flags, VgaMode vgaMode) {
@@ -670,7 +670,7 @@ public class VgaFunctionality : IVgaFunctionality {
         }
         _biosDataArea.VideoPageSize = (ushort)CalculatePageSize(memoryModel, width, height);
         _biosDataArea.CrtControllerBaseAddress = (ushort)GetCrtControllerPort();
-        _biosDataArea.CharacterHeight = characterHeight;
+        _biosDataArea.CharacterPointHeight = characterHeight;
         _biosDataArea.VideoCtl = (byte)(0x60 | (flags.HasFlag(ModeFlags.NoClearMem) ? 0x80 : 0x00));
         _biosDataArea.FeatureSwitches = 0xF9;
         _biosDataArea.ModesetCtl &= 0x7F;
@@ -735,7 +735,7 @@ public class VgaFunctionality : IVgaFunctionality {
     }
 
     private CharacterPlusAttribute ReadGraphicsCharacter(VgaMode vgaMode, CursorPosition cursorPosition) {
-        int characterHeight = _biosDataArea.CharacterHeight;
+        int characterHeight = _biosDataArea.CharacterPointHeight;
         if (cursorPosition.X >= _biosDataArea.ScreenColumns || characterHeight > 16) {
             return new CharacterPlusAttribute((char)0, 0, false);
         }
@@ -802,7 +802,7 @@ public class VgaFunctionality : IVgaFunctionality {
         }
         byte start = (byte)(cursorType >> 8 & 0x3f);
         byte end = (byte)(cursorType & 0x1f);
-        ushort characterHeight = _biosDataArea.CharacterHeight;
+        ushort characterHeight = _biosDataArea.CharacterPointHeight;
         if (characterHeight <= 8 || end >= 8 || start >= 0x20) {
             return cursorType;
         }
@@ -873,7 +873,7 @@ public class VgaFunctionality : IVgaFunctionality {
         GraphicsOperation operation = CreateGraphicsOperation(vgaMode);
         operation.X = area.Width * 8;
         operation.Width = destination.X * 8;
-        int characterHeight = _biosDataArea.CharacterHeight;
+        int characterHeight = _biosDataArea.CharacterPointHeight;
         operation.Y = area.Height * characterHeight;
         operation.Height = destination.Y * characterHeight;
         operation.Lines = operation.Y + lines * characterHeight;
@@ -891,7 +891,7 @@ public class VgaFunctionality : IVgaFunctionality {
         GraphicsOperation operation = CreateGraphicsOperation(vgaMode);
         operation.X = startPosition.X * 8;
         operation.Width = area.Width * 8;
-        int characterHeight = _biosDataArea.CharacterHeight;
+        int characterHeight = _biosDataArea.CharacterPointHeight;
         operation.Y = startPosition.Y * characterHeight;
         operation.Height = area.Height * characterHeight;
         operation.Pixels[0] = ca.Attribute;
@@ -1101,7 +1101,7 @@ public class VgaFunctionality : IVgaFunctionality {
         }
         GraphicsOperation operation = CreateGraphicsOperation(vgaMode);
         operation.X = (ushort)(cursorPosition.X * 8);
-        int characterHeight = _biosDataArea.CharacterHeight;
+        int characterHeight = _biosDataArea.CharacterPointHeight;
         operation.Y = (ushort)(cursorPosition.Y * characterHeight);
         byte foregroundAttribute = characterPlusAttribute.Attribute;
         bool useXor = false;
@@ -1150,7 +1150,7 @@ public class VgaFunctionality : IVgaFunctionality {
     }
 
     private SegmentedAddress GetFontAddress(char character) {
-        int characterHeight = _biosDataArea.CharacterHeight;
+        int characterHeight = _biosDataArea.CharacterPointHeight;
         SegmentedAddress address;
         if (characterHeight == 8 && character >= 128) {
             address = GetInterruptVectorAddress(0x1F);

@@ -187,7 +187,7 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
                 SegmentedAddress address = _vgaFunctions.GetFontAddress(_state.BH);
                 _state.ES = address.Segment;
                 _state.BP = address.Offset;
-                _state.CX = (ushort)(_biosDataArea.CharacterHeight & 0xFF);
+                _state.CX = (ushort)(_biosDataArea.CharacterPointHeight & 0xFF);
                 _state.DL = _biosDataArea.ScreenRows;
                 break;
 

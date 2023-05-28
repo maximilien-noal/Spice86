@@ -24,6 +24,10 @@ public class Configuration {
     [Option('a', nameof(ExeArgs), Default = null, Required = false, HelpText = "List of parameters to give to the emulated program")]
     public string? ExeArgs { get; set; }
 
+    /// <summary> Gets or sets whether Joystick emulation is enabled. </summary>
+    [Option('j', nameof(Joystick), Default = false, HelpText = "Enable Joystick emulation on the game port")]
+    public bool Joystick { get; init; }
+
     /// <summary> Hexadecimal string representing the expected SHA256 checksum of the emulated program. </summary>
     [Option('x', nameof(ExpectedChecksum), Default = null, Required = false, HelpText = "Hexadecimal string representing the expected SHA256 checksum of the emulated program")]
     public string? ExpectedChecksum { get; init; }

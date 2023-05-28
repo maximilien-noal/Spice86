@@ -94,9 +94,9 @@ public class Machine : IDisposable {
     public IOPortDispatcher IoPortDispatcher { get; }
 
     /// <summary>
-    /// A gameport joystick
+    /// A gameport for a joystick
     /// </summary>
-    public Joystick Joystick { get; }
+    public GamePort GamePort { get; }
 
     /// <summary>
     /// An IBM PC Keyboard
@@ -273,8 +273,8 @@ public class Machine : IDisposable {
         Register(Timer);
         Keyboard = new Keyboard(this, machineCreationOptions.LoggerService, machineCreationOptions.Gui, machineCreationOptions.Configuration);
         Register(Keyboard);
-        Joystick = new Joystick(this, machineCreationOptions.Configuration, machineCreationOptions.LoggerService);
-        Register(Joystick);
+        GamePort = new GamePort(this, machineCreationOptions.Configuration, machineCreationOptions.LoggerService);
+        Register(GamePort);
         PcSpeaker = new PcSpeaker(this, machineCreationOptions.LoggerService, machineCreationOptions.Configuration);
         Register(PcSpeaker);
         OPL3FM = new OPL3FM(this, machineCreationOptions.Configuration, machineCreationOptions.LoggerService);

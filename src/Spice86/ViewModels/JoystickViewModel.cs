@@ -6,19 +6,26 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.Devices.Input.Joystick;
-using Spice86.Shared.Emulator.Joystick;
+using Spice86.Core.Emulator.VM;
 
+/// <summary>
+/// Emulates an on screen digital joystick
+/// </summary>
 public partial class JoystickViewModel : ObservableObject {
     private readonly Machine? _machine;
     private readonly DispatcherTimer? _timer;
-    
-    [ObservableProperty]
-    private byte? _data;
+
+    private const int ButtonUpTimeout = 200;
 
     [ObservableProperty]
     private DateTimeOffset _lastUpdate;
+
+    [ObservableProperty]
+    private DateTimeOffset? _lastGamePortReadTime;
+
+    [ObservableProperty]
+    private DateTimeOffset? _lastGamePortWriteTime;
 
     public JoystickViewModel() {
         if (!Design.IsDesignMode) {
@@ -31,58 +38,100 @@ public partial class JoystickViewModel : ObservableObject {
 
     [RelayCommand]
     public void UpdateData() {
-        Data = _machine?.Joystick.GameportState.Value;
-        LastGamePortReadValue = _machine?.Joystick.LastGamePortReadValue;
+        LastGamePortReadValue = _machine?.GamePort.LastReadValue;
+        LastGamePortReadTime = _machine?.GamePort.LastReadTime;
+        LastGamePortWriteTime = _machine?.GamePort.LastWriteTime;
         LastUpdate = DateTimeOffset.Now;
     }
 
-    private GameportState _gameportState = new();
-    
     public JoystickViewModel(Machine machine) {
         _machine = machine;
         _timer = new(TimeSpan.FromMilliseconds(10), DispatcherPriority.Normal, (_, _) => UpdateData());
         _timer.Start();
+        machine.GamePort.ConnectDigitalJoystick();
     }
 
     [RelayCommand]
-    public void Up() {
-        _gameportState.Joystick1YAxis = false;
+    public async Task Up() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.IsWriteActive = true;
+        _machine.GamePort.SetY(1.0);
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.YFinal = 0;
+        _machine.GamePort.Joystick.YCount = 0;
+        _machine.GamePort.SetY(0.0);
+        UpdateData();
     }
 
     [RelayCommand]
-    public void Down() {
-        _gameportState.Joystick1YAxis = true;
+    public async Task Down() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.IsWriteActive = true;
+        _machine.GamePort.SetY(-1.0);
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.YFinal = 0;
+        _machine.GamePort.Joystick.YCount = 0;
+        _machine.GamePort.SetY(0.0);
+        UpdateData();
     }
 
     [RelayCommand]
-    public void Left() {
-        _gameportState.Joystick1XAxis = false;
+    public async Task Left() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.IsWriteActive = true;
+        _machine.GamePort.SetX(1.0);
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.XFinal = 0;
+        _machine.GamePort.Joystick.XCount = 0;
+        _machine.GamePort.SetX(0.0);
+        UpdateData();
     }
 
     [RelayCommand]
-    public void Right() {
-        _gameportState.Joystick1XAxis = true;
+    public async Task Right() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.IsWriteActive = true;
+        _machine.GamePort.SetX(-1.0);
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.XFinal = 0;
+        _machine.GamePort.Joystick.XCount = 0;
+        _machine.GamePort.SetX(0.0);
+        UpdateData();
     }
 
     [RelayCommand]
-    public void Button1() {
-        _gameportState.Joystick1Button1 = true;
+    public async Task Button1() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.Joystick.ButtonA = true;
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.ButtonA = false;
+        UpdateData();
     }
     
     [RelayCommand]
-    public void Button2() {
-        _gameportState.Joystick1Button2 = true;
+    public async Task Button2() {
+        if (_machine is null) {
+            return;
+        }
+        _machine.GamePort.Joystick.ButtonB = true;
         UpdateData();
-        _machine?.Joystick.WriteByte(Joystick.GetSetJoystickStatus, _gameportState.Value);
+        await Task.Delay(ButtonUpTimeout);
+        _machine.GamePort.Joystick.ButtonB = false;
+        UpdateData();
     }
 }

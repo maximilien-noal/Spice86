@@ -16,6 +16,6 @@ public class BiosEquipmentDeterminationInt11Handler : InterruptHandler {
 
     /// <inheritdoc />
     public override void Run() {
-        _state.AX = _machine.Bios.BiosConfiguration;
+        _state.AX = _machine.BiosDataArea.BiosConfiguration;
     }
 }
