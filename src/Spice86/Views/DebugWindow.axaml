@@ -34,8 +34,11 @@
                             <Grid RowDefinitions="Auto,*" Margin="5">
                                 <Label HorizontalAlignment="Center" FontWeight="Bold">State</Label>
                                 <pgc:PropertyGrid Grid.Row="1" ShowTitle="False" ShowStyle="Alphabetic" SelectedObject="{CompiledBinding State}" />
-                        </Grid>
+                            </Grid>
                         </WrapPanel>
+                    </TabItem>
+                    <TabItem Header="Memory">
+                        
                     </TabItem>
                     <TabItem Header="Video Card">
                         <WrapPanel>
