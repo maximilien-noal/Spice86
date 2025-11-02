@@ -13,22 +13,35 @@ For more information:
 
 ## Features
 
-The MCP server exposes the following tools for querying the emulator:
+The MCP server exposes the following tools for interacting with the emulator:
 
-### Currently Implemented (Placeholder)
-- **GetCpuRegisters**: Get current CPU register values (EAX, EBX, ECX, etc.)
-- **ReadMemory**: Read memory from a specific address
-- **GetEmulatorState**: Get overall emulator state information
-- **Disassemble**: Disassemble instructions at a specific address
+### CPU & Memory Inspection
+- **GetCpuRegisters**: Get current CPU register values (EAX, EBX, ECX, CS, IP, flags, cycles, etc.)
+- **ReadMemory**: Read memory from a specific address with hex dump format
+- **WriteMemory**: Write bytes to memory at a specific address
+- **GetEmulatorState**: Get overall emulator state (cycles, A20 gate, physical address)
 
-### Planned Features
-- Access to live CPU state (State class)
-- Memory reading and writing (Memory class)
-- CFG CPU graph inspection (CfgCpu class)
-- EMS/XMS memory access
-- DOS/BIOS state inspection
-- Breakpoint management
-- Real-time disassembly with Iced
+### Disassembly
+- **Disassemble**: Disassemble instructions at a specific address using Iced.Intel
+
+### Breakpoints
+- **AddBreakpoint**: Add execution breakpoint at a specific address
+- **RemoveBreakpoint**: Remove execution breakpoint
+- **AddMemoryReadBreakpoint**: Add breakpoint on memory reads
+- **AddMemoryWriteBreakpoint**: Add breakpoint on memory writes
+- **AddInterruptBreakpoint**: Add breakpoint on specific interrupts (INT 0x00-0xFF)
+- **ListBreakpoints**: List all active breakpoints
+
+### Emulation Control
+- **PauseEmulation**: Pause the emulator execution
+- **ResumeEmulation**: Resume the emulator execution
+- **GetPauseState**: Query current pause state
+
+### Future Features
+- CFG CPU graph exploration
+- MemoryBasedDataStructures interaction
+- Conditional breakpoints with custom C# conditions
+- CFGCPU disassembler/AST integration (when Iced is replaced)
 
 ## Building
 
