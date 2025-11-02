@@ -13,7 +13,7 @@ using Spice86.Shared.Interfaces;
 
 /// <summary>
 /// Provides a bridge between the MCP server and Spice86 emulator components.
-/// Can be initialized standalone or from a fully-configured Machine instance.
+/// Can be initialized standalone or from individual emulator components.
 /// </summary>
 public sealed class McpEmulatorBridge : IDisposable {
     private readonly ILoggerService _loggerService;
@@ -49,18 +49,33 @@ public sealed class McpEmulatorBridge : IDisposable {
     }
 
     /// <summary>
-    /// Initializes from a fully-configured Machine instance (preferred for production).
+    /// Initializes from individual emulator components.
     /// </summary>
-    /// <param name="machine">The configured Machine instance.</param>
+    /// <param name="state">The CPU state containing registers and flags.</param>
+    /// <param name="memory">The memory interface.</param>
+    /// <param name="breakpointsManager">The breakpoints manager.</param>
+    /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
-    public McpEmulatorBridge(Machine machine, ILoggerService loggerService) {
+    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
+    /// <param name="biosDataArea">Optional BIOS data area.</param>
+    /// <param name="pauseHandler">Optional pause handler (if null, emulation control is not available).</param>
+    public McpEmulatorBridge(
+        State state,
+        IMemory memory,
+        EmulatorBreakpointsManager breakpointsManager,
+        IOPortDispatcher ioPortDispatcher,
+        ILoggerService loggerService,
+        CfgCpu? cfgCpu = null,
+        BiosDataArea? biosDataArea = null,
+        IPauseHandler? pauseHandler = null) {
         _loggerService = loggerService;
-        State = machine.CpuState;
-        Memory = machine.Memory;
-        BreakpointsManager = machine.EmulatorBreakpointsManager;
-        IOPortDispatcher = machine.IoPortDispatcher;
-        CfgCpu = machine.CfgCpu;
-        BiosDataArea = machine.BiosDataArea;
+        State = state;
+        Memory = memory;
+        BreakpointsManager = breakpointsManager;
+        IOPortDispatcher = ioPortDispatcher;
+        CfgCpu = cfgCpu;
+        BiosDataArea = biosDataArea;
+        PauseHandler = pauseHandler;
         
         // We don't own the pause handler in this mode
         _ownedPauseHandler = null;
@@ -98,9 +113,9 @@ public sealed class McpEmulatorBridge : IDisposable {
 
     /// <summary>
     /// Gets the pause handler for controlling emulation flow.
-    /// Returns the owned pause handler if in standalone mode, or null if using shared instance.
+    /// May be null if emulation control is not available.
     /// </summary>
-    public IPauseHandler? PauseHandler => _ownedPauseHandler;
+    public IPauseHandler? PauseHandler { get; }
 
     /// <summary>
     /// Disposes the MCP emulator bridge.

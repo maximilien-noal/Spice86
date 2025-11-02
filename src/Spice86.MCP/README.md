@@ -82,22 +82,43 @@ dotnet run --project src/Spice86.MCP/Spice86.MCP.csproj
 ```
 
 ### Integration with Spice86 Machine
-Create an MCP server instance from a fully-configured Machine:
+### Integration with Spice86 Components
+Create an MCP server instance from individual emulator components:
 
 ```csharp
 using Spice86.MCP;
 using Spice86.Logging;
 
-// After creating your Machine instance with a shared logger
+// Use existing emulator components (State, Memory, etc.)
 var loggerService = new LoggerService();
-var machine = new Machine(...);
+var state = new State(...);
+var memory = ...;
+var breakpointsManager = ...;
+var ioPortDispatcher = ...;
 
-// Create and run the MCP server with shared logger
-var mcpHost = McpServerFactory.CreateMcpServerHost(machine, loggerService);
+// Create and run the MCP server with individual components
+var mcpHost = McpServerFactory.CreateMcpServerHost(
+    state,
+    memory,
+    breakpointsManager,
+    ioPortDispatcher,
+    loggerService,
+    cfgCpu: optionalCfgCpu,
+    biosDataArea: optionalBiosDataArea,
+    pauseHandler: optionalPauseHandler);
 await mcpHost.RunAsync();
 
 // Or use the convenience method
-await McpServerFactory.RunMcpServerAsync(machine, loggerService, cancellationToken);
+await McpServerFactory.RunMcpServerAsync(
+    state,
+    memory,
+    breakpointsManager,
+    ioPortDispatcher,
+    loggerService,
+    cfgCpu: optionalCfgCpu,
+    biosDataArea: optionalBiosDataArea,
+    pauseHandler: optionalPauseHandler,
+    cancellationToken);
 ```
 
 ## Usage with AI Tools

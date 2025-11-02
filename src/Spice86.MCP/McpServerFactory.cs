@@ -3,7 +3,13 @@ namespace Spice86.MCP;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.CPU.CfgCpu;
+using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
+using Spice86.Core.Emulator.IOPorts;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
+using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.MCP.Tools;
 using Spice86.Shared.Interfaces;
 
@@ -12,16 +18,38 @@ using Spice86.Shared.Interfaces;
 /// </summary>
 public static class McpServerFactory {
     /// <summary>
-    /// Creates a hosted MCP server instance using a fully-configured Machine.
+    /// Creates a hosted MCP server instance from individual emulator components.
     /// </summary>
-    /// <param name="machine">The configured Machine instance from Spice86DependencyInjection.</param>
+    /// <param name="state">The CPU state containing registers and flags.</param>
+    /// <param name="memory">The memory interface.</param>
+    /// <param name="breakpointsManager">The breakpoints manager.</param>
+    /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
+    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
+    /// <param name="biosDataArea">Optional BIOS data area.</param>
+    /// <param name="pauseHandler">Optional pause handler.</param>
     /// <returns>A configured IHost ready to run the MCP server.</returns>
-    public static IHost CreateMcpServerHost(Machine machine, ILoggerService loggerService) {
+    public static IHost CreateMcpServerHost(
+        State state,
+        IMemory memory,
+        EmulatorBreakpointsManager breakpointsManager,
+        IOPortDispatcher ioPortDispatcher,
+        ILoggerService loggerService,
+        CfgCpu? cfgCpu = null,
+        BiosDataArea? biosDataArea = null,
+        IPauseHandler? pauseHandler = null) {
         var builder = Host.CreateApplicationBuilder();
 
-        // Create MCP emulator bridge from the Machine with shared logger
-        var mcpBridge = new McpEmulatorBridge(machine, loggerService);
+        // Create MCP emulator bridge from individual components with shared logger
+        var mcpBridge = new McpEmulatorBridge(
+            state,
+            memory,
+            breakpointsManager,
+            ioPortDispatcher,
+            loggerService,
+            cfgCpu,
+            biosDataArea,
+            pauseHandler);
 
         // Register logger service and MCP bridge components as singletons
         builder.Services.AddSingleton(loggerService);
@@ -34,6 +62,10 @@ public static class McpServerFactory {
         // Register optional components (may be null in some configurations)
         if (mcpBridge.BiosDataArea != null) {
             builder.Services.AddSingleton(mcpBridge.BiosDataArea);
+        }
+        
+        if (mcpBridge.PauseHandler != null) {
+            builder.Services.AddSingleton(mcpBridge.PauseHandler);
         }
 
         // Register MCP server with all emulator tools
@@ -65,15 +97,38 @@ public static class McpServerFactory {
     }
 
     /// <summary>
-    /// Creates and runs an MCP server asynchronously using a fully-configured Machine.
+    /// Creates and runs an MCP server asynchronously from individual emulator components.
     /// This is a convenience method that creates the host and runs it.
     /// </summary>
-    /// <param name="machine">The configured Machine instance.</param>
+    /// <param name="state">The CPU state containing registers and flags.</param>
+    /// <param name="memory">The memory interface.</param>
+    /// <param name="breakpointsManager">The breakpoints manager.</param>
+    /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
+    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
+    /// <param name="biosDataArea">Optional BIOS data area.</param>
+    /// <param name="pauseHandler">Optional pause handler.</param>
     /// <param name="cancellationToken">Cancellation token to stop the server.</param>
     /// <returns>A task representing the running server.</returns>
-    public static async Task RunMcpServerAsync(Machine machine, ILoggerService loggerService, CancellationToken cancellationToken = default) {
-        using var host = CreateMcpServerHost(machine, loggerService);
+    public static async Task RunMcpServerAsync(
+        State state,
+        IMemory memory,
+        EmulatorBreakpointsManager breakpointsManager,
+        IOPortDispatcher ioPortDispatcher,
+        ILoggerService loggerService,
+        CfgCpu? cfgCpu = null,
+        BiosDataArea? biosDataArea = null,
+        IPauseHandler? pauseHandler = null,
+        CancellationToken cancellationToken = default) {
+        using var host = CreateMcpServerHost(
+            state,
+            memory,
+            breakpointsManager,
+            ioPortDispatcher,
+            loggerService,
+            cfgCpu,
+            biosDataArea,
+            pauseHandler);
         await host.RunAsync(cancellationToken);
     }
 }
