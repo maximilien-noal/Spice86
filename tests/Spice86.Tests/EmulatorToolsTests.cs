@@ -32,7 +32,7 @@ public class EmulatorToolsTests {
         var a20Gate = new A20Gate(configuration.A20Gate);
         _memory = new Memory(_breakpointsManager.MemoryReadWriteBreakpoints, ram, a20Gate, initializeResetVector: false);
         
-        _tools = new EmulatorTools(_state, _memory, _breakpointsManager);
+        _tools = new EmulatorTools(_state, _memory, _breakpointsManager, pauseHandler);
     }
 
     [Fact]

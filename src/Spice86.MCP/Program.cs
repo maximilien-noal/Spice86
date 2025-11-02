@@ -19,6 +19,7 @@ builder.Services.AddSingleton(emulatorService);
 builder.Services.AddSingleton(emulatorService.State);
 builder.Services.AddSingleton(emulatorService.Memory);
 builder.Services.AddSingleton(emulatorService.BreakpointsManager);
+builder.Services.AddSingleton(emulatorService.PauseHandler);
 
 // Register MCP server with emulator tools
 builder.Services.AddMcpServer()

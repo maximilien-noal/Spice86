@@ -5,6 +5,7 @@ using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
 using System.ComponentModel;
@@ -19,6 +20,7 @@ public sealed class EmulatorTools {
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly EmulatorBreakpointsManager _breakpointsManager;
+    private readonly IPauseHandler _pauseHandler;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmulatorTools"/> class.
@@ -26,10 +28,12 @@ public sealed class EmulatorTools {
     /// <param name="state">The CPU state containing registers and flags.</param>
     /// <param name="memory">The memory interface for reading/writing memory.</param>
     /// <param name="breakpointsManager">The breakpoints manager for managing breakpoints.</param>
-    public EmulatorTools(State state, IMemory memory, EmulatorBreakpointsManager breakpointsManager) {
+    /// <param name="pauseHandler">The pause handler for controlling emulation flow.</param>
+    public EmulatorTools(State state, IMemory memory, EmulatorBreakpointsManager breakpointsManager, IPauseHandler pauseHandler) {
         _state = state;
         _memory = memory;
         _breakpointsManager = breakpointsManager;
+        _pauseHandler = pauseHandler;
     }
 
     [McpServerTool]
@@ -240,6 +244,98 @@ public sealed class EmulatorTools {
         _breakpointsManager.ToggleBreakPoint(breakpoint, false);
         
         return Task.FromResult($"Removed execution breakpoint at 0x{addr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add a memory read breakpoint at a specific address")]
+    public Task<string> AddMemoryReadBreakpoint(
+        [Description("The memory address for the breakpoint (hex format, e.g., 0x1000)")] string address) {
+        
+        if (!TryParseAddress(address, out uint addr)) {
+            return Task.FromResult($"Error: Invalid address format '{address}'. Use hex format like 0x1000 or 1000");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.MEMORY_READ, 
+            addr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added memory read breakpoint at 0x{addr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add a memory write breakpoint at a specific address")]
+    public Task<string> AddMemoryWriteBreakpoint(
+        [Description("The memory address for the breakpoint (hex format, e.g., 0x1000)")] string address) {
+        
+        if (!TryParseAddress(address, out uint addr)) {
+            return Task.FromResult($"Error: Invalid address format '{address}'. Use hex format like 0x1000 or 1000");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.MEMORY_WRITE, 
+            addr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added memory write breakpoint at 0x{addr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add an interrupt breakpoint for a specific interrupt number")]
+    public Task<string> AddInterruptBreakpoint(
+        [Description("The interrupt number (0-255)")] int interruptNumber) {
+        
+        if (interruptNumber < 0 || interruptNumber > 255) {
+            return Task.FromResult($"Error: Interrupt number must be between 0 and 255.");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.CPU_INTERRUPT, 
+            interruptNumber, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added interrupt breakpoint for INT 0x{interruptNumber:X2}");
+    }
+
+    [McpServerTool]
+    [Description("List all active breakpoints")]
+    public Task<string> ListBreakpoints() {
+        var result = new StringBuilder();
+        result.AppendLine("Active Breakpoints:");
+        result.AppendLine();
+        
+        // Note: The BreakpointsManager doesn't expose a way to list all breakpoints
+        // This would require enhancing the EmulatorBreakpointsManager
+        result.AppendLine("(Breakpoint listing requires EmulatorBreakpointsManager enhancement)");
+        result.AppendLine("Breakpoints have been registered but cannot be listed in current implementation.");
+        
+        return Task.FromResult(result.ToString());
+    }
+
+    [McpServerTool]
+    [Description("Pause the emulation")]
+    public Task<string> PauseEmulation() {
+        _pauseHandler.RequestPause("MCP server requested pause");
+        return Task.FromResult($"Emulation paused. IsPaused: {_pauseHandler.IsPaused}");
+    }
+
+    [McpServerTool]
+    [Description("Resume the emulation")]
+    public Task<string> ResumeEmulation() {
+        _pauseHandler.Resume();
+        return Task.FromResult($"Emulation resumed. IsPaused: {_pauseHandler.IsPaused}");
+    }
+
+    [McpServerTool]
+    [Description("Get the current pause state of the emulation")]
+    public Task<string> GetPauseState() {
+        return Task.FromResult($"Emulation is {(_pauseHandler.IsPaused ? "paused" : "running")}");
     }
 
     private static bool TryParseAddress(string addressStr, out uint address) {
