@@ -24,20 +24,20 @@ public static class McpServerFactory {
     /// <param name="memory">The memory interface.</param>
     /// <param name="breakpointsManager">The breakpoints manager.</param>
     /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
+    /// <param name="cfgCpu">The CFG CPU instance.</param>
+    /// <param name="biosDataArea">The BIOS data area.</param>
+    /// <param name="pauseHandler">The pause handler for emulation control.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
-    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
-    /// <param name="biosDataArea">Optional BIOS data area.</param>
-    /// <param name="pauseHandler">Optional pause handler.</param>
     /// <returns>A configured IHost ready to run the MCP server.</returns>
     public static IHost CreateMcpServerHost(
         State state,
         IMemory memory,
         EmulatorBreakpointsManager breakpointsManager,
         IOPortDispatcher ioPortDispatcher,
-        ILoggerService loggerService,
-        CfgCpu? cfgCpu = null,
-        BiosDataArea? biosDataArea = null,
-        IPauseHandler? pauseHandler = null) {
+        CfgCpu cfgCpu,
+        BiosDataArea biosDataArea,
+        IPauseHandler pauseHandler,
+        ILoggerService loggerService) {
         var builder = Host.CreateApplicationBuilder();
 
         // Create MCP emulator bridge from individual components with shared logger
@@ -46,10 +46,10 @@ public static class McpServerFactory {
             memory,
             breakpointsManager,
             ioPortDispatcher,
-            loggerService,
             cfgCpu,
             biosDataArea,
-            pauseHandler);
+            pauseHandler,
+            loggerService);
 
         // Register logger service and MCP bridge components as singletons
         builder.Services.AddSingleton(loggerService);
@@ -58,15 +58,9 @@ public static class McpServerFactory {
         builder.Services.AddSingleton(mcpBridge.Memory);
         builder.Services.AddSingleton(mcpBridge.BreakpointsManager);
         builder.Services.AddSingleton(mcpBridge.IOPortDispatcher);
-
-        // Register optional components (may be null in some configurations)
-        if (mcpBridge.BiosDataArea != null) {
-            builder.Services.AddSingleton(mcpBridge.BiosDataArea);
-        }
-        
-        if (mcpBridge.PauseHandler != null) {
-            builder.Services.AddSingleton(mcpBridge.PauseHandler);
-        }
+        builder.Services.AddSingleton(mcpBridge.BiosDataArea);
+        builder.Services.AddSingleton(mcpBridge.PauseHandler);
+        builder.Services.AddSingleton(mcpBridge.CfgCpu);
 
         // Register MCP server with all emulator tools
         var mcpServerBuilder = builder.Services.AddMcpServer()
@@ -75,13 +69,8 @@ public static class McpServerFactory {
             .WithTools<DisassemblerTools>()
             .WithTools<StructureExplorationTools>()
             .WithTools<StructureViewerTools>()
-            .WithTools<ConditionalBreakpointTools>();
-
-        // Add CFG CPU tools if CFG CPU is available
-        if (mcpBridge.CfgCpu != null) {
-            builder.Services.AddSingleton(mcpBridge.CfgCpu);
-            mcpServerBuilder.WithTools<CfgCpuTools>();
-        }
+            .WithTools<ConditionalBreakpointTools>()
+            .WithTools<CfgCpuTools>();
 
         builder.Logging.AddConsole(options => {
             options.LogToStandardErrorThreshold = LogLevel.Trace;
@@ -104,10 +93,10 @@ public static class McpServerFactory {
     /// <param name="memory">The memory interface.</param>
     /// <param name="breakpointsManager">The breakpoints manager.</param>
     /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
+    /// <param name="cfgCpu">The CFG CPU instance.</param>
+    /// <param name="biosDataArea">The BIOS data area.</param>
+    /// <param name="pauseHandler">The pause handler for emulation control.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
-    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
-    /// <param name="biosDataArea">Optional BIOS data area.</param>
-    /// <param name="pauseHandler">Optional pause handler.</param>
     /// <param name="cancellationToken">Cancellation token to stop the server.</param>
     /// <returns>A task representing the running server.</returns>
     public static async Task RunMcpServerAsync(
@@ -115,20 +104,20 @@ public static class McpServerFactory {
         IMemory memory,
         EmulatorBreakpointsManager breakpointsManager,
         IOPortDispatcher ioPortDispatcher,
+        CfgCpu cfgCpu,
+        BiosDataArea biosDataArea,
+        IPauseHandler pauseHandler,
         ILoggerService loggerService,
-        CfgCpu? cfgCpu = null,
-        BiosDataArea? biosDataArea = null,
-        IPauseHandler? pauseHandler = null,
         CancellationToken cancellationToken = default) {
         using var host = CreateMcpServerHost(
             state,
             memory,
             breakpointsManager,
             ioPortDispatcher,
-            loggerService,
             cfgCpu,
             biosDataArea,
-            pauseHandler);
+            pauseHandler,
+            loggerService);
         await host.RunAsync(cancellationToken);
     }
 }

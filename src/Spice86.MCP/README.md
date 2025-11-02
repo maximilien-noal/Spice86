@@ -90,22 +90,26 @@ using Spice86.MCP;
 using Spice86.Logging;
 
 // Use existing emulator components (State, Memory, etc.)
+// All components are required - no optional parameters
 var loggerService = new LoggerService();
 var state = new State(...);
 var memory = ...;
 var breakpointsManager = ...;
 var ioPortDispatcher = ...;
+var cfgCpu = ...;  // Required
+var biosDataArea = ...;  // Required
+var pauseHandler = ...;  // Required
 
-// Create and run the MCP server with individual components
+// Create and run the MCP server with all required components
 var mcpHost = McpServerFactory.CreateMcpServerHost(
     state,
     memory,
     breakpointsManager,
     ioPortDispatcher,
-    loggerService,
-    cfgCpu: optionalCfgCpu,
-    biosDataArea: optionalBiosDataArea,
-    pauseHandler: optionalPauseHandler);
+    cfgCpu,
+    biosDataArea,
+    pauseHandler,
+    loggerService);
 await mcpHost.RunAsync();
 
 // Or use the convenience method
@@ -114,10 +118,10 @@ await McpServerFactory.RunMcpServerAsync(
     memory,
     breakpointsManager,
     ioPortDispatcher,
+    cfgCpu,
+    biosDataArea,
+    pauseHandler,
     loggerService,
-    cfgCpu: optionalCfgCpu,
-    biosDataArea: optionalBiosDataArea,
-    pauseHandler: optionalPauseHandler,
     cancellationToken);
 ```
 

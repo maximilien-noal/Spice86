@@ -21,17 +21,21 @@ public sealed class McpEmulatorBridge : IDisposable {
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new standalone instance for testing/development.
+    /// Initializes a new instance for testing/development with minimal components.
+    /// For production use, provide all required components via the other constructor.
     /// </summary>
     /// <param name="configuration">Configuration for the emulator.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
-    public McpEmulatorBridge(Configuration configuration, ILoggerService loggerService) {
+    /// <param name="cfgCpu">The CFG CPU instance.</param>
+    /// <param name="biosDataArea">The BIOS data area.</param>
+    public McpEmulatorBridge(Configuration configuration, ILoggerService loggerService, CfgCpu cfgCpu, BiosDataArea biosDataArea) {
         _loggerService = loggerService;
         
         // Initialize basic emulator components
         State = new State(configuration.CpuModel);
         
         _ownedPauseHandler = new PauseHandler(_loggerService);
+        PauseHandler = _ownedPauseHandler;
         BreakpointsManager = new EmulatorBreakpointsManager(_ownedPauseHandler, State);
         
         var ram = new Ram(A20Gate.EndOfHighMemoryArea);
@@ -41,9 +45,9 @@ public sealed class McpEmulatorBridge : IDisposable {
         // Create minimal IOPortDispatcher for standalone mode
         IOPortDispatcher = new IOPortDispatcher(BreakpointsManager.IoReadWriteBreakpoints, State, _loggerService, false);
         
-        // These will be null in standalone mode
-        CfgCpu = null;
-        BiosDataArea = null;
+        // Use provided required components
+        CfgCpu = cfgCpu;
+        BiosDataArea = biosDataArea;
         
         _loggerService.Information("MCP emulator bridge initialized in standalone mode");
     }
@@ -55,19 +59,19 @@ public sealed class McpEmulatorBridge : IDisposable {
     /// <param name="memory">The memory interface.</param>
     /// <param name="breakpointsManager">The breakpoints manager.</param>
     /// <param name="ioPortDispatcher">The IO port dispatcher.</param>
+    /// <param name="cfgCpu">The CFG CPU instance.</param>
+    /// <param name="biosDataArea">The BIOS data area.</param>
+    /// <param name="pauseHandler">The pause handler for emulation control.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
-    /// <param name="cfgCpu">Optional CFG CPU instance.</param>
-    /// <param name="biosDataArea">Optional BIOS data area.</param>
-    /// <param name="pauseHandler">Optional pause handler (if null, emulation control is not available).</param>
     public McpEmulatorBridge(
         State state,
         IMemory memory,
         EmulatorBreakpointsManager breakpointsManager,
         IOPortDispatcher ioPortDispatcher,
-        ILoggerService loggerService,
-        CfgCpu? cfgCpu = null,
-        BiosDataArea? biosDataArea = null,
-        IPauseHandler? pauseHandler = null) {
+        CfgCpu cfgCpu,
+        BiosDataArea biosDataArea,
+        IPauseHandler pauseHandler,
+        ILoggerService loggerService) {
         _loggerService = loggerService;
         State = state;
         Memory = memory;
@@ -102,20 +106,19 @@ public sealed class McpEmulatorBridge : IDisposable {
     public IOPortDispatcher IOPortDispatcher { get; }
 
     /// <summary>
-    /// Gets the CFG CPU instance (may be null if CFG CPU is not enabled).
+    /// Gets the CFG CPU instance.
     /// </summary>
-    public CfgCpu? CfgCpu { get; }
+    public CfgCpu CfgCpu { get; }
 
     /// <summary>
-    /// Gets the BIOS data area (may be null in headless or standalone configurations).
+    /// Gets the BIOS data area.
     /// </summary>
-    public BiosDataArea? BiosDataArea { get; }
+    public BiosDataArea BiosDataArea { get; }
 
     /// <summary>
     /// Gets the pause handler for controlling emulation flow.
-    /// May be null if emulation control is not available.
     /// </summary>
-    public IPauseHandler? PauseHandler { get; }
+    public IPauseHandler PauseHandler { get; }
 
     /// <summary>
     /// Disposes the MCP emulator bridge.
