@@ -31,16 +31,12 @@
         <PackageReference Include="Serilog"/>
         <PackageReference Include="Serilog.Sinks.Console"/>
         <PackageReference Include="Serilog.Sinks.Debug"/>
-        <PackageReference Include="System.Buffers"/>
-        <PackageReference Include="System.Memory"/>
         <PackageReference Include="System.Memory.Data"/>
-        <PackageReference Include="System.Text.Encoding.CodePages"/>
         <PackageReference Include="CommandLineParser"/>
         <PackageReference Include="MeltySynth"/>
         <PackageReference Include="Morris.Moxy"/>
         <!--WARNING: No Mac OS support (MUNT needs to be build and included for this platform)-->
         <PackageReference Include="Mt32emu.net"/>
-        <PackageReference Include="System.Text.Json"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Bufdio.Spice86\Bufdio.Spice86.csproj"/>
