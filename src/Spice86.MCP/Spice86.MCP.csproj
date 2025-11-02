@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+    <!-- Properties geared towards NuGet -->
+    <PropertyGroup>
+        <PackageId>Spice86.MCP</PackageId>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Spice86.Core\Spice86.Core.csproj" />
+        <ProjectReference Include="..\Spice86.Logging\Spice86.Logging.csproj" />
+        <ProjectReference Include="..\Spice86.Shared\Spice86.Shared.csproj" />
+    </ItemGroup>
+</Project>
