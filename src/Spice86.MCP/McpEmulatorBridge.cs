@@ -9,27 +9,29 @@ using Spice86.Logging;
 using Spice86.Shared.Interfaces;
 
 /// <summary>
-/// Service that provides access to emulator components for MCP tools.
+/// Provides a bridge between the MCP server and Spice86 emulator components.
+/// Initializes and exposes core emulator services (CPU state, memory, breakpoints, pause control)
+/// for programmatic access through the Model Context Protocol.
 /// </summary>
-public sealed class EmulatorService : IDisposable {
+public sealed class McpEmulatorBridge : IDisposable {
     private readonly LoggerService _loggerService;
-    private readonly McpPauseHandler _pauseHandler;
+    private readonly PauseHandler _pauseHandler;
     private bool _disposed;
 
-    public EmulatorService(Configuration configuration) {
+    public McpEmulatorBridge(Configuration configuration) {
         _loggerService = new LoggerService();
         
         // Initialize basic emulator components
         State = new State(configuration.CpuModel);
         
-        _pauseHandler = new McpPauseHandler(_loggerService);
+        _pauseHandler = new PauseHandler(_loggerService);
         BreakpointsManager = new EmulatorBreakpointsManager(_pauseHandler, State);
         
         var ram = new Ram(A20Gate.EndOfHighMemoryArea);
         var a20Gate = new A20Gate(configuration.A20Gate);
         Memory = new Memory(BreakpointsManager.MemoryReadWriteBreakpoints, ram, a20Gate, initializeResetVector: false);
         
-        _loggerService.Information("Emulator service initialized for MCP server");
+        _loggerService.Information("MCP emulator bridge initialized");
     }
 
     /// <summary>
@@ -53,51 +55,15 @@ public sealed class EmulatorService : IDisposable {
     public IPauseHandler PauseHandler => _pauseHandler;
 
     /// <summary>
-    /// Disposes the emulator service.
+    /// Disposes the MCP emulator bridge.
     /// </summary>
     public void Dispose() {
         if (_disposed) {
             return;
         }
 
-        _loggerService.Information("Emulator service disposed");
+        _loggerService.Information("MCP emulator bridge disposed");
         _pauseHandler.Dispose();
         _disposed = true;
-    }
-
-    private sealed class McpPauseHandler : IPauseHandler {
-        private readonly ILoggerService _loggerService;
-        private bool _isPaused;
-
-        public McpPauseHandler(ILoggerService loggerService) {
-            _loggerService = loggerService;
-        }
-
-        public bool IsPaused => _isPaused;
-
-        public event Action? Pausing;
-        public event Action? Paused;
-        public event Action? Resumed;
-
-        public void RequestPause(string? reason = null) {
-            _isPaused = true;
-            _loggerService.Information("Pause requested: {Message}", reason ?? "No message");
-            Pausing?.Invoke();
-            Paused?.Invoke();
-        }
-
-        public void Resume() {
-            _isPaused = false;
-            _loggerService.Information("Resume requested");
-            Resumed?.Invoke();
-        }
-
-        public void WaitIfPaused() {
-            // No-op for MCP server
-        }
-
-        public void Dispose() {
-            // No-op
-        }
     }
 }

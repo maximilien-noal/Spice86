@@ -12,15 +12,17 @@ using System.Threading.Tasks;
 using Xunit;
 
 /// <summary>
-/// Tests for advanced breakpoint features in EmulatorTools MCP tools.
+/// Tests for MCP server breakpoint management functionality.
+/// Validates comprehensive breakpoint support including memory, interrupt, IO port, and execution breakpoints
+/// for enhanced reverse engineering and debugging capabilities.
 /// </summary>
-public class AdvancedBreakpointTests {
+public class McpServerBreakpointTests {
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly EmulatorTools _tools;
 
-    public AdvancedBreakpointTests() {
+    public McpServerBreakpointTests() {
         var configuration = new Configuration();
         _state = new State(configuration.CpuModel);
         

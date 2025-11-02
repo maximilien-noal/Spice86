@@ -11,15 +11,15 @@ var builder = Host.CreateApplicationBuilder(args);
 var configuration = new Configuration();
 // Use default configuration for now - in a real scenario, this would parse args
 
-// Create emulator service
-var emulatorService = new EmulatorService(configuration);
+// Create MCP emulator bridge
+var mcpBridge = new McpEmulatorBridge(configuration);
 
-// Register emulator service as singleton
-builder.Services.AddSingleton(emulatorService);
-builder.Services.AddSingleton(emulatorService.State);
-builder.Services.AddSingleton(emulatorService.Memory);
-builder.Services.AddSingleton(emulatorService.BreakpointsManager);
-builder.Services.AddSingleton(emulatorService.PauseHandler);
+// Register MCP bridge components as singletons
+builder.Services.AddSingleton(mcpBridge);
+builder.Services.AddSingleton(mcpBridge.State);
+builder.Services.AddSingleton(mcpBridge.Memory);
+builder.Services.AddSingleton(mcpBridge.BreakpointsManager);
+builder.Services.AddSingleton(mcpBridge.PauseHandler);
 
 // Register MCP server with emulator tools
 builder.Services.AddMcpServer()
@@ -32,8 +32,8 @@ builder.Logging.AddConsole(options => {
 
 var app = builder.Build();
 
-// Ensure emulator service is disposed on shutdown
+// Ensure MCP bridge is disposed on shutdown
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-lifetime.ApplicationStopping.Register(() => emulatorService.Dispose());
+lifetime.ApplicationStopping.Register(() => mcpBridge.Dispose());
 
 await app.RunAsync();

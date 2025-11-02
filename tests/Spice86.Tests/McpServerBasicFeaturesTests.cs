@@ -12,15 +12,16 @@ using System.Threading.Tasks;
 using Xunit;
 
 /// <summary>
-/// Tests for the EmulatorTools MCP tools.
+/// Tests for MCP server basic functionality including CPU register access, memory operations, and disassembly.
+/// Validates that the Model Context Protocol server correctly exposes core emulator state for reverse engineering.
 /// </summary>
-public class EmulatorToolsTests {
+public class McpServerBasicFeaturesTests {
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly EmulatorTools _tools;
 
-    public EmulatorToolsTests() {
+    public McpServerBasicFeaturesTests() {
         var configuration = new Configuration();
         _state = new State(configuration.CpuModel);
         

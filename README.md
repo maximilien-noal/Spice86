@@ -93,9 +93,9 @@ Spice86 speaks the [GDB](https://www.gnu.org/software/gdb/) remote protocol:
 - it supports most of the commands you need to debug.
 - it also provides custom GDB commands to do dynamic analysis.
 
-## AI Integration via Model Context Protocol (MCP)
+## Model Context Protocol (MCP) Server for Reverse Engineering
 
-Spice86 provides an MCP server that exposes emulator functionality to AI tools and external applications through the [Model Context Protocol](https://modelcontextprotocol.io/).
+Spice86 provides an MCP server that exposes emulator internals through the [Model Context Protocol](https://modelcontextprotocol.io/), enabling programmatic access to emulator state for automated reverse engineering workflows and external tooling integration.
 
 ### Running the MCP Server
 
@@ -105,15 +105,17 @@ dotnet run --project src/Spice86.MCP/Spice86.MCP.csproj
 
 ### Available MCP Tools
 
-The MCP server provides the following tools for querying emulator state:
+The MCP server provides structured access to emulator state for reverse engineering:
 - **GetCpuRegisters**: Query current CPU register values (EAX, EBX, ECX, etc.)
-- **ReadMemory**: Read memory contents from specific addresses
+- **ReadMemory/WriteMemory**: Read and write memory contents at specific addresses
 - **GetEmulatorState**: Get overall emulator state information
 - **Disassemble**: Disassemble instructions at a specific address
+- **Breakpoint Management**: Add/remove execution, memory, interrupt, and IO port breakpoints
+- **Emulation Control**: Pause/resume emulation for step-by-step analysis
 
-### Usage with AI Tools
+### Integration with External Tools
 
-Configure your AI tool to connect to the Spice86 MCP server. For example, in Claude Desktop:
+The MCP server uses stdio transport, making it compatible with any MCP-compliant client. Example configuration:
 
 ```json
 {
@@ -126,7 +128,9 @@ Configure your AI tool to connect to the Spice86 MCP server. For example, in Cla
 }
 ```
 
-See [src/Spice86.MCP/README.md](src/Spice86.MCP/README.md) for more details.
+This enables automated analysis scripts, custom debugging workflows, and integration with reverse engineering toolchains.
+
+See [src/Spice86.MCP/README.md](src/Spice86.MCP/README.md) for complete tool documentation.
 
 ### Connecting to GDB
 The GDB server is always started along with the program to execute unless option is set to 0.
