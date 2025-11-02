@@ -47,6 +47,7 @@
 		<ProjectReference Include="..\..\src\Spice86.Core\Spice86.Core.csproj"/>
 		<ProjectReference Include="..\..\src\Spice86.Shared\Spice86.Shared.csproj"/>
 		<ProjectReference Include="..\..\src\Spice86\Spice86.csproj"/>
+		<ProjectReference Include="..\..\src\Spice86.MCP\Spice86.MCP.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <None Update="Resources\**">

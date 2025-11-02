@@ -12,6 +12,7 @@
     <ItemGroup>
         <PackageReference Include="ModelContextProtocol" />
         <PackageReference Include="Microsoft.Extensions.Hosting" />
+        <PackageReference Include="Iced" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Spice86.Core\Spice86.Core.csproj" />
