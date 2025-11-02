@@ -2,8 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Spice86.Core.CLI;
+using Spice86.Logging;
 using Spice86.MCP;
 using Spice86.MCP.Tools;
+using Spice86.Shared.Interfaces;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -11,10 +13,14 @@ var builder = Host.CreateApplicationBuilder(args);
 var configuration = new Configuration();
 // Use default configuration for now - in a real scenario, this would parse args
 
-// Create MCP emulator bridge in standalone mode
-var mcpBridge = new McpEmulatorBridge(configuration);
+// Create shared logger service
+var loggerService = new LoggerService();
 
-// Register MCP bridge components as singletons
+// Create MCP emulator bridge in standalone mode with shared logger
+var mcpBridge = new McpEmulatorBridge(configuration, loggerService);
+
+// Register logger service and MCP bridge components as singletons
+builder.Services.AddSingleton<ILoggerService>(loggerService);
 builder.Services.AddSingleton(mcpBridge);
 builder.Services.AddSingleton(mcpBridge.State);
 builder.Services.AddSingleton(mcpBridge.Memory);

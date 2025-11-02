@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Spice86.Core.Emulator.VM;
 using Spice86.MCP.Tools;
+using Spice86.Shared.Interfaces;
 
 /// <summary>
 /// Helper class for creating and configuring MCP server instances for Spice86.
@@ -14,14 +15,16 @@ public static class McpServerFactory {
     /// Creates a hosted MCP server instance using a fully-configured Machine.
     /// </summary>
     /// <param name="machine">The configured Machine instance from Spice86DependencyInjection.</param>
+    /// <param name="loggerService">Shared logger service instance.</param>
     /// <returns>A configured IHost ready to run the MCP server.</returns>
-    public static IHost CreateMcpServerHost(Machine machine) {
+    public static IHost CreateMcpServerHost(Machine machine, ILoggerService loggerService) {
         var builder = Host.CreateApplicationBuilder();
 
-        // Create MCP emulator bridge from the Machine
-        var mcpBridge = new McpEmulatorBridge(machine);
+        // Create MCP emulator bridge from the Machine with shared logger
+        var mcpBridge = new McpEmulatorBridge(machine, loggerService);
 
-        // Register MCP bridge components as singletons
+        // Register logger service and MCP bridge components as singletons
+        builder.Services.AddSingleton(loggerService);
         builder.Services.AddSingleton(mcpBridge);
         builder.Services.AddSingleton(mcpBridge.State);
         builder.Services.AddSingleton(mcpBridge.Memory);
@@ -66,10 +69,11 @@ public static class McpServerFactory {
     /// This is a convenience method that creates the host and runs it.
     /// </summary>
     /// <param name="machine">The configured Machine instance.</param>
+    /// <param name="loggerService">Shared logger service instance.</param>
     /// <param name="cancellationToken">Cancellation token to stop the server.</param>
     /// <returns>A task representing the running server.</returns>
-    public static async Task RunMcpServerAsync(Machine machine, CancellationToken cancellationToken = default) {
-        using var host = CreateMcpServerHost(machine);
+    public static async Task RunMcpServerAsync(Machine machine, ILoggerService loggerService, CancellationToken cancellationToken = default) {
+        using var host = CreateMcpServerHost(machine, loggerService);
         await host.RunAsync(cancellationToken);
     }
 }

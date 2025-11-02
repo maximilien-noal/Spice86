@@ -16,20 +16,22 @@ using Spice86.Shared.Interfaces;
 /// Can be initialized standalone or from a fully-configured Machine instance.
 /// </summary>
 public sealed class McpEmulatorBridge : IDisposable {
-    private readonly LoggerService? _ownedLoggerService;
+    private readonly ILoggerService _loggerService;
     private readonly PauseHandler? _ownedPauseHandler;
     private bool _disposed;
 
     /// <summary>
     /// Initializes a new standalone instance for testing/development.
     /// </summary>
-    public McpEmulatorBridge(Configuration configuration) {
-        _ownedLoggerService = new LoggerService();
+    /// <param name="configuration">Configuration for the emulator.</param>
+    /// <param name="loggerService">Shared logger service instance.</param>
+    public McpEmulatorBridge(Configuration configuration, ILoggerService loggerService) {
+        _loggerService = loggerService;
         
         // Initialize basic emulator components
         State = new State(configuration.CpuModel);
         
-        _ownedPauseHandler = new PauseHandler(_ownedLoggerService);
+        _ownedPauseHandler = new PauseHandler(_loggerService);
         BreakpointsManager = new EmulatorBreakpointsManager(_ownedPauseHandler, State);
         
         var ram = new Ram(A20Gate.EndOfHighMemoryArea);
@@ -37,19 +39,22 @@ public sealed class McpEmulatorBridge : IDisposable {
         Memory = new Memory(BreakpointsManager.MemoryReadWriteBreakpoints, ram, a20Gate, initializeResetVector: false);
         
         // Create minimal IOPortDispatcher for standalone mode
-        IOPortDispatcher = new IOPortDispatcher(BreakpointsManager.IoReadWriteBreakpoints, State, _ownedLoggerService, false);
+        IOPortDispatcher = new IOPortDispatcher(BreakpointsManager.IoReadWriteBreakpoints, State, _loggerService, false);
         
         // These will be null in standalone mode
         CfgCpu = null;
         BiosDataArea = null;
         
-        _ownedLoggerService.Information("MCP emulator bridge initialized in standalone mode");
+        _loggerService.Information("MCP emulator bridge initialized in standalone mode");
     }
 
     /// <summary>
     /// Initializes from a fully-configured Machine instance (preferred for production).
     /// </summary>
-    public McpEmulatorBridge(Machine machine) {
+    /// <param name="machine">The configured Machine instance.</param>
+    /// <param name="loggerService">Shared logger service instance.</param>
+    public McpEmulatorBridge(Machine machine, ILoggerService loggerService) {
+        _loggerService = loggerService;
         State = machine.CpuState;
         Memory = machine.Memory;
         BreakpointsManager = machine.EmulatorBreakpointsManager;
@@ -57,8 +62,7 @@ public sealed class McpEmulatorBridge : IDisposable {
         CfgCpu = machine.CfgCpu;
         BiosDataArea = machine.BiosDataArea;
         
-        // We don't own these resources in this mode
-        _ownedLoggerService = null;
+        // We don't own the pause handler in this mode
         _ownedPauseHandler = null;
     }
 
@@ -107,8 +111,8 @@ public sealed class McpEmulatorBridge : IDisposable {
         }
 
         // Only dispose resources we own (standalone mode)
-        if (_ownedLoggerService != null) {
-            _ownedLoggerService.Information("MCP emulator bridge disposed");
+        if (_ownedPauseHandler != null) {
+            _loggerService.Information("MCP emulator bridge disposed");
         }
         _ownedPauseHandler?.Dispose();
         

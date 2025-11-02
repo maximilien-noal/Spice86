@@ -86,16 +86,18 @@ Create an MCP server instance from a fully-configured Machine:
 
 ```csharp
 using Spice86.MCP;
+using Spice86.Logging;
 
-// After creating your Machine instance
+// After creating your Machine instance with a shared logger
+var loggerService = new LoggerService();
 var machine = new Machine(...);
 
-// Create and run the MCP server
-var mcpHost = McpServerFactory.CreateMcpServerHost(machine);
+// Create and run the MCP server with shared logger
+var mcpHost = McpServerFactory.CreateMcpServerHost(machine, loggerService);
 await mcpHost.RunAsync();
 
 // Or use the convenience method
-await McpServerFactory.RunMcpServerAsync(machine, cancellationToken);
+await McpServerFactory.RunMcpServerAsync(machine, loggerService, cancellationToken);
 ```
 
 ## Usage with AI Tools
@@ -186,7 +188,7 @@ Spice86.MCP/
 
 ## Requirements
 
-- .NET 9.0 or later
+- .NET 8.0 or later
 - ModelContextProtocol package (0.4.0-preview.3)
 - Microsoft.Extensions.Hosting
 - ICED disassembler library

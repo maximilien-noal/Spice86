@@ -28,7 +28,7 @@
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.2" />
     <PackageVersion Include="JvE.Structurizer" Version="1.2.0" />
     <PackageVersion Include="MeltySynth" Version="2.4.1" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="ModelContextProtocol" Version="0.4.0-preview.3" />
     <PackageVersion Include="Morris.Moxy" Version="1.10" />
     <PackageVersion Include="Mt32emu.net" Version="1.0.0-rc.1" />
