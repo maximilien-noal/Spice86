@@ -11,7 +11,7 @@ var builder = Host.CreateApplicationBuilder(args);
 var configuration = new Configuration();
 // Use default configuration for now - in a real scenario, this would parse args
 
-// Create MCP emulator bridge
+// Create MCP emulator bridge in standalone mode
 var mcpBridge = new McpEmulatorBridge(configuration);
 
 // Register MCP bridge components as singletons
@@ -19,12 +19,32 @@ builder.Services.AddSingleton(mcpBridge);
 builder.Services.AddSingleton(mcpBridge.State);
 builder.Services.AddSingleton(mcpBridge.Memory);
 builder.Services.AddSingleton(mcpBridge.BreakpointsManager);
-builder.Services.AddSingleton(mcpBridge.PauseHandler);
+builder.Services.AddSingleton(mcpBridge.IOPortDispatcher);
 
-// Register MCP server with emulator tools
+// Register optional components (may be null in standalone mode)
+if (mcpBridge.CfgCpu != null) {
+    builder.Services.AddSingleton(mcpBridge.CfgCpu);
+}
+if (mcpBridge.BiosDataArea != null) {
+    builder.Services.AddSingleton(mcpBridge.BiosDataArea);
+}
+if (mcpBridge.PauseHandler != null) {
+    builder.Services.AddSingleton(mcpBridge.PauseHandler);
+}
+
+// Register MCP server with all emulator tools
 builder.Services.AddMcpServer()
     .WithStdioServerTransport()
-    .WithTools<EmulatorTools>();
+    .WithTools<EmulatorTools>()
+    .WithTools<DisassemblerTools>()
+    .WithTools<StructureExplorationTools>()
+    .WithTools<ConditionalBreakpointTools>();
+
+// Add CFG CPU tools if CFG CPU is available
+if (mcpBridge.CfgCpu != null) {
+    builder.Services.AddMcpServer()
+        .WithTools<CfgCpuTools>();
+}
 
 builder.Logging.AddConsole(options => {
     options.LogToStandardErrorThreshold = LogLevel.Trace;
