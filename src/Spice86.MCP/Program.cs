@@ -38,6 +38,7 @@ builder.Services.AddMcpServer()
     .WithTools<EmulatorTools>()
     .WithTools<DisassemblerTools>()
     .WithTools<StructureExplorationTools>()
+    .WithTools<StructureViewerTools>()
     .WithTools<ConditionalBreakpointTools>();
 
 // Add CFG CPU tools if CFG CPU is available
