@@ -16,7 +16,7 @@ Pre-releases are also available [on the Release page](https://github.com/OpenRak
 
 NOTE: This is a port, and a continuation from the [original Java Spice86](https://github.com/kevinferrare/spice86).
 
-It requires [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and runs on Windows, macOS, and Linux.
+It requires [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) and runs on Windows, macOS, and Linux.
 
 ## Approach
 Rewriting a program from only the binary is a hard task.
@@ -92,6 +92,41 @@ When there is already data in the specified location, the emulator will load it 
 Spice86 speaks the [GDB](https://www.gnu.org/software/gdb/) remote protocol:
 - it supports most of the commands you need to debug.
 - it also provides custom GDB commands to do dynamic analysis.
+
+## AI Integration via Model Context Protocol (MCP)
+
+Spice86 provides an MCP server that exposes emulator functionality to AI tools and external applications through the [Model Context Protocol](https://modelcontextprotocol.io/).
+
+### Running the MCP Server
+
+```bash
+dotnet run --project src/Spice86.MCP/Spice86.MCP.csproj
+```
+
+### Available MCP Tools
+
+The MCP server provides the following tools for querying emulator state:
+- **GetCpuRegisters**: Query current CPU register values (EAX, EBX, ECX, etc.)
+- **ReadMemory**: Read memory contents from specific addresses
+- **GetEmulatorState**: Get overall emulator state information
+- **Disassemble**: Disassemble instructions at a specific address
+
+### Usage with AI Tools
+
+Configure your AI tool to connect to the Spice86 MCP server. For example, in Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "spice86": {
+      "command": "dotnet",
+      "args": ["run", "--project", "/path/to/Spice86/src/Spice86.MCP/Spice86.MCP.csproj"]
+    }
+  }
+}
+```
+
+See [src/Spice86.MCP/README.md](src/Spice86.MCP/README.md) for more details.
 
 ### Connecting to GDB
 The GDB server is always started along with the program to execute unless option is set to 0.
