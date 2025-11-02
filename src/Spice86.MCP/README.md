@@ -29,7 +29,11 @@ The MCP server exposes the following tools for interacting with the emulator:
 - **RemoveBreakpoint**: Remove execution breakpoint
 - **AddMemoryReadBreakpoint**: Add breakpoint on memory reads
 - **AddMemoryWriteBreakpoint**: Add breakpoint on memory writes
+- **AddMemoryAccessBreakpoint**: Add breakpoint on memory read or write
 - **AddInterruptBreakpoint**: Add breakpoint on specific interrupts (INT 0x00-0xFF)
+- **AddIoReadBreakpoint**: Add breakpoint on IO port reads
+- **AddIoWriteBreakpoint**: Add breakpoint on IO port writes
+- **AddIoAccessBreakpoint**: Add breakpoint on IO port read or write
 - **ListBreakpoints**: List all active breakpoints
 
 ### Emulation Control

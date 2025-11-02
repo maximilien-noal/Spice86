@@ -63,6 +63,42 @@ public class AdvancedBreakpointTests {
     }
 
     [Fact]
+    public async Task AddIoReadBreakpoint_AddsBreakpointSuccessfully() {
+        // Act
+        string result = await _tools.AddIoReadBreakpoint("0x3F8");
+
+        // Assert
+        Assert.Contains("Added IO read breakpoint at port 0x3F8", result);
+    }
+
+    [Fact]
+    public async Task AddIoWriteBreakpoint_AddsBreakpointSuccessfully() {
+        // Act
+        string result = await _tools.AddIoWriteBreakpoint("0x3F8");
+
+        // Assert
+        Assert.Contains("Added IO write breakpoint at port 0x3F8", result);
+    }
+
+    [Fact]
+    public async Task AddIoAccessBreakpoint_AddsBreakpointSuccessfully() {
+        // Act
+        string result = await _tools.AddIoAccessBreakpoint("0x3F8");
+
+        // Assert
+        Assert.Contains("Added IO access breakpoint at port 0x3F8", result);
+    }
+
+    [Fact]
+    public async Task AddMemoryAccessBreakpoint_AddsBreakpointSuccessfully() {
+        // Act
+        string result = await _tools.AddMemoryAccessBreakpoint("0x1000");
+
+        // Assert
+        Assert.Contains("Added memory access breakpoint at 0x1000", result);
+    }
+
+    [Fact]
     public async Task ListBreakpoints_ReturnsAllBreakpoints() {
         // Arrange
         await _tools.AddBreakpoint("0x1000");

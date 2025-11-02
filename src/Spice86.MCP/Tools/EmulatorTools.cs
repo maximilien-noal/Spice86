@@ -304,6 +304,82 @@ public sealed class EmulatorTools {
     }
 
     [McpServerTool]
+    [Description("Add a memory access (read or write) breakpoint at a specific address")]
+    public Task<string> AddMemoryAccessBreakpoint(
+        [Description("The memory address for the breakpoint (hex format, e.g., 0x1000)")] string address) {
+        
+        if (!TryParseAddress(address, out uint addr)) {
+            return Task.FromResult($"Error: Invalid address format '{address}'. Use hex format like 0x1000 or 1000");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.MEMORY_ACCESS, 
+            addr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added memory access breakpoint at 0x{addr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add an IO port read breakpoint at a specific port")]
+    public Task<string> AddIoReadBreakpoint(
+        [Description("The IO port address (hex format, e.g., 0x3F8)")] string port) {
+        
+        if (!TryParseAddress(port, out uint portAddr)) {
+            return Task.FromResult($"Error: Invalid port format '{port}'. Use hex format like 0x3F8 or 3F8");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.IO_READ, 
+            portAddr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added IO read breakpoint at port 0x{portAddr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add an IO port write breakpoint at a specific port")]
+    public Task<string> AddIoWriteBreakpoint(
+        [Description("The IO port address (hex format, e.g., 0x3F8)")] string port) {
+        
+        if (!TryParseAddress(port, out uint portAddr)) {
+            return Task.FromResult($"Error: Invalid port format '{port}'. Use hex format like 0x3F8 or 3F8");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.IO_WRITE, 
+            portAddr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added IO write breakpoint at port 0x{portAddr:X}");
+    }
+
+    [McpServerTool]
+    [Description("Add an IO port access (read or write) breakpoint at a specific port")]
+    public Task<string> AddIoAccessBreakpoint(
+        [Description("The IO port address (hex format, e.g., 0x3F8)")] string port) {
+        
+        if (!TryParseAddress(port, out uint portAddr)) {
+            return Task.FromResult($"Error: Invalid port format '{port}'. Use hex format like 0x3F8 or 3F8");
+        }
+
+        var breakpoint = new AddressBreakPoint(
+            Spice86.Shared.Emulator.VM.Breakpoint.BreakPointType.IO_ACCESS, 
+            portAddr, 
+            bp => { /* Breakpoint triggered */ }, 
+            false);
+        _breakpointsManager.ToggleBreakPoint(breakpoint, true);
+        
+        return Task.FromResult($"Added IO access breakpoint at port 0x{portAddr:X}");
+    }
+
+    [McpServerTool]
     [Description("List all active breakpoints")]
     public Task<string> ListBreakpoints() {
         var result = new StringBuilder();
