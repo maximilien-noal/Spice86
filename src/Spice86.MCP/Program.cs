@@ -33,7 +33,7 @@ if (mcpBridge.PauseHandler != null) {
 }
 
 // Register MCP server with all emulator tools
-builder.Services.AddMcpServer()
+var mcpServerBuilder = builder.Services.AddMcpServer()
     .WithStdioServerTransport()
     .WithTools<EmulatorTools>()
     .WithTools<DisassemblerTools>()
@@ -43,8 +43,7 @@ builder.Services.AddMcpServer()
 
 // Add CFG CPU tools if CFG CPU is available
 if (mcpBridge.CfgCpu != null) {
-    builder.Services.AddMcpServer()
-        .WithTools<CfgCpuTools>();
+    mcpServerBuilder.WithTools<CfgCpuTools>();
 }
 
 builder.Logging.AddConsole(options => {
