@@ -3,7 +3,7 @@
     <PropertyGroup>
         <IsPackable>False</IsPackable>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <WarningsAsErrors>false</WarningsAsErrors>
