@@ -66,6 +66,109 @@ The MCP server exposes comprehensive tools organized into categories:
 - **TestCondition**: Test a C# condition expression
 - **GetConditionHelp**: Get help on available variables and expressions
 
+### DumpOperations - Memory and Execution Dumps
+- **DumpMemoryRegion**: Dump memory region as hexadecimal
+- **DumpMemoryToFile**: Save entire memory to binary file
+- **GetExecutionFlowDumpStatus**: Check if execution flow recording is available
+
+### FunctionInformationOperations - Reverse Engineering Support
+- **ListFunctions**: List all reverse-engineered functions
+- **GetFunctionDetails**: Get detailed info about a function (callers, returns, overrides)
+- **SearchFunctions**: Search for functions by name pattern
+- **GetFunctionStatistics**: Get statistics about function information
+
+### CustomStructureOperations - Game-Specific Extensibility
+- **ListCustomStructures**: List all registered custom structure types
+- **GetStructureDescription**: Get description of a custom structure
+- **ReadCustomStructure**: Read a custom structure from memory
+- **GetProviderInfo**: Get information about registered providers
+
+## Extensibility for Reverse Engineering Projects
+
+The MCP server is designed to be extensible for users reverse-engineering their own games (like the Dune project). You can add your game-specific structures **without needing to understand MCP or AI internals**.
+
+### Adding Custom Structures
+
+1. **Implement ICustomStructureProvider**:
+
+```csharp
+using Spice86.MCP.Extensibility;
+using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
+
+public class MyGameStructures : ICustomStructureProvider {
+    private readonly IMemory _memory;
+    
+    public MyGameStructures(IMemory memory) {
+        _memory = memory;
+    }
+    
+    public string ProviderName => "MyGame";
+    
+    public IReadOnlyDictionary<string, Func<SegmentedAddress, MemoryBasedDataStructure>> GetStructureFactories() {
+        return new Dictionary<string, Func<SegmentedAddress, MemoryBasedDataStructure>> {
+            ["PlayerData"] = addr => new PlayerDataStructure(_memory, addr),
+            ["GameState"] = addr => new GameStateStructure(_memory, addr),
+            ["InventoryItem"] = addr => new InventoryItemStructure(_memory, addr)
+        };
+    }
+    
+    public string GetStructureDescription(string structureName) {
+        return structureName switch {
+            "PlayerData" => "Player character data including position, health, inventory",
+            "GameState" => "Global game state with flags, level, score",
+            "InventoryItem" => "Item in player inventory with type, quantity, properties",
+            _ => "Unknown structure"
+        };
+    }
+}
+```
+
+2. **Register your provider**:
+
+```csharp
+var customRegistry = new CustomStructureRegistry();
+customRegistry.RegisterProvider(new MyGameStructures(memory));
+
+// Pass the registry when creating the MCP bridge
+var mcpBridge = new McpEmulatorBridge(
+    state, memory, breakpointsManager, ioPortDispatcher,
+    cfgCpu, biosDataArea, pauseHandler, loggerService,
+    executionFlowDumper: null,
+    functionInformations: myFunctionInfoDict,
+    customStructureRegistry: customRegistry
+);
+```
+
+3. **Use through MCP**:
+
+AI tools can now query your structures:
+- `ListCustomStructures` - See "MyGame: PlayerData, GameState, InventoryItem"
+- `GetStructureDescription PlayerData` - Get description
+- `ReadCustomStructure PlayerData 0x1000:0x0000` - Read from memory
+
+### Accessing Function Information
+
+If you're using `CSharpOverrideHelper` for your reverse engineering project, the MCP server can expose your `FunctionInformations` dictionary:
+
+```csharp
+// In your override helper class
+public class MyGameOverrides : CSharpOverrideHelper {
+    public MyGameOverrides(...) : base(...) {
+        DefineFunction(0xF000, 0x1234, MyFunction);
+        // ... more functions
+    }
+}
+
+// Pass the FunctionInformations to MCP
+var mcpBridge = new McpEmulatorBridge(
+    ...,
+    functionInformations: myOverrides.FunctionInformations,
+    ...
+);
+```
+
+AI tools can then explore your reverse-engineered functions, see call graphs, find functions by name, and more.
+
 ## Building
 
 ```bash
