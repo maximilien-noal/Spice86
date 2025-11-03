@@ -3,12 +3,16 @@ namespace Spice86.MCP;
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.CPU.CfgCpu;
+using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Logging;
+using Spice86.MCP.Extensibility;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
 /// <summary>
@@ -38,8 +42,8 @@ public sealed class McpEmulatorBridge : IDisposable {
         PauseHandler = _ownedPauseHandler;
         BreakpointsManager = new EmulatorBreakpointsManager(_ownedPauseHandler, State);
         
-        var ram = new Ram(A20Gate.EndOfHighMemoryArea);
-        var a20Gate = new A20Gate(configuration.A20Gate);
+        Ram ram = new Ram(A20Gate.EndOfHighMemoryArea);
+        A20Gate a20Gate = new A20Gate(configuration.A20Gate);
         Memory = new Memory(BreakpointsManager.MemoryReadWriteBreakpoints, ram, a20Gate, initializeResetVector: false);
         
         // Create minimal IOPortDispatcher for standalone mode
@@ -48,6 +52,11 @@ public sealed class McpEmulatorBridge : IDisposable {
         // Use provided required components
         CfgCpu = cfgCpu;
         BiosDataArea = biosDataArea;
+        
+        // Optional components for extensibility
+        ExecutionFlowDumper = null;
+        FunctionInformations = null;
+        CustomStructureRegistry = new CustomStructureRegistry();
         
         _loggerService.Information("MCP emulator bridge initialized in standalone mode");
     }
@@ -63,6 +72,9 @@ public sealed class McpEmulatorBridge : IDisposable {
     /// <param name="biosDataArea">The BIOS data area.</param>
     /// <param name="pauseHandler">The pause handler for emulation control.</param>
     /// <param name="loggerService">Shared logger service instance.</param>
+    /// <param name="executionFlowDumper">Optional execution flow dumper for recording execution data.</param>
+    /// <param name="functionInformations">Optional dictionary of function information from reverse engineering.</param>
+    /// <param name="customStructureRegistry">Optional registry for custom game-specific structures.</param>
     public McpEmulatorBridge(
         State state,
         IMemory memory,
@@ -71,7 +83,10 @@ public sealed class McpEmulatorBridge : IDisposable {
         CfgCpu cfgCpu,
         BiosDataArea biosDataArea,
         IPauseHandler pauseHandler,
-        ILoggerService loggerService) {
+        ILoggerService loggerService,
+        ExecutionFlowDumper? executionFlowDumper = null,
+        IDictionary<SegmentedAddress, FunctionInformation>? functionInformations = null,
+        CustomStructureRegistry? customStructureRegistry = null) {
         _loggerService = loggerService;
         State = state;
         Memory = memory;
@@ -80,6 +95,9 @@ public sealed class McpEmulatorBridge : IDisposable {
         CfgCpu = cfgCpu;
         BiosDataArea = biosDataArea;
         PauseHandler = pauseHandler;
+        ExecutionFlowDumper = executionFlowDumper;
+        FunctionInformations = functionInformations;
+        CustomStructureRegistry = customStructureRegistry ?? new CustomStructureRegistry();
         
         // We don't own the pause handler in this mode
         _ownedPauseHandler = null;
@@ -119,6 +137,21 @@ public sealed class McpEmulatorBridge : IDisposable {
     /// Gets the pause handler for controlling emulation flow.
     /// </summary>
     public IPauseHandler PauseHandler { get; }
+
+    /// <summary>
+    /// Gets the execution flow dumper for recording execution data (may be null).
+    /// </summary>
+    public ExecutionFlowDumper? ExecutionFlowDumper { get; }
+
+    /// <summary>
+    /// Gets the function information dictionary from reverse engineering (may be null).
+    /// </summary>
+    public IDictionary<SegmentedAddress, FunctionInformation>? FunctionInformations { get; }
+
+    /// <summary>
+    /// Gets the registry for custom game-specific structures.
+    /// </summary>
+    public CustomStructureRegistry CustomStructureRegistry { get; }
 
     /// <summary>
     /// Disposes the MCP emulator bridge.
