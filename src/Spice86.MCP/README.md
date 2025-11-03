@@ -77,74 +77,9 @@ The MCP server exposes comprehensive tools organized into categories:
 - **SearchFunctions**: Search for functions by name pattern
 - **GetFunctionStatistics**: Get statistics about function information
 
-### CustomStructureOperations - Game-Specific Extensibility
-- **ListCustomStructures**: List all registered custom structure types
-- **GetStructureDescription**: Get description of a custom structure
-- **ReadCustomStructure**: Read a custom structure from memory
-- **GetProviderInfo**: Get information about registered providers
-
 ## Extensibility for Reverse Engineering Projects
 
-The MCP server is designed to be extensible for users reverse-engineering their own games (like the Dune project). You can add your game-specific structures **without needing to understand MCP or AI internals**.
-
-### Adding Custom Structures
-
-1. **Implement ICustomStructureProvider**:
-
-```csharp
-using Spice86.MCP.Extensibility;
-using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
-
-public class MyGameStructures : ICustomStructureProvider {
-    private readonly IMemory _memory;
-    
-    public MyGameStructures(IMemory memory) {
-        _memory = memory;
-    }
-    
-    public string ProviderName => "MyGame";
-    
-    public IReadOnlyDictionary<string, Func<SegmentedAddress, MemoryBasedDataStructure>> GetStructureFactories() {
-        return new Dictionary<string, Func<SegmentedAddress, MemoryBasedDataStructure>> {
-            ["PlayerData"] = addr => new PlayerDataStructure(_memory, addr),
-            ["GameState"] = addr => new GameStateStructure(_memory, addr),
-            ["InventoryItem"] = addr => new InventoryItemStructure(_memory, addr)
-        };
-    }
-    
-    public string GetStructureDescription(string structureName) {
-        return structureName switch {
-            "PlayerData" => "Player character data including position, health, inventory",
-            "GameState" => "Global game state with flags, level, score",
-            "InventoryItem" => "Item in player inventory with type, quantity, properties",
-            _ => "Unknown structure"
-        };
-    }
-}
-```
-
-2. **Register your provider**:
-
-```csharp
-var customRegistry = new CustomStructureRegistry();
-customRegistry.RegisterProvider(new MyGameStructures(memory));
-
-// Pass the registry when creating the MCP bridge
-var mcpBridge = new McpEmulatorBridge(
-    state, memory, breakpointsManager, ioPortDispatcher,
-    cfgCpu, biosDataArea, pauseHandler, loggerService,
-    executionFlowDumper: null,
-    functionInformations: myFunctionInfoDict,
-    customStructureRegistry: customRegistry
-);
-```
-
-3. **Use through MCP**:
-
-AI tools can now query your structures:
-- `ListCustomStructures` - See "MyGame: PlayerData, GameState, InventoryItem"
-- `GetStructureDescription PlayerData` - Get description
-- `ReadCustomStructure PlayerData 0x1000:0x0000` - Read from memory
+The MCP server is designed to be extensible for users reverse-engineering their own games (like the Dune project).
 
 ### Accessing Function Information
 

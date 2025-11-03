@@ -11,7 +11,6 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Logging;
-using Spice86.MCP.Extensibility;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
@@ -56,7 +55,6 @@ public sealed class McpEmulatorBridge : IDisposable {
         // Optional components for extensibility
         ExecutionFlowDumper = null;
         FunctionInformations = null;
-        CustomStructureRegistry = new CustomStructureRegistry();
         
         _loggerService.Information("MCP emulator bridge initialized in standalone mode");
     }
@@ -74,7 +72,6 @@ public sealed class McpEmulatorBridge : IDisposable {
     /// <param name="loggerService">Shared logger service instance.</param>
     /// <param name="executionFlowDumper">Optional execution flow dumper for recording execution data.</param>
     /// <param name="functionInformations">Optional dictionary of function information from reverse engineering.</param>
-    /// <param name="customStructureRegistry">Optional registry for custom game-specific structures.</param>
     public McpEmulatorBridge(
         State state,
         IMemory memory,
@@ -85,8 +82,7 @@ public sealed class McpEmulatorBridge : IDisposable {
         IPauseHandler pauseHandler,
         ILoggerService loggerService,
         ExecutionFlowDumper? executionFlowDumper = null,
-        IDictionary<SegmentedAddress, FunctionInformation>? functionInformations = null,
-        CustomStructureRegistry? customStructureRegistry = null) {
+        IDictionary<SegmentedAddress, FunctionInformation>? functionInformations = null) {
         _loggerService = loggerService;
         State = state;
         Memory = memory;
@@ -97,7 +93,6 @@ public sealed class McpEmulatorBridge : IDisposable {
         PauseHandler = pauseHandler;
         ExecutionFlowDumper = executionFlowDumper;
         FunctionInformations = functionInformations;
-        CustomStructureRegistry = customStructureRegistry ?? new CustomStructureRegistry();
         
         // We don't own the pause handler in this mode
         _ownedPauseHandler = null;
@@ -147,11 +142,6 @@ public sealed class McpEmulatorBridge : IDisposable {
     /// Gets the function information dictionary from reverse engineering (may be null).
     /// </summary>
     public IDictionary<SegmentedAddress, FunctionInformation>? FunctionInformations { get; }
-
-    /// <summary>
-    /// Gets the registry for custom game-specific structures.
-    /// </summary>
-    public CustomStructureRegistry CustomStructureRegistry { get; }
 
     /// <summary>
     /// Disposes the MCP emulator bridge.
