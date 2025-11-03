@@ -67,7 +67,7 @@ public sealed class ConditionalBreakpointTools {
         }
 
         // Create the breakpoint with the condition
-        var breakpoint = new AddressBreakPoint(
+        AddressBreakPoint breakpoint = new AddressBreakPoint(
             bpType,
             addr,
             bp => {
@@ -82,7 +82,7 @@ public sealed class ConditionalBreakpointTools {
         );
 
         // Store the conditional breakpoint info
-        var info = new ConditionalBreakpointInfo {
+        ConditionalBreakpointInfo info = new ConditionalBreakpointInfo {
             Id = id,
             Address = addr,
             Condition = condition,
@@ -103,7 +103,7 @@ public sealed class ConditionalBreakpointTools {
     public Task<string> RemoveConditionalBreakpoint(
         [Description("The ID of the conditional breakpoint to remove")] string id) {
         
-        if (!_conditionalBreakpoints.TryGetValue(id, out var info)) {
+        if (!_conditionalBreakpoints.TryGetValue(id, out ConditionalBreakpointInfo? info)) {
             return Task.FromResult($"Error: No conditional breakpoint with ID '{id}' found");
         }
 
@@ -119,14 +119,14 @@ public sealed class ConditionalBreakpointTools {
     [McpServerTool]
     [Description("List all conditional breakpoints")]
     public Task<string> ListConditionalBreakpoints() {
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.AppendLine("Conditional Breakpoints:");
         result.AppendLine();
 
         if (_conditionalBreakpoints.Count == 0) {
             result.AppendLine("No conditional breakpoints defined.");
         } else {
-            foreach (var kvp in _conditionalBreakpoints.OrderBy(x => x.Value.Address)) {
+            foreach (KeyValuePair<string, ConditionalBreakpointInfo> kvp in _conditionalBreakpoints.OrderBy(x => x.Value.Address)) {
                 var info = kvp.Value;
                 result.AppendLine($"ID: {info.Id}");
                 result.AppendLine($"  Address: 0x{info.Address:X}");
@@ -159,7 +159,7 @@ public sealed class ConditionalBreakpointTools {
     [McpServerTool]
     [Description("Get help on available variables and expressions for conditional breakpoints")]
     public Task<string> GetConditionHelp() {
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.AppendLine("Conditional Breakpoint Expression Guide:");
         result.AppendLine();
         
@@ -242,9 +242,9 @@ public sealed class ConditionalBreakpointTools {
         
         // Example: "ax == 0x1234"
         if (condition.Contains("==")) {
-            var parts = condition.Split("==", StringSplitOptions.TrimEntries);
+            string[] parts = condition.Split("==", StringSplitOptions.TrimEntries);
             if (parts.Length == 2) {
-                var registerName = parts[0].Trim();
+                string registerName = parts[0].Trim();
                 if (TryParseValue(parts[1].Trim(), out uint value)) {
                     return () => {
                         uint regValue = GetRegisterValue(registerName);
@@ -256,9 +256,9 @@ public sealed class ConditionalBreakpointTools {
         
         // Example: "ax > 100"
         if (condition.Contains(">")) {
-            var parts = condition.Split(">", StringSplitOptions.TrimEntries);
+            string[] parts = condition.Split(">", StringSplitOptions.TrimEntries);
             if (parts.Length == 2) {
-                var registerName = parts[0].Trim();
+                string registerName = parts[0].Trim();
                 if (TryParseValue(parts[1].Trim(), out uint value)) {
                     return () => {
                         uint regValue = GetRegisterValue(registerName);
@@ -270,9 +270,9 @@ public sealed class ConditionalBreakpointTools {
         
         // Example: "ax < 100"
         if (condition.Contains("<")) {
-            var parts = condition.Split("<", StringSplitOptions.TrimEntries);
+            string[] parts = condition.Split("<", StringSplitOptions.TrimEntries);
             if (parts.Length == 2) {
-                var registerName = parts[0].Trim();
+                string registerName = parts[0].Trim();
                 if (TryParseValue(parts[1].Trim(), out uint value)) {
                     return () => {
                         uint regValue = GetRegisterValue(registerName);
