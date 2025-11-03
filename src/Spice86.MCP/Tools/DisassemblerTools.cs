@@ -4,6 +4,7 @@ using Iced.Intel;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Shared.Utils;
 using System.ComponentModel;
 using System.Text;
 
@@ -393,18 +394,13 @@ public sealed class DisassemblerTools {
     }
 
     private static bool TryParseAddress(string addressStr, out uint address) {
+        uint? parsed = AddressParser.ParseHex(addressStr);
+        if (parsed != null) {
+            address = parsed.Value;
+            return true;
+        }
         address = 0;
-        
-        if (string.IsNullOrWhiteSpace(addressStr)) {
-            return false;
-        }
-
-        // Remove 0x prefix if present
-        if (addressStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
-            addressStr = addressStr.Substring(2);
-        }
-
-        return uint.TryParse(addressStr, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out address);
+        return false;
     }
 
     /// <summary>

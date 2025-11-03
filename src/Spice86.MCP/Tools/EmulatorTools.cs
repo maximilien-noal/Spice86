@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Utils;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text;
@@ -415,18 +416,13 @@ public sealed class EmulatorTools {
     }
 
     private static bool TryParseAddress(string addressStr, out uint address) {
+        uint? parsed = AddressParser.ParseHex(addressStr);
+        if (parsed != null) {
+            address = parsed.Value;
+            return true;
+        }
         address = 0;
-        
-        if (string.IsNullOrWhiteSpace(addressStr)) {
-            return false;
-        }
-
-        // Remove 0x prefix if present
-        if (addressStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
-            addressStr = addressStr.Substring(2);
-        }
-
-        return uint.TryParse(addressStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out address);
+        return false;
     }
 
     /// <summary>

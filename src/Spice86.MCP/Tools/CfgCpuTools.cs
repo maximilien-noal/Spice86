@@ -6,6 +6,7 @@ using Spice86.Core.Emulator.CPU.CfgCpu;
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Utils;
 using System.ComponentModel;
 using System.Text;
 
@@ -166,43 +167,21 @@ public sealed class CfgCpuTools {
             return false;
         }
 
-        // Try to parse as segmented address (e.g., 0xF000:0x1000 or F000:1000)
-        if (addressStr.Contains(':')) {
-            string[] parts = addressStr.Split(':');
-            if (parts.Length != 2) {
-                return false;
-            }
+        // Try segmented address first
+        SegmentedAddress? parsed = AddressParser.ParseSegmentedAddress(addressStr);
+        if (parsed != null) {
+            address = parsed.Value;
+            return true;
+        }
 
-            string segmentStr = parts[0].Trim();
-            string offsetStr = parts[1].Trim();
-
-            // Remove 0x prefix if present
-            if (segmentStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
-                segmentStr = segmentStr.Substring(2);
-            }
-            if (offsetStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
-                offsetStr = offsetStr.Substring(2);
-            }
-
-            if (ushort.TryParse(segmentStr, System.Globalization.NumberStyles.HexNumber, null, out ushort segment) &&
-                ushort.TryParse(offsetStr, System.Globalization.NumberStyles.HexNumber, null, out ushort offset)) {
-                address = new SegmentedAddress(segment, offset);
-                return true;
-            }
-        } else {
-            // Try to parse as physical address
-            string addrStr = addressStr;
-            if (addrStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
-                addrStr = addrStr.Substring(2);
-            }
-
-            if (uint.TryParse(addrStr, System.Globalization.NumberStyles.HexNumber, null, out uint physAddr)) {
-                // Convert physical to segmented (simplified - segment * 16 + offset)
-                ushort segment = (ushort)(physAddr >> 4);
-                ushort offset = (ushort)(physAddr & 0xF);
-                address = new SegmentedAddress(segment, offset);
-                return true;
-            }
+        // Try linear/physical address
+        uint? physAddr = AddressParser.ParseHex(addressStr);
+        if (physAddr != null) {
+            // Convert physical to segmented (simplified - segment * 16 + offset)
+            ushort segment = (ushort)(physAddr.Value >> 4);
+            ushort offset = (ushort)(physAddr.Value & 0xF);
+            address = new SegmentedAddress(segment, offset);
+            return true;
         }
 
         return false;

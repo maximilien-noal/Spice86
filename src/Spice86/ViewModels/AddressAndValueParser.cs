@@ -9,21 +9,22 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Address and value parser with State support for register names.
+/// For State-independent parsing, use AddressParser in Spice86.Shared.Utils.
+/// </summary>
 public partial class AddressAndValueParser {
-    
-    [GeneratedRegex(@"^0x[0-9A-Fa-f]+$")]
-    public static partial Regex HexUintRegex();
     
     /// <summary>
     /// A000:0000 is valid
-    /// DS:SI is valid
+    /// DS:SI is valid (with State)
     /// </summary>
     /// <returns></returns>
     [GeneratedRegex(@"^([0-9A-Fa-f]{1,4}|[a-zA-Z]{2}):([0-9A-Fa-f]{1,4}|[a-zA-Z]{2})$")]
-    public static partial Regex SegmentedAddressRegex();
+    public static partial Regex SegmentedAddressWithRegistersRegex();
 
     /// <summary>
-    /// Tries to parse the address string into a uint address.
+    /// Tries to parse the address string into a uint address with State support for registers.
     /// </summary>
     /// <param name="value">The user input.</param>
     /// <param name="state">The emulated CPU registers and flags.</param>
@@ -41,14 +42,16 @@ public partial class AddressAndValueParser {
             return true;
         }
         
-        address = ParseHex(valueTrimmed);
+        address = AddressParser.ParseHex(valueTrimmed);
         return address != null;
     }
 
+    /// <summary>
+    /// Parse segmented address with State support for register names (e.g., DS:SI)
+    /// </summary>
     public static SegmentedAddress? ParseSegmentedAddress(string value, State? state) {
         string trimmedValue = value.Trim();
-        Match segmentedMatch = SegmentedAddressRegex()
-            .Match(trimmedValue);
+        Match segmentedMatch = SegmentedAddressWithRegistersRegex().Match(trimmedValue);
         if (segmentedMatch.Success) {
             ushort? segment = TryParseSegmentOrRegister(
                 segmentedMatch.Groups[1].Value,
@@ -57,13 +60,16 @@ public partial class AddressAndValueParser {
                 segmentedMatch.Groups[2].Value,
                 state);
             if (segment != null && offset != null) {
-                return new(segment.Value, offset.Value);
+                return new SegmentedAddress(segment.Value, offset.Value);
             }
         }
 
         return null;
     }
     
+    /// <summary>
+    /// Parse segment/offset value or register name from State
+    /// </summary>
     public static ushort? TryParseSegmentOrRegister(string value, State? state) {
         // Try a property of the CPU state first (there is no collision with hex values)
         ushort? res = GetUshortStateProperty(value, state);
@@ -71,14 +77,12 @@ public partial class AddressAndValueParser {
             return res;
         }
         // Try to parse hex value
-        if (ushort.TryParse(value, NumberStyles.HexNumber,
-                CultureInfo.InvariantCulture, out ushort result)) {
-            return result;
-        }
-
-        return null;
+        return AddressParser.ParseHexUshort(value);
     }
     
+    /// <summary>
+    /// Get ushort property value from State by name
+    /// </summary>
     public static ushort? GetUshortStateProperty(string value, State? state) {
         if (state is null) {
             return null;
@@ -93,51 +97,31 @@ public partial class AddressAndValueParser {
         return null;
     }
 
-    public static bool IsValidHex(string value) {
-       return HexUintRegex().Match(value).Success;
-    }
+    /// <summary>
+    /// Delegate to shared AddressParser for basic hex validation
+    /// </summary>
+    public static bool IsValidHex(string value) => AddressParser.IsValidHex(value);
 
-    public static uint? ParseHex(string value) {
-        if (!IsValidHex(value)) {
-            return null;
-        }
-
-        string hexValue = value;
-        if (hexValue.StartsWith("0x") && hexValue.Length is > 2 and <= 10) {
-            hexValue = hexValue[2..];
-        }
-        if (uint.TryParse(hexValue, NumberStyles.HexNumber,
-                CultureInfo.InvariantCulture, out uint res)) {
-            return res;
-        }
-
-        return null;
-    }
+    /// <summary>
+    /// Delegate to shared AddressParser for hex parsing
+    /// </summary>
+    public static uint? ParseHex(string value) => AddressParser.ParseHex(value);
     
-    public static byte[]? ParseHexAsArray(string? value) {
-        if (value == null) {
-            return null;
-        }
-        string valueTrimmed = value.Trim();
-        if (!IsValidHex(valueTrimmed)) {
-            return null;
-        }
-        
-        if (valueTrimmed.StartsWith("0x")) {
-            valueTrimmed = valueTrimmed[2..];
-        }
-
-        return ConvertUtils.HexToByteArray(valueTrimmed);
-    }
+    /// <summary>
+    /// Delegate to shared AddressParser for hex array parsing
+    /// </summary>
+    public static byte[]? ParseHexAsArray(string? value) => AddressParser.ParseHexAsArray(value);
     
-    
+    /// <summary>
+    /// Validate address with State support for register names
+    /// </summary>
     public static bool TryValidateAddress(string? value, State state, out string message) {
         if (string.IsNullOrWhiteSpace(value)) {
             message = "Address is required";
             return false;
         }
-        if (!IsValidHex(value) &&
-            !SegmentedAddressRegex().IsMatch(value) && 
+        if (!AddressParser.IsValidHex(value) &&
+            !SegmentedAddressWithRegistersRegex().IsMatch(value) && 
             GetUshortStateProperty(value, state) == null) {
             message = "Invalid address format";
             return false;
