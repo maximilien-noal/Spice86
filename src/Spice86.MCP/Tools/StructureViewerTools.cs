@@ -3,8 +3,10 @@ namespace Spice86.MCP.Tools;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Utils;
 using System.ComponentModel;
 using System.Text;
 
@@ -16,13 +18,15 @@ using System.Text;
 public sealed class StructureViewerTools {
     private readonly IMemory _memory;
     private readonly State _state;
+    private readonly BiosDataArea _biosDataArea;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StructureViewerTools"/> class.
     /// </summary>
-    public StructureViewerTools(IMemory memory, State state) {
+    public StructureViewerTools(IMemory memory, State state, BiosDataArea biosDataArea) {
         _memory = memory;
         _state = state;
+        _biosDataArea = biosDataArea;
     }
 
     [McpServerTool]
@@ -136,39 +140,26 @@ public sealed class StructureViewerTools {
         result.AppendLine($"BIOS Data Area at {address}:");
         result.AppendLine();
         
-        uint baseAddr = address.Linear;
-        
         result.AppendLine("Serial Ports:");
         for (int i = 0; i < 4; i++) {
-            ushort portAddr = _memory.UInt16[baseAddr + (uint)(i * 2)];
+            ushort portAddr = _biosDataArea.PortCom[i];
             result.AppendLine($"  COM{i + 1}: 0x{portAddr:X4}");
         }
         result.AppendLine();
         
         result.AppendLine("Parallel Ports:");
         for (int i = 0; i < 3; i++) {
-            ushort portAddr = _memory.UInt16[baseAddr + 0x08 + (uint)(i * 2)];
+            ushort portAddr = _biosDataArea.PortLpt[i];
             result.AppendLine($"  LPT{i + 1}: 0x{portAddr:X4}");
         }
         result.AppendLine();
         
-        ushort equipmentFlags = _memory.UInt16[baseAddr + 0x10];
-        result.AppendLine($"Equipment Flags: 0x{equipmentFlags:X4}");
-        
-        ushort memorySize = _memory.UInt16[baseAddr + 0x13];
-        result.AppendLine($"Memory Size: {memorySize} KB");
-        
-        byte kbdFlags = _memory.UInt8[baseAddr + 0x17];
-        result.AppendLine($"Keyboard Flags: 0x{kbdFlags:X2}");
-        
-        byte videoMode = _memory.UInt8[baseAddr + 0x49];
-        result.AppendLine($"Video Mode: 0x{videoMode:X2}");
-        
-        ushort screenCols = _memory.UInt16[baseAddr + 0x4A];
-        result.AppendLine($"Screen Columns: {screenCols}");
-        
-        uint timerCount = _memory.UInt32[baseAddr + 0x6C];
-        result.AppendLine($"Timer Counter: {timerCount}");
+        result.AppendLine($"Equipment Flags: 0x{_biosDataArea.EquipmentListFlags:X4}");
+        result.AppendLine($"Memory Size: {_biosDataArea.ConventionalMemorySizeKb} KB");
+        result.AppendLine($"Keyboard Flags: 0x{_biosDataArea.KeyboardStatusFlag:X2}");
+        result.AppendLine($"Video Mode: 0x{_biosDataArea.VideoMode:X2}");
+        result.AppendLine($"Screen Columns: {_biosDataArea.ScreenColumns}");
+        result.AppendLine($"Timer Counter: {_biosDataArea.TimerCounter}");
         
         return Task.FromResult(result.ToString());
     }
@@ -178,7 +169,7 @@ public sealed class StructureViewerTools {
         result.AppendLine($"Program Segment Prefix at {address}:");
         result.AppendLine();
         
-        uint baseAddr = address.Linear;
+        uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
         byte int20h = _memory.UInt8[baseAddr];
         result.AppendLine($"INT 20h Instruction: 0x{int20h:X2}");
@@ -213,7 +204,7 @@ public sealed class StructureViewerTools {
         result.AppendLine($"Memory Control Block at {address}:");
         result.AppendLine();
         
-        uint baseAddr = address.Linear;
+        uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
         byte signature = _memory.UInt8[baseAddr];
         char sigChar = (char)signature;
@@ -243,7 +234,7 @@ public sealed class StructureViewerTools {
         result.AppendLine($"Interrupt Vector Entry at {address}:");
         result.AppendLine();
         
-        uint baseAddr = address.Linear;
+        uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
         ushort offset = _memory.UInt16[baseAddr];
         ushort segment = _memory.UInt16[baseAddr + 0x02];
