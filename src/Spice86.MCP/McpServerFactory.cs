@@ -40,6 +40,12 @@ public static class McpServerFactory {
         ILoggerService loggerService) {
         var builder = Host.CreateApplicationBuilder();
 
+        // Enable DI validation to catch dependency issues at build time
+        builder.Services.Configure<ServiceProviderOptions>(options => {
+            options.ValidateOnBuild = true;
+            options.ValidateScopes = true;
+        });
+
         // Create MCP emulator bridge from individual components with shared logger
         var mcpBridge = new McpEmulatorBridge(
             state,
