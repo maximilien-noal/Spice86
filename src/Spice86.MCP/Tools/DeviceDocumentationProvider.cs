@@ -11,20 +11,20 @@ using System.Text;
 using System.Reflection;
 
 /// <summary>
-/// MCP tools for exploring DOS and BIOS data structures.
-/// Provides read-only introspection into emulator structures for knowledge purposes.
+/// MCP server for exploring DOS and BIOS data structures and device port documentation.
+/// Provides comprehensive device documentation (DMA, PIC, Timer, etc.) and structure information for reverse engineering.
 /// </summary>
 [McpServerToolType]
-public sealed class StructureExplorationTools {
+public sealed class DeviceDocumentationProvider {
     private readonly BiosDataArea? _biosDataArea;
     private readonly IOPortDispatcher _ioPortDispatcher;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StructureExplorationTools"/> class.
+    /// Initializes a new instance of the <see cref="DeviceDocumentationProvider"/> class.
     /// </summary>
     /// <param name="biosDataArea">The BIOS data area (may be null in headless configurations).</param>
     /// <param name="ioPortDispatcher">The IO port dispatcher for port exploration.</param>
-    public StructureExplorationTools(BiosDataArea? biosDataArea, IOPortDispatcher ioPortDispatcher) {
+    public DeviceDocumentationProvider(BiosDataArea? biosDataArea, IOPortDispatcher ioPortDispatcher) {
         _biosDataArea = biosDataArea;
         _ioPortDispatcher = ioPortDispatcher;
     }

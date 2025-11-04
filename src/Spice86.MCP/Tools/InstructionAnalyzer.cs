@@ -9,18 +9,18 @@ using System.ComponentModel;
 using System.Text;
 
 /// <summary>
-/// MCP tools for disassembly and instruction analysis using ICED disassembler.
-/// Provides a generic C# interface for working with x86 instructions and AST preparation.
+/// MCP server for detailed x86 instruction analysis using ICED disassembler.
+/// Provides operand decomposition, control flow classification, and encoding details for AST preparation.
 /// </summary>
 [McpServerToolType]
-public sealed class DisassemblerTools {
+public sealed class InstructionAnalyzer {
     private readonly IMemory _memory;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DisassemblerTools"/> class.
+    /// Initializes a new instance of the <see cref="InstructionAnalyzer"/> class.
     /// </summary>
     /// <param name="memory">The memory interface for reading instruction bytes.</param>
-    public DisassemblerTools(IMemory memory) {
+    public InstructionAnalyzer(IMemory memory) {
         _memory = memory;
     }
 

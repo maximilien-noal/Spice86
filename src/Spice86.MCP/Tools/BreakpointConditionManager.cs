@@ -12,19 +12,20 @@ using System.Linq.Expressions;
 using System.Text;
 
 /// <summary>
-/// MCP tools for managing conditional breakpoints with custom C# expressions.
+/// MCP server for managing conditional breakpoints with custom C# expressions.
+/// Supports expression tree-based breakpoint conditions that can access CPU registers and memory.
 /// </summary>
 [McpServerToolType]
-public sealed class ConditionalBreakpointTools {
+public sealed class BreakpointConditionManager {
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly Dictionary<string, ConditionalBreakpointInfo> _conditionalBreakpoints = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConditionalBreakpointTools"/> class.
+    /// Initializes a new instance of the <see cref="BreakpointConditionManager"/> class.
     /// </summary>
-    public ConditionalBreakpointTools(EmulatorBreakpointsManager breakpointsManager, State state, IMemory memory) {
+    public BreakpointConditionManager(EmulatorBreakpointsManager breakpointsManager, State state, IMemory memory) {
         _breakpointsManager = breakpointsManager;
         _state = state;
         _memory = memory;

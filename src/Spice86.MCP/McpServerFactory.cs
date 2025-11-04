@@ -68,15 +68,17 @@ public static class McpServerFactory {
         builder.Services.AddSingleton(mcpBridge.PauseHandler);
         builder.Services.AddSingleton(mcpBridge.CfgCpu);
 
-        // Register MCP server with all emulator tools
+        // Register MCP server with all emulator tool categories
         var mcpServerBuilder = builder.Services.AddMcpServer()
             .WithStdioServerTransport()
-            .WithTools<EmulatorTools>()
-            .WithTools<DisassemblerTools>()
-            .WithTools<StructureExplorationTools>()
-            .WithTools<StructureViewerTools>()
-            .WithTools<ConditionalBreakpointTools>()
-            .WithTools<CfgCpuTools>();
+            .WithTools<EmulatorStateInspector>()
+            .WithTools<InstructionAnalyzer>()
+            .WithTools<DeviceDocumentationProvider>()
+            .WithTools<MemoryStructureReader>()
+            .WithTools<BreakpointConditionManager>()
+            .WithTools<CfgGraphExplorer>()
+            .WithTools<DumpOperations>()
+            .WithTools<FunctionInformationOperations>();
 
         builder.Logging.AddConsole(options => {
             options.LogToStandardErrorThreshold = LogLevel.Trace;

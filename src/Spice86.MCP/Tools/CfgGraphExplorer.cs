@@ -11,17 +11,18 @@ using System.ComponentModel;
 using System.Text;
 
 /// <summary>
-/// MCP tools for exploring and analyzing the Control Flow Graph (CFG) CPU execution state.
+/// MCP server for exploring and analyzing the Control Flow Graph (CFG) CPU execution state.
+/// Provides detailed CFG node inspection, entry point enumeration, and control flow path exploration.
 /// </summary>
 [McpServerToolType]
-public sealed class CfgCpuTools {
+public sealed class CfgGraphExplorer {
     private readonly CfgCpu _cfgCpu;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CfgCpuTools"/> class.
+    /// Initializes a new instance of the <see cref="CfgGraphExplorer"/> class.
     /// </summary>
     /// <param name="cfgCpu">The CFG CPU instance for graph exploration.</param>
-    public CfgCpuTools(CfgCpu cfgCpu) {
+    public CfgGraphExplorer(CfgCpu cfgCpu) {
         _cfgCpu = cfgCpu;
     }
 

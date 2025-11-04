@@ -11,19 +11,19 @@ using System.ComponentModel;
 using System.Text;
 
 /// <summary>
-/// MCP tools for exploring memory structures in a text-based format.
-/// Provides structure definition lookup and memory interpretation capabilities.
+/// MCP server for reading and interpreting memory-based DOS/BIOS data structures.
+/// Provides access to BDA, PSP, MCB, DTA, and IVT structures from emulator memory in text format.
 /// </summary>
 [McpServerToolType]
-public sealed class StructureViewerTools {
+public sealed class MemoryStructureReader {
     private readonly IMemory _memory;
     private readonly State _state;
     private readonly BiosDataArea _biosDataArea;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StructureViewerTools"/> class.
+    /// Initializes a new instance of the <see cref="MemoryStructureReader"/> class.
     /// </summary>
-    public StructureViewerTools(IMemory memory, State state, BiosDataArea biosDataArea) {
+    public MemoryStructureReader(IMemory memory, State state, BiosDataArea biosDataArea) {
         _memory = memory;
         _state = state;
         _biosDataArea = biosDataArea;

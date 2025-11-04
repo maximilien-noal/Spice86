@@ -14,23 +14,24 @@ using System.Globalization;
 using System.Text;
 
 /// <summary>
-/// MCP tools for inspecting and controlling the Spice86 emulator.
+/// MCP server for inspecting and controlling the Spice86 emulator state.
+/// Provides access to CPU registers, memory, disassembly, breakpoints, and execution control.
 /// </summary>
 [McpServerToolType]
-public sealed class EmulatorTools {
+public sealed class EmulatorStateInspector {
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly IPauseHandler _pauseHandler;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EmulatorTools"/> class.
+    /// Initializes a new instance of the <see cref="EmulatorStateInspector"/> class.
     /// </summary>
     /// <param name="state">The CPU state containing registers and flags.</param>
     /// <param name="memory">The memory interface for reading/writing memory.</param>
     /// <param name="breakpointsManager">The breakpoints manager for managing breakpoints.</param>
     /// <param name="pauseHandler">The pause handler for controlling emulation flow.</param>
-    public EmulatorTools(State state, IMemory memory, EmulatorBreakpointsManager breakpointsManager, IPauseHandler pauseHandler) {
+    public EmulatorStateInspector(State state, IMemory memory, EmulatorBreakpointsManager breakpointsManager, IPauseHandler pauseHandler) {
         _state = state;
         _memory = memory;
         _breakpointsManager = breakpointsManager;
