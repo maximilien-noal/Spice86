@@ -4,11 +4,13 @@ using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.VM.Breakpoint;
 using Spice86.Shared.Utils;
 using System.ComponentModel;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 /// <summary>
@@ -20,15 +22,17 @@ public sealed class BreakpointConditionManager {
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly State _state;
     private readonly IMemory _memory;
+    private readonly IPauseHandler _pauseHandler;
     private readonly Dictionary<string, ConditionalBreakpointInfo> _conditionalBreakpoints = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BreakpointConditionManager"/> class.
     /// </summary>
-    public BreakpointConditionManager(EmulatorBreakpointsManager breakpointsManager, State state, IMemory memory) {
+    public BreakpointConditionManager(EmulatorBreakpointsManager breakpointsManager, State state, IMemory memory, IPauseHandler pauseHandler) {
         _breakpointsManager = breakpointsManager;
         _state = state;
         _memory = memory;
+        _pauseHandler = pauseHandler;
     }
 
     [McpServerTool]
@@ -68,19 +72,21 @@ public sealed class BreakpointConditionManager {
             return Task.FromResult($"Error compiling condition: {error}");
         }
 
-        // Create the breakpoint with the condition
+        if (compiledCondition == null) {
+            return Task.FromResult("Error: Failed to compile condition");
+        }
+
+        // Create the breakpoint with the condition callback
+        // Use additionalTriggerCondition to evaluate the condition before triggering
         AddressBreakPoint breakpoint = new AddressBreakPoint(
             bpType,
             addr,
             bp => {
-                // This callback will be called by the emulator when the address is hit
-                // The condition is evaluated here
-                if (compiledCondition!()) {
-                    // Log or signal that the conditional breakpoint was hit
-                    // In a real scenario, this would pause execution or notify the debugger
-                }
+                // When condition is met, pause the emulator
+                _pauseHandler.RequestPause("Conditional breakpoint hit");
             },
-            false
+            false,
+            address => compiledCondition()  // Evaluate condition as additional trigger condition
         );
 
         // Store the conditional breakpoint info
@@ -88,7 +94,7 @@ public sealed class BreakpointConditionManager {
             Id = id,
             Address = addr,
             Condition = condition,
-            CompiledCondition = compiledCondition!,
+            CompiledCondition = compiledCondition,
             Type = bpType,
             Breakpoint = breakpoint
         };
@@ -239,53 +245,65 @@ public sealed class BreakpointConditionManager {
     }
 
     private Func<bool>? CreateSimpleEvaluator(string condition) {
-        // This is a simplified evaluator for common patterns
-        // A full implementation would use expression tree building or Roslyn compilation
+        // Use expression trees to build condition evaluators
+        // This provides better performance and more flexibility than string parsing
         
-        // Example: "ax == 0x1234"
+        // Parse the condition to extract operator and operands
+        string[]? parts = null;
+        ExpressionType? comparisonType = null;
+        
         if (condition.Contains("==")) {
-            string[] parts = condition.Split("==", StringSplitOptions.TrimEntries);
-            if (parts.Length == 2) {
-                string registerName = parts[0].Trim();
-                if (TryParseValue(parts[1].Trim(), out uint value)) {
-                    return () => {
-                        uint regValue = GetRegisterValue(registerName);
-                        return regValue == value;
-                    };
-                }
-            }
+            parts = condition.Split("==", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.Equal;
+        } else if (condition.Contains("!=")) {
+            parts = condition.Split("!=", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.NotEqual;
+        } else if (condition.Contains(">=")) {
+            parts = condition.Split(">=", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.GreaterThanOrEqual;
+        } else if (condition.Contains("<=")) {
+            parts = condition.Split("<=", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.LessThanOrEqual;
+        } else if (condition.Contains(">")) {
+            parts = condition.Split(">", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.GreaterThan;
+        } else if (condition.Contains("<")) {
+            parts = condition.Split("<", StringSplitOptions.TrimEntries);
+            comparisonType = ExpressionType.LessThan;
         }
         
-        // Example: "ax > 100"
-        if (condition.Contains(">")) {
-            string[] parts = condition.Split(">", StringSplitOptions.TrimEntries);
-            if (parts.Length == 2) {
-                string registerName = parts[0].Trim();
-                if (TryParseValue(parts[1].Trim(), out uint value)) {
-                    return () => {
-                        uint regValue = GetRegisterValue(registerName);
-                        return regValue > value;
-                    };
-                }
-            }
+        if (parts == null || parts.Length != 2 || comparisonType == null) {
+            return null;
         }
         
-        // Example: "ax < 100"
-        if (condition.Contains("<")) {
-            string[] parts = condition.Split("<", StringSplitOptions.TrimEntries);
-            if (parts.Length == 2) {
-                string registerName = parts[0].Trim();
-                if (TryParseValue(parts[1].Trim(), out uint value)) {
-                    return () => {
-                        uint regValue = GetRegisterValue(registerName);
-                        return regValue < value;
-                    };
-                }
-            }
+        string registerName = parts[0].Trim();
+        if (!TryParseValue(parts[1].Trim(), out uint value)) {
+            return null;
         }
-
-        // Default: always true (for testing purposes)
-        return () => true;
+        
+        // Build expression tree: () => GetRegisterValue(registerName) <comparisonType> value
+        MethodInfo? getRegisterMethod = typeof(BreakpointConditionManager).GetMethod(
+            nameof(GetRegisterValue),
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        
+        if (getRegisterMethod == null) {
+            return null;
+        }
+        
+        // Create lambda: () => this.GetRegisterValue(registerName) <comparisonType> value
+        ConstantExpression thisExpr = Expression.Constant(this);
+        ConstantExpression registerNameExpr = Expression.Constant(registerName);
+        ConstantExpression valueExpr = Expression.Constant(value);
+        
+        // Call GetRegisterValue
+        MethodCallExpression getRegCall = Expression.Call(thisExpr, getRegisterMethod, registerNameExpr);
+        
+        // Create comparison
+        BinaryExpression comparison = Expression.MakeBinary(comparisonType.Value, getRegCall, valueExpr);
+        
+        // Compile to delegate
+        Expression<Func<bool>> lambda = Expression.Lambda<Func<bool>>(comparison);
+        return lambda.Compile();
     }
 
     private bool TryParseValue(string valueStr, out uint value) {
