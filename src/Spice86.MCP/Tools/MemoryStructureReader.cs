@@ -16,17 +16,14 @@ using System.Text;
 /// </summary>
 [McpServerToolType]
 public sealed class MemoryStructureReader {
-    private readonly IMemory _memory;
-    private readonly State _state;
-    private readonly BiosDataArea _biosDataArea;
+    private readonly MemoryStructureProvider _structureProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MemoryStructureReader"/> class.
     /// </summary>
-    public MemoryStructureReader(IMemory memory, State state, BiosDataArea biosDataArea) {
-        _memory = memory;
-        _state = state;
-        _biosDataArea = biosDataArea;
+    /// <param name="structureProvider">The memory structure provider containing all emulator structures.</param>
+    public MemoryStructureReader(MemoryStructureProvider structureProvider) {
+        _structureProvider = structureProvider;
     }
 
     [McpServerTool]
@@ -142,24 +139,24 @@ public sealed class MemoryStructureReader {
         
         result.AppendLine("Serial Ports:");
         for (int i = 0; i < 4; i++) {
-            ushort portAddr = _biosDataArea.PortCom[i];
+            ushort portAddr = _structureProvider.BiosDataArea.PortCom[i];
             result.AppendLine($"  COM{i + 1}: 0x{portAddr:X4}");
         }
         result.AppendLine();
         
         result.AppendLine("Parallel Ports:");
         for (int i = 0; i < 3; i++) {
-            ushort portAddr = _biosDataArea.PortLpt[i];
+            ushort portAddr = _structureProvider.BiosDataArea.PortLpt[i];
             result.AppendLine($"  LPT{i + 1}: 0x{portAddr:X4}");
         }
         result.AppendLine();
         
-        result.AppendLine($"Equipment Flags: 0x{_biosDataArea.EquipmentListFlags:X4}");
-        result.AppendLine($"Memory Size: {_biosDataArea.ConventionalMemorySizeKb} KB");
-        result.AppendLine($"Keyboard Flags: 0x{_biosDataArea.KeyboardStatusFlag:X2}");
-        result.AppendLine($"Video Mode: 0x{_biosDataArea.VideoMode:X2}");
-        result.AppendLine($"Screen Columns: {_biosDataArea.ScreenColumns}");
-        result.AppendLine($"Timer Counter: {_biosDataArea.TimerCounter}");
+        result.AppendLine($"Equipment Flags: 0x{_structureProvider.BiosDataArea.EquipmentListFlags:X4}");
+        result.AppendLine($"Memory Size: {_structureProvider.BiosDataArea.ConventionalMemorySizeKb} KB");
+        result.AppendLine($"Keyboard Flags: 0x{_structureProvider.BiosDataArea.KeyboardStatusFlag:X2}");
+        result.AppendLine($"Video Mode: 0x{_structureProvider.BiosDataArea.VideoMode:X2}");
+        result.AppendLine($"Screen Columns: {_structureProvider.BiosDataArea.ScreenColumns}");
+        result.AppendLine($"Timer Counter: {_structureProvider.BiosDataArea.TimerCounter}");
         
         return Task.FromResult(result.ToString());
     }
@@ -171,26 +168,26 @@ public sealed class MemoryStructureReader {
         
         uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
-        byte int20h = _memory.UInt8[baseAddr];
+        byte int20h = _structureProvider.Memory.UInt8[baseAddr];
         result.AppendLine($"INT 20h Instruction: 0x{int20h:X2}");
         
-        ushort memorySize = _memory.UInt16[baseAddr + 0x02];
+        ushort memorySize = _structureProvider.Memory.UInt16[baseAddr + 0x02];
         result.AppendLine($"Memory Size (paragraphs): 0x{memorySize:X4} ({memorySize} paragraphs = {memorySize * 16} bytes)");
         
-        ushort terminateSeg = _memory.UInt16[baseAddr + 0x0A];
-        ushort terminateOff = _memory.UInt16[baseAddr + 0x0C];
+        ushort terminateSeg = _structureProvider.Memory.UInt16[baseAddr + 0x0A];
+        ushort terminateOff = _structureProvider.Memory.UInt16[baseAddr + 0x0C];
         result.AppendLine($"Terminate Address: {terminateSeg:X4}:{terminateOff:X4}");
         
-        ushort envSeg = _memory.UInt16[baseAddr + 0x2C];
+        ushort envSeg = _structureProvider.Memory.UInt16[baseAddr + 0x2C];
         result.AppendLine($"Environment Segment: 0x{envSeg:X4}");
         
-        byte cmdLen = _memory.UInt8[baseAddr + 0x80];
+        byte cmdLen = _structureProvider.Memory.UInt8[baseAddr + 0x80];
         result.AppendLine($"Command Tail Length: {cmdLen}");
         
         if (cmdLen > 0) {
             var cmdBytes = new byte[Math.Min((int)cmdLen, 127)];
             for (int i = 0; i < cmdBytes.Length; i++) {
-                cmdBytes[i] = _memory.UInt8[baseAddr + 0x81 + (uint)i];
+                cmdBytes[i] = _structureProvider.Memory.UInt8[baseAddr + 0x81 + (uint)i];
             }
             string cmdTail = System.Text.Encoding.ASCII.GetString(cmdBytes);
             result.AppendLine($"Command Tail: \"{cmdTail}\"");
@@ -206,20 +203,20 @@ public sealed class MemoryStructureReader {
         
         uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
-        byte signature = _memory.UInt8[baseAddr];
+        byte signature = _structureProvider.Memory.UInt8[baseAddr];
         char sigChar = (char)signature;
         result.AppendLine($"Signature: '{sigChar}' (0x{signature:X2}) - {(signature == 'M' ? "More blocks follow" : signature == 'Z' ? "Last block" : "Invalid")}");
         
-        ushort ownerPSP = _memory.UInt16[baseAddr + 0x01];
+        ushort ownerPSP = _structureProvider.Memory.UInt16[baseAddr + 0x01];
         result.AppendLine($"Owner PSP: 0x{ownerPSP:X4} {(ownerPSP == 0 ? "(Free)" : ownerPSP == 8 ? "(DOS)" : "(Program)")}");
         
-        ushort sizeParagraphs = _memory.UInt16[baseAddr + 0x03];
+        ushort sizeParagraphs = _structureProvider.Memory.UInt16[baseAddr + 0x03];
         result.AppendLine($"Size: {sizeParagraphs} paragraphs ({sizeParagraphs * 16} bytes)");
         
         // Try to read program name (DOS 4+)
         var nameBytes = new byte[8];
         for (int i = 0; i < 8; i++) {
-            nameBytes[i] = _memory.UInt8[baseAddr + 0x08 + (uint)i];
+            nameBytes[i] = _structureProvider.Memory.UInt8[baseAddr + 0x08 + (uint)i];
         }
         string name = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0', ' ');
         if (!string.IsNullOrWhiteSpace(name)) {
@@ -236,8 +233,8 @@ public sealed class MemoryStructureReader {
         
         uint baseAddr = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset);
         
-        ushort offset = _memory.UInt16[baseAddr];
-        ushort segment = _memory.UInt16[baseAddr + 0x02];
+        ushort offset = _structureProvider.Memory.UInt16[baseAddr];
+        ushort segment = _structureProvider.Memory.UInt16[baseAddr + 0x02];
         
         result.AppendLine($"Handler Address: {segment:X4}:{offset:X4}");
         result.AppendLine($"Linear Address: 0x{((segment << 4) + offset):X}");

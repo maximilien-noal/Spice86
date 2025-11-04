@@ -67,6 +67,13 @@ public static class McpServerFactory {
         builder.Services.AddSingleton(mcpBridge.BiosDataArea);
         builder.Services.AddSingleton(mcpBridge.PauseHandler);
         builder.Services.AddSingleton(mcpBridge.CfgCpu);
+        
+        // Register memory structure provider for composition-based structure access
+        var structureProvider = new MemoryStructureProvider(
+            mcpBridge.BiosDataArea,
+            mcpBridge.Memory,
+            mcpBridge.State);
+        builder.Services.AddSingleton(structureProvider);
 
         // Register MCP server with all emulator tool categories
         var mcpServerBuilder = builder.Services.AddMcpServer()
