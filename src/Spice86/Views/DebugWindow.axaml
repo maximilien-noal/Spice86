@@ -60,95 +60,86 @@
 				</Button.Content>
 			</Button>
 		</StackPanel>
-		<TabControl TabStripPlacement="Left" Grid.Row="1">
-			<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F1">
-				<controls:HotKeyTabItem.Header>
+		<TabControl TabStripPlacement="Left" Grid.Row="1" ItemsSource="{Binding Plugins}">
+			<TabControl.ItemTemplate>
+				<DataTemplate>
 					<LayoutTransformControl>
 						<LayoutTransformControl.LayoutTransform>
 							<RotateTransform Angle="-90" />
 						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="Disassembly" ToolTip.Tip="Alt-F1" />
+						<TextBlock Margin="5,0,0,5" Text="{Binding TabHeader}" ToolTip.Tip="{Binding TabTooltip}" />
 					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-				<TabControl ItemsSource="{Binding DisassemblyViewModels}">
-					<TabControl.ItemTemplate>
-						<DataTemplate DataType="{x:Type vm:DisassemblyViewModel}">
-							<TextBlock Text="{Binding Header}" />
-						</DataTemplate>
-					</TabControl.ItemTemplate>
-					<TabControl.ContentTemplate>
-						<DataTemplate DataType="{x:Type vm:DisassemblyViewModel}">
-							<ContentPresenter Content="{Binding}" />
-						</DataTemplate>
-					</TabControl.ContentTemplate>
-				</TabControl>
-			</controls:HotKeyTabItem>
-			<controls:HotKeyTabItem
-				HotKeyManager.HotKey="Alt+F2"
-				IsVisible="{Binding CfgCpuViewModel.IsCfgCpuEnabled}"
-				Content="{Binding CfgCpuViewModel}">
-				<controls:HotKeyTabItem.Header>
-					<LayoutTransformControl>
-						<LayoutTransformControl.LayoutTransform>
-							<RotateTransform Angle="-90" />
-						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="Code Flow" ToolTip.Tip="Alt-F2" />
-					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-			</controls:HotKeyTabItem>
-			<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F3" Content="{Binding CpuViewModel}">
-				<controls:HotKeyTabItem.Header>
-					<LayoutTransformControl>
-						<LayoutTransformControl.LayoutTransform>
-							<RotateTransform Angle="-90" />
-						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="CPU" ToolTip.Tip="Alt-F3" />
-					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-			</controls:HotKeyTabItem>
-			<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F4">
-				<controls:HotKeyTabItem.Header>
-					<LayoutTransformControl>
-						<LayoutTransformControl.LayoutTransform>
-							<RotateTransform Angle="-90" />
-						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="Memory" ToolTip.Tip="Alt-F4" />
-					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-				<TabControl ItemsSource="{Binding MemoryViewModels}">
-					<TabControl.ItemTemplate>
-						<DataTemplate DataType="{x:Type vm:MemoryViewModel}">
-							<TextBlock Text="{Binding Header}" />
-						</DataTemplate>
-					</TabControl.ItemTemplate>
-				</TabControl>
-			</controls:HotKeyTabItem>
-			<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F5">
-				<controls:HotKeyTabItem.Header>
-					<LayoutTransformControl>
-						<LayoutTransformControl.LayoutTransform>
-							<RotateTransform Angle="-90" />
-						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="Devices" ToolTip.Tip="Alt-F5" />
-					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-				<TabControl>
-					<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F7" Header="Video Card" ToolTip.Tip="Alt-F7" Content="{Binding VideoCardViewModel}" />
-					<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F8" Header="Color Palette" ToolTip.Tip="Alt-F8" Content="{Binding PaletteViewModel}" />
-					<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F9" Header="General MIDI / MT-32" ToolTip.Tip="Alt-F9" Content="{Binding MidiViewModel}" />
-					<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F10" Header="Software Mixer" ToolTip.Tip="Alt-F10" Content="{Binding SoftwareMixerViewModel}" />
-				</TabControl>
-			</controls:HotKeyTabItem>
-			<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F6" Content="{Binding BreakpointsViewModel}">
-				<controls:HotKeyTabItem.Header>
-					<LayoutTransformControl>
-						<LayoutTransformControl.LayoutTransform>
-							<RotateTransform Angle="-90" />
-						</LayoutTransformControl.LayoutTransform>
-						<TextBlock Margin="5,0,0,5" Text="Breakpoints" ToolTip.Tip="Alt-F6" />
-					</LayoutTransformControl>
-				</controls:HotKeyTabItem.Header>
-			</controls:HotKeyTabItem>
+				</DataTemplate>
+			</TabControl.ItemTemplate>
+			<TabControl.ContentTemplate>
+				<DataTemplate>
+					<!-- Handle DebuggerPluginWrapper: single view model content -->
+					<ContentControl Content="{Binding}">
+						<ContentControl.DataTemplates>
+							<DataTemplate DataType="vm:DebuggerPluginWrapper">
+								<ContentPresenter Content="{Binding Content}" />
+							</DataTemplate>
+							<!-- Handle DebuggerCollectionPlugin: collection of items like Disassembly or Memory -->
+							<DataTemplate DataType="vm:DebuggerCollectionPlugin">
+								<TabControl ItemsSource="{Binding Items}">
+									<TabControl.ItemTemplate>
+										<DataTemplate>
+											<ContentControl Content="{Binding}">
+												<ContentControl.DataTemplates>
+													<DataTemplate DataType="vm:DisassemblyViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+													<DataTemplate DataType="vm:MemoryViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+													<DataTemplate DataType="vm:StackMemoryViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+													<DataTemplate DataType="vm:DataSegmentMemoryViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+													<DataTemplate DataType="vm:XmsMemoryViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+													<DataTemplate DataType="vm:EmsMemoryViewModel">
+														<TextBlock Text="{Binding Header}" />
+													</DataTemplate>
+												</ContentControl.DataTemplates>
+											</ContentControl>
+										</DataTemplate>
+									</TabControl.ItemTemplate>
+									<TabControl.ContentTemplate>
+										<DataTemplate>
+											<ContentPresenter Content="{Binding}" />
+										</DataTemplate>
+									</TabControl.ContentTemplate>
+								</TabControl>
+							</DataTemplate>
+							<!-- Handle DebuggerDevicesPlugin: nested device tabs -->
+							<DataTemplate DataType="vm:DebuggerDevicesPlugin">
+								<TabControl ItemsSource="{Binding DevicePlugins}">
+									<TabControl.ItemTemplate>
+										<DataTemplate>
+											<TextBlock Text="{Binding TabHeader}" ToolTip.Tip="{Binding TabTooltip}" />
+										</DataTemplate>
+									</TabControl.ItemTemplate>
+									<TabControl.ContentTemplate>
+										<DataTemplate>
+											<ContentControl Content="{Binding}">
+												<ContentControl.DataTemplates>
+													<DataTemplate DataType="vm:DebuggerPluginWrapper">
+														<ContentPresenter Content="{Binding Content}" />
+													</DataTemplate>
+												</ContentControl.DataTemplates>
+											</ContentControl>
+										</DataTemplate>
+									</TabControl.ContentTemplate>
+								</TabControl>
+							</DataTemplate>
+						</ContentControl.DataTemplates>
+					</ContentControl>
+				</DataTemplate>
+			</TabControl.ContentTemplate>
 		</TabControl>
 		<views:StatusMessageView Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" DataContext="{Binding StatusMessageViewModel}" />
 	</Grid>

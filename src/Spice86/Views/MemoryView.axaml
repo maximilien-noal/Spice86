@@ -69,6 +69,22 @@
 						</Interaction.Behaviors>
 					</TextBox>
 				</Grid>
+				<StackPanel Orientation="Vertical" Margin="10,0,0,0">
+					<Label Content="Memory Map:" />
+					<ComboBox
+						MinWidth="180"
+						ItemsSource="{Binding MemoryMapItems}"
+						SelectedItem="{Binding SelectedMemoryMapItem, Mode=TwoWay}"
+						SelectionChanged="OnMemoryMapItemSelected"
+						PlaceholderText="Select location..."
+						ToolTip.Tip="Quick navigation to standard memory locations">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding Name}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+				</StackPanel>
 				<StackPanel Orientation="Vertical">
 					<Button IsVisible="{Binding IsPaused}" IsEnabled="{Binding IsPaused}"
 							Command="{Binding UpdateBinaryDocumentCommand}"
