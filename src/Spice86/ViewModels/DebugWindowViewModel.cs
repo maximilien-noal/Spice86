@@ -22,50 +22,64 @@ public partial class DebugWindowViewModel : ViewModelBase,
     private bool _isPaused;
 
     [ObservableProperty]
+    private PaletteViewModel _paletteViewModel;
+
+    [ObservableProperty]
     private AvaloniaList<MemoryViewModel> _memoryViewModels = new();
+
+    [ObservableProperty]
+    private VideoCardViewModel _videoCardViewModel;
+
+    [ObservableProperty]
+    private CpuViewModel _cpuViewModel;
+
+    [ObservableProperty]
+    private MidiViewModel _midiViewModel;
 
     [ObservableProperty]
     private AvaloniaList<DisassemblyViewModel> _disassemblyViewModels = new();
 
-    /// <summary>
-    /// Gets the collection of debugger plugins that appear as tabs.
-    /// This allows easy extension of the debugger with new tab types.
-    /// </summary>
     [ObservableProperty]
-    private AvaloniaList<IDebuggerPlugin> _plugins = new();
+    private SoftwareMixerViewModel _softwareMixerViewModel;
 
     [ObservableProperty]
-    private StatusMessageViewModel? _statusMessageViewModel;
+    private CfgCpuViewModel _cfgCpuViewModel;
+
+    [ObservableProperty]
+    private StatusMessageViewModel _statusMessageViewModel;
+
+    [ObservableProperty]
+    private BreakpointsViewModel _breakpointsViewModel;
 
     private readonly IPauseHandler _pauseHandler;
 
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
-        IPauseHandler pauseHandler, IList<IDebuggerPlugin> plugins) {
+        IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
+        DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,
+        SoftwareMixerViewModel softwareMixerViewModel, VideoCardViewModel videoCardViewModel,
+        CpuViewModel cpuViewModel, MidiViewModel midiViewModel, CfgCpuViewModel cfgCpuViewModel,
+        IList<MemoryViewModel> memoryViewModels) {
         messenger.Register<AddViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<AddViewModelMessage<MemoryViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<MemoryViewModel>>(this);
         _messenger = messenger;
         _uiDispatcher = uiDispatcher;
+        BreakpointsViewModel = breakpointsViewModel;
+        StatusMessageViewModel = new(_uiDispatcher, _messenger);
         _pauseHandler = pauseHandler;
         IsPaused = pauseHandler.IsPaused;
         pauseHandler.Paused += () => uiDispatcher.Post(() => IsPaused = true);
         pauseHandler.Resumed += () => uiDispatcher.Post(() => IsPaused = false);
-        
-        Plugins.AddRange(plugins);
-        
-        // Extract DisassemblyViewModels and MemoryViewModels for backward compatibility
-        foreach (var plugin in plugins) {
-            if (plugin is DebuggerCollectionPlugin collectionPlugin) {
-                foreach (var item in collectionPlugin.Items) {
-                    if (item is DisassemblyViewModel disassemblyVm) {
-                        DisassemblyViewModels.Add(disassemblyVm);
-                    } else if (item is MemoryViewModel memoryVm) {
-                        MemoryViewModels.Add(memoryVm);
-                    }
-                }
-            }
-        }
+        DisassemblyViewModel disassemblyVm = disassemblyViewModel;
+        DisassemblyViewModels.Add(disassemblyVm);
+        PaletteViewModel = paletteViewModel;
+        SoftwareMixerViewModel = softwareMixerViewModel;
+        VideoCardViewModel = videoCardViewModel;
+        CpuViewModel = cpuViewModel;
+        MidiViewModel = midiViewModel;
+        MemoryViewModels.AddRange(memoryViewModels);
+        CfgCpuViewModel = cfgCpuViewModel;
     }
 
     [RelayCommand]

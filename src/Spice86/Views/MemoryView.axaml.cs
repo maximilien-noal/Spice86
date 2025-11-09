@@ -17,13 +17,6 @@ public partial class MemoryView : UserControl {
         this.HexViewer.DoubleTapped += OnHexViewerDoubleTapped;
     }
 
-    private void OnMemoryMapItemSelected(object? sender, SelectionChangedEventArgs e) {
-        if (DataContext is MemoryViewModel viewModel && 
-            viewModel.NavigateToMemoryMapItemCommand.CanExecute(null)) {
-            viewModel.NavigateToMemoryMapItemCommand.Execute(null);
-        }
-    }
-
     private void OnHexViewerDoubleTapped(object? sender, TappedEventArgs e) {
         if(DataContext is MemoryViewModel viewModel &&
             viewModel.EditMemoryCommand.CanExecute(null)) {

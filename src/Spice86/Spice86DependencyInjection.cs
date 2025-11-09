@@ -567,70 +567,12 @@ public class Spice86DependencyInjection : IDisposable {
                 textClipboard, hostStorageProvider, structureViewModelFactory,
                 canCloseTab: false);
 
-            StatusMessageViewModel statusMessageViewModel = new(uiDispatcher, messenger);
-
-            // Create debugger plugins using the plugin architecture
-            List<IDebuggerPlugin> plugins = new() {
-                // Disassembly plugin (collection of disassembly views)
-                new DebuggerCollectionPlugin(
-                    "Disassembly",
-                    new AvaloniaList<ViewModelBase> { disassemblyViewModel },
-                    "Alt-F1",
-                    "Alt+F1",
-                    isVisible: true),
-                
-                // CFG CPU plugin
-                new DebuggerPluginWrapper(
-                    cfgCpuViewModel,
-                    "Code Flow",
-                    "Alt-F2",
-                    "Alt+F2",
-                    isVisible: cfgCpuViewModel.IsCfgCpuEnabled),
-                
-                // CPU plugin
-                new DebuggerPluginWrapper(
-                    cpuViewModel,
-                    "CPU",
-                    "Alt-F3",
-                    "Alt+F3"),
-                
-                // Memory plugin (collection of memory views)
-                new DebuggerCollectionPlugin(
-                    "Memory",
-                    new AvaloniaList<ViewModelBase> { 
-                        memoryViewModel, 
-                        stackMemoryViewModel, 
-                        dataSegmentViewModel,
-                        xmsMemoryViewModel,
-                        emsMemoryViewModel
-                    },
-                    "Alt-F4",
-                    "Alt+F4",
-                    isVisible: true),
-                
-                // Devices plugin (nested tabs)
-                new DebuggerDevicesPlugin(
-                    "Devices",
-                    new AvaloniaList<IDebuggerPlugin> {
-                        new DebuggerPluginWrapper(videoCardViewModel, "Video Card", "Alt-F7", "Alt+F7"),
-                        new DebuggerPluginWrapper(paletteViewModel, "Color Palette", "Alt-F8", "Alt+F8"),
-                        new DebuggerPluginWrapper(midiViewModel, "General MIDI / MT-32", "Alt-F9", "Alt+F9"),
-                        new DebuggerPluginWrapper(softwareMixerViewModel, "Software Mixer", "Alt-F10", "Alt+F10")
-                    },
-                    "Alt-F5",
-                    "Alt+F5"),
-                
-                // Breakpoints plugin
-                new DebuggerPluginWrapper(
-                    breakpointsViewModel,
-                    "Breakpoints",
-                    "Alt-F6",
-                    "Alt+F6")
-            };
-
             DebugWindowViewModel debugWindowViewModel = new(
-                WeakReferenceMessenger.Default, uiDispatcher, pauseHandler, plugins);
-            debugWindowViewModel.StatusMessageViewModel = statusMessageViewModel;
+                WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
+                breakpointsViewModel, disassemblyViewModel,
+                paletteViewModel, softwareMixerViewModel, videoCardViewModel,
+                cpuViewModel, midiViewModel, cfgCpuViewModel,
+                [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel, xmsMemoryViewModel, emsMemoryViewModel]);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;
