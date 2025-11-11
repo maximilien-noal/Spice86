@@ -23,7 +23,8 @@ public class JitCompiler : IJitCompiler {
     private const int MaximumBlockSize = 50;
     
     private readonly ILoggerService _loggerService;
-    private readonly Dictionary<int, CompiledBlock> _compiledBlocks = new();
+    // Cache key includes content hash to handle self-modifying code
+    private readonly Dictionary<(int NodeId, int ContentHash), CompiledBlock> _compiledBlocks = new();
     private readonly EmulatorBreakpointsManager _breakpointsManager;
     private readonly IMemory _memory;
 
@@ -35,23 +36,23 @@ public class JitCompiler : IJitCompiler {
 
     /// <inheritdoc />
     public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock? compiledBlock) {
-        if (_compiledBlocks.TryGetValue(node.Id, out CompiledBlock? block)) {
-            // CRITICAL: Check if the node's instruction list has changed
-            // This handles self-modifying code where the same node is reused with different instructions
-            if (!NodeInstructionsMatchCachedBlock(node, block)) {
-                _compiledBlocks.Remove(node.Id);
-                compiledBlock = null;
-                return false;
-            }
-            
+        if (node is not CfgInstruction startInstruction) {
+            compiledBlock = null;
+            return false;
+        }
+        
+        int contentHash = ComputeInstructionContentHash(startInstruction);
+        var key = (node.Id, contentHash);
+        
+        if (_compiledBlocks.TryGetValue(key, out CompiledBlock? block)) {
             if (!AllInstructionsAreStillLive(block)) {
-                _compiledBlocks.Remove(node.Id);
+                _compiledBlocks.Remove(key);
                 compiledBlock = null;
                 return false;
             }
             
             if (BlockContainsExecutionBreakpoint(block)) {
-                _compiledBlocks.Remove(node.Id);
+                _compiledBlocks.Remove(key);
                 compiledBlock = null;
                 return false;
             }
@@ -62,6 +63,22 @@ public class JitCompiler : IJitCompiler {
         
         compiledBlock = null;
         return false;
+    }
+
+    /// <summary>
+    /// Compute a hash of the instruction's bytes to detect code changes
+    /// </summary>
+    private int ComputeInstructionContentHash(CfgInstruction instruction) {
+        HashCode hash = new();
+        IList<byte?> signatureBytes = instruction.Signature.SignatureValue;
+        
+        foreach (byte? b in signatureBytes) {
+            if (b.HasValue) {
+                hash.Add(b.Value);
+            }
+        }
+        
+        return hash.ToHashCode();
     }
 
     /// <summary>
@@ -173,7 +190,15 @@ public class JitCompiler : IJitCompiler {
             return false;
         }
         
-        if (_compiledBlocks.TryGetValue(startNode.Id, out CompiledBlock? existingBlock)) {
+        if (startNode is not CfgInstruction startInstruction) {
+            compiledBlock = null;
+            return false;
+        }
+        
+        int contentHash = ComputeInstructionContentHash(startInstruction);
+        var key = (startNode.Id, contentHash);
+        
+        if (_compiledBlocks.TryGetValue(key, out CompiledBlock? existingBlock)) {
             compiledBlock = existingBlock;
             return true;
         }
@@ -192,7 +217,7 @@ public class JitCompiler : IJitCompiler {
 
         try {
             CompiledBlock compiled = CompileInstructionsToBlock(instructions);
-            _compiledBlocks[startNode.Id] = compiled;
+            _compiledBlocks[key] = compiled;
             compiledBlock = compiled;
             return true;
         } catch (Exception ex) {
@@ -216,7 +241,11 @@ public class JitCompiler : IJitCompiler {
 
     /// <inheritdoc />
     public void InvalidateBlock(int nodeId) {
-        _compiledBlocks.Remove(nodeId);
+        // Remove all cached blocks for this node ID (all content variations)
+        var keysToRemove = _compiledBlocks.Keys.Where(k => k.NodeId == nodeId).ToList();
+        foreach (var key in keysToRemove) {
+            _compiledBlocks.Remove(key);
+        }
     }
 
     private List<CfgInstruction> CollectBasicBlock(ICfgNode startNode) {
