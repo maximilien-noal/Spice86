@@ -1,7 +1,6 @@
 namespace Spice86.Tests.PerformanceTests;
 
-using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 /// <summary>
 /// Manages the SQLite database for storing performance test results.
@@ -15,7 +14,7 @@ public class PerformanceDatabase : IDisposable {
     /// </summary>
     /// <param name="databasePath">Path to the SQLite database file.</param>
     public PerformanceDatabase(string databasePath) {
-        _connectionString = $"Data Source={databasePath};Version=3;";
+        _connectionString = $"Data Source={databasePath}";
         InitializeDatabase();
     }
 
@@ -23,7 +22,7 @@ public class PerformanceDatabase : IDisposable {
     /// Initializes the database schema if it doesn't exist.
     /// </summary>
     private void InitializeDatabase() {
-        using var connection = new SQLiteConnection(_connectionString);
+        using var connection = new SqliteConnection(_connectionString);
         connection.Open();
 
         string createTableSql = @"
@@ -53,7 +52,7 @@ public class PerformanceDatabase : IDisposable {
                 ON PerformanceTestResults(RunId, TestId);
         ";
 
-        using var command = new SQLiteCommand(createTableSql, connection);
+        using var command = new SqliteCommand(createTableSql, connection);
         command.ExecuteNonQuery();
     }
 
@@ -64,7 +63,7 @@ public class PerformanceDatabase : IDisposable {
     /// <param name="gitCommit">Optional git commit hash.</param>
     /// <returns>The run ID.</returns>
     public long StoreTestRun(IEnumerable<PerformanceTestResult> results, string? gitCommit = null) {
-        using var connection = new SQLiteConnection(_connectionString);
+        using var connection = new SqliteConnection(_connectionString);
         connection.Open();
 
         using var transaction = connection.BeginTransaction();
@@ -77,7 +76,7 @@ public class PerformanceDatabase : IDisposable {
             ";
 
             long runId;
-            using (var command = new SQLiteCommand(insertRunSql, connection, transaction)) {
+            using (var command = new SqliteCommand(insertRunSql, connection, transaction)) {
                 command.Parameters.AddWithValue("@timestamp", DateTime.UtcNow.ToString("O"));
                 command.Parameters.AddWithValue("@commit", gitCommit ?? string.Empty);
                 command.Parameters.AddWithValue("@machine", Environment.MachineName);
@@ -92,7 +91,7 @@ public class PerformanceDatabase : IDisposable {
             ";
 
             foreach (var result in results) {
-                using var command = new SQLiteCommand(insertResultSql, connection, transaction);
+                using var command = new SqliteCommand(insertResultSql, connection, transaction);
                 command.Parameters.AddWithValue("@runId", runId);
                 command.Parameters.AddWithValue("@testId", result.TestId);
                 command.Parameters.AddWithValue("@testName", result.TestName);
@@ -117,7 +116,7 @@ public class PerformanceDatabase : IDisposable {
     /// <param name="limit">Maximum number of results to retrieve.</param>
     /// <returns>List of historical test results.</returns>
     public List<HistoricalTestResult> GetHistoricalResults(int testId, int limit = 50) {
-        using var connection = new SQLiteConnection(_connectionString);
+        using var connection = new SqliteConnection(_connectionString);
         connection.Open();
 
         string sql = @"
@@ -130,7 +129,7 @@ public class PerformanceDatabase : IDisposable {
         ";
 
         var results = new List<HistoricalTestResult>();
-        using var command = new SQLiteCommand(sql, connection);
+        using var command = new SqliteCommand(sql, connection);
         command.Parameters.AddWithValue("@testId", testId);
         command.Parameters.AddWithValue("@limit", limit);
 
@@ -153,7 +152,7 @@ public class PerformanceDatabase : IDisposable {
     /// <param name="testId">The test ID.</param>
     /// <returns>Statistics for the test.</returns>
     public PerformanceStatistics? GetTestStatistics(int testId) {
-        using var connection = new SQLiteConnection(_connectionString);
+        using var connection = new SqliteConnection(_connectionString);
         connection.Open();
 
         string sql = @"
@@ -166,7 +165,7 @@ public class PerformanceDatabase : IDisposable {
             WHERE TestId = @testId;
         ";
 
-        using var command = new SQLiteCommand(sql, connection);
+        using var command = new SqliteCommand(sql, connection);
         command.Parameters.AddWithValue("@testId", testId);
 
         using var reader = command.ExecuteReader();
