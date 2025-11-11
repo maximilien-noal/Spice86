@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 /// <summary>
 /// Test runner for executing performance test binaries and collecting metrics.
 /// </summary>
-public class PerformanceTestRunner : IDisposable {
+public sealed class PerformanceTestRunner : IDisposable {
     private readonly ITestOutputHelper _output;
     private readonly string _testBinaryPath;
     private Spice86DependencyInjection? _emulator;
