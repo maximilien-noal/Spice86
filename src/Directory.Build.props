@@ -7,6 +7,8 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<WarningsAsErrors>nullable</WarningsAsErrors>
 		<NoWarn>$(NoWarn);1591;NU1507</NoWarn>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<AvaloniaDisableTelemetry>true</AvaloniaDisableTelemetry>
 	</PropertyGroup>
 	<!-- Source Link configuration -->
 	<PropertyGroup>
