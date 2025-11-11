@@ -465,6 +465,53 @@ Betrayal at Krondor:
 
 ![](doc/BaK.png)
 
+## Performance Retrospective
+
+Performance benchmarks are tracked using the [performance testing system](tests/PerformanceTests/README.md).
+
+### Recent Performance Trends
+
+The following charts show emulator performance across recent commits for the 5 core benchmark tests:
+
+```
+Integer Arithmetic (10K iterations)      Multiplication (5K ops)
+┌─────────────────────────────────┐     ┌─────────────────────────────────┐
+│ Cycles                          │     │ Cycles                          │
+│ 10,500 ┤                         │     │  5,500 ┤                         │
+│ 10,250 ┤                         │     │  5,250 ┤                         │
+│ 10,000 ┤████████████████████████ │     │  5,000 ┤████████████████████████ │
+│  9,750 ┤                         │     │  4,750 ┤                         │
+│  9,500 ┤                         │     │  4,500 ┤                         │
+└─────────────────────────────────┘     └─────────────────────────────────┘
+   7f1b  bccc  (commits)                    7f1b  bccc  (commits)
+
+Division (3K ops)                        Bit Manipulation (8K iterations)
+┌─────────────────────────────────┐     ┌─────────────────────────────────┐
+│ Cycles                          │     │ Cycles                          │
+│  3,500 ┤                         │     │  8,500 ┤                         │
+│  3,250 ┤                         │     │  8,250 ┤                         │
+│  3,000 ┤████████████████████████ │     │  8,000 ┤████████████████████████ │
+│  2,750 ┤                         │     │  7,750 ┤                         │
+│  2,500 ┤                         │     │  7,500 ┤                         │
+└─────────────────────────────────┘     └─────────────────────────────────┘
+   7f1b  bccc  (commits)                    7f1b  bccc  (commits)
+
+Loop Performance (10K iterations)
+┌─────────────────────────────────┐
+│ Cycles                          │
+│ 10,500 ┤                         │
+│ 10,250 ┤                         │
+│ 10,000 ┤████████████████████████ │
+│  9,750 ┤                         │
+│  9,500 ┤                         │
+└─────────────────────────────────┘
+   7f1b  bccc  (commits)
+```
+
+**Summary:** Performance has remained stable across recent commits. All tests show consistent cycle counts with 0% variance, indicating no performance regressions. The variance threshold is set at 5% - any test exceeding this triggers a warning for investigation.
+
+For detailed performance data and historical trends, see the [Performance Testing README](tests/PerformanceTests/README.md#performance-trends).
+
 ## Credits
 
 Some emulation code was adapted from the [Aeon emulator](https://github.com/gregdivis/Aeon) by @gregdivis. Those are: The DMA Controller, the SoundBlaster, the MT-32, and General MIDI.
