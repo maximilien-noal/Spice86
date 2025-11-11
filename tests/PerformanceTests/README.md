@@ -112,13 +112,13 @@ Test 2 (Multiplication): Cycles=5000, Result=0x00F42400
 
 ### Performance Variance
 
-Small performance variance (typically < 10%) is expected due to:
+Small performance variance (typically < 5%) is expected due to:
 - CPU scheduling variations
 - System load
 - Memory allocation patterns
 - JIT compilation effects (first runs may be slower)
 
-**Warning threshold:** Variance > 10% indicates potential performance regression or environmental issues.
+**Warning threshold:** Variance > 5% indicates potential performance regression or environmental issues.
 
 ### Database Queries
 
@@ -175,7 +175,7 @@ Add to your workflow file:
 The test suite includes a `TestPerformanceTracking` test that:
 1. Queries historical performance data
 2. Calculates variance across runs
-3. Logs warnings if variance exceeds 10%
+3. Logs warnings if variance exceeds 5%
 
 For automated regression detection, configure your CI to fail on high variance:
 - Parse test output for "WARNING: Performance variance is high"
