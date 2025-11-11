@@ -1,0 +1,82 @@
+name: Update Performance Charts
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+
+jobs:
+  update-charts:
+    name: Update Performance Charts
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for database context
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install matplotlib numpy
+      
+      - name: Build assembly test binary
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm
+          cd tests/PerformanceTests/Assembly
+          make clean
+          make
+      
+      - name: Run performance tests
+        run: |
+          cd tests/PerformanceTests
+          dotnet test PerformanceTests.csproj --configuration Release --logger "console;verbosity=normal"
+        continue-on-error: true  # Continue even if tests fail
+      
+      - name: Check if database exists
+        id: check_db
+        run: |
+          if [ -f "tests/PerformanceTests/Database/performance.db" ]; then
+            echo "Database exists"
+            echo "db_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Database does not exist"
+            echo "db_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Update performance charts
+        if: steps.check_db.outputs.db_exists == 'true'
+        run: |
+          python .github/scripts/update_performance_charts.py
+      
+      - name: Check for chart changes
+        id: check_changes
+        run: |
+          git diff --quiet doc/perf*.png tests/PerformanceTests/perf*.png || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push chart updates
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add doc/perf*.png tests/PerformanceTests/perf*.png
+          git add tests/PerformanceTests/Database/performance.db
+          git commit -m "Update performance charts from latest test run [skip ci]"
+          git push

@@ -270,6 +270,8 @@ Initial baseline measurements (reference platform: x86_64, .NET 8):
 
 Performance metrics tracked across recent commits. The charts below visualize cycle counts for each test - lower values indicate better performance.
 
+**Automated Chart Updates:** These charts are automatically generated from the SQLite performance database. When performance tests run on the master branch, results are stored in the database, and a GitHub Actions workflow regenerates all charts with the latest data. See [`.github/workflows/update-perf-charts.yml`](../../.github/workflows/update-perf-charts.yml) and [`.github/scripts/update_performance_charts.py`](../../.github/scripts/update_performance_charts.py) for implementation details.
+
 #### Comprehensive Performance Comparison
 
 ![Performance Comparison Across All Tests](perf_comparison.png)

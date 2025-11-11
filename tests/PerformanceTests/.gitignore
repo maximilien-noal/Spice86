@@ -2,8 +2,9 @@
 bin/
 obj/
 
-# Performance database
+# Performance database (but allow performance.db to be tracked for CI)
 Database/*.db
+!Database/performance.db
 Database/*.db-journal
 Database/*.db-wal
 Database/*.db-shm

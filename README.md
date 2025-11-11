@@ -454,6 +454,8 @@ Performance benchmarks are tracked using the [performance testing system](tests/
 
 The following charts show emulator performance across recent commits for the 5 core benchmark tests. Lower cycle counts indicate better performance.
 
+**Note:** These charts are automatically updated from the performance database when changes are pushed to the master branch. The GitHub Actions workflow runs performance tests and regenerates the charts with the latest data.
+
 #### Performance Overview - All Tests
 
 ![Emulator Performance Across Recent Commits](doc/perf_overview.png)
