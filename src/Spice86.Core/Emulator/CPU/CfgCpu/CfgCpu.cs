@@ -1,8 +1,11 @@
 namespace Spice86.Core.Emulator.CPU.CfgCpu;
 
+using Serilog.Events;
+
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Core.Emulator.CPU.CfgCpu.Feeder;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
+using Spice86.Core.Emulator.CPU.CfgCpu.Jit;
 using Spice86.Core.Emulator.CPU.CfgCpu.Linker;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.Exceptions;
@@ -22,9 +25,7 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly DualPic _dualPic;
     private readonly ExecutionContextManager _executionContextManager;
     private readonly InstructionReplacerRegistry _replacerRegistry = new();
-    private readonly Jit.JitCompiler? _jitCompiler;
-    private readonly bool _jitEnabled;
-    private readonly EmulatorBreakpointsManager _emulatorBreakpointsManager;
+    private readonly IJitCompiler _jitCompiler;
 
     public CfgCpu(IMemory memory, State state, IOPortDispatcher ioPortDispatcher, CallbackHandler callbackHandler,
         DualPic dualPic, EmulatorBreakpointsManager emulatorBreakpointsManager, FunctionCatalogue functionCatalogue, 
@@ -32,18 +33,18 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
         _loggerService = loggerService;
         _state = state;
         _dualPic = dualPic;
-        _jitEnabled = enableJit;
-        _emulatorBreakpointsManager = emulatorBreakpointsManager;
         
         CfgNodeFeeder = new(memory, state, emulatorBreakpointsManager, _replacerRegistry);
         _executionContextManager = new(memory, state, CfgNodeFeeder, _replacerRegistry, functionCatalogue, useCodeOverride, loggerService);
         _instructionExecutionHelper = new(state, memory, ioPortDispatcher, callbackHandler, emulatorBreakpointsManager.InterruptBreakPoints, _executionContextManager, loggerService);
         
-        if (_jitEnabled) {
-            _jitCompiler = new Jit.JitCompiler(loggerService, emulatorBreakpointsManager);
-            if (loggerService.IsEnabled(Serilog.Events.LogEventLevel.Information)) {
+        if (enableJit) {
+            _jitCompiler = new JitCompiler(loggerService, emulatorBreakpointsManager);
+            if (loggerService.IsEnabled(LogEventLevel.Information)) {
                 loggerService.Information("JIT compilation enabled for CfgCpu");
             }
+        } else {
+            _jitCompiler = new NullJitCompiler();
         }
     }
     
@@ -67,77 +68,73 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     public void ExecuteNext() {
         ICfgNode toExecute = CfgNodeFeeder.GetLinkedCfgNodeToExecute(CurrentExecutionContext);
 
-        // Try JIT execution if enabled
-        if (_jitEnabled && _jitCompiler != null && toExecute is CfgInstruction) {
-            Jit.CompiledBlock? compiledBlock = _jitCompiler.GetCompiledBlock(toExecute);
-            if (compiledBlock == null) {
-                // Try to compile this block
-                compiledBlock = _jitCompiler.TryCompileBasicBlock(toExecute, _instructionExecutionHelper);
-            }
-
-            if (compiledBlock != null) {
-                // Execute the compiled block
-                ExecuteCompiledBlock(compiledBlock);
-                return;
-            }
+        if (TryExecuteWithJit(toExecute)) {
+            return;
         }
 
-        // Execute the node normally (interpreted)
+        ExecuteNodeInterpreted(toExecute);
+    }
+
+    private bool TryExecuteWithJit(ICfgNode toExecute) {
+        if (toExecute is not CfgInstruction) {
+            return false;
+        }
+
+        if (_jitCompiler.TryGetCompiledBlock(toExecute, out CompiledBlock compiledBlock)) {
+            ExecuteCompiledBlock(compiledBlock);
+            return true;
+        }
+
+        if (_jitCompiler.TryCompileBasicBlock(toExecute, _instructionExecutionHelper, out compiledBlock)) {
+            ExecuteCompiledBlock(compiledBlock);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ExecuteNodeInterpreted(ICfgNode toExecute) {
         try {
             _loggerService.LoggerPropertyBag.CsIp = toExecute.Address;
             toExecute.Execute(_instructionExecutionHelper);
         } catch (CpuException e) {
-            if(toExecute is CfgInstruction cfgInstruction) {
+            if (toExecute is CfgInstruction cfgInstruction) {
                 _instructionExecutionHelper.HandleCpuException(cfgInstruction, e);
             }
         }
 
-        ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
-        
-        _state.IncCycles();
-
-        // Register what was executed and what is next node according to the graph in the execution context for next pass
-        CurrentExecutionContext.LastExecuted = toExecute;
-        CurrentExecutionContext.NodeToExecuteNextAccordingToGraph = nextToExecute;
-        HandleExternalInterrupt(toExecute);
+        UpdateExecutionContext(toExecute);
     }
 
-    /// <summary>
-    /// Execute a compiled basic block
-    /// </summary>
-    private void ExecuteCompiledBlock(Jit.CompiledBlock compiledBlock) {
-        try {
-            _loggerService.LoggerPropertyBag.CsIp = compiledBlock.Instructions[0].Address;
-            
-            // Execute the compiled block
-            compiledBlock.CompiledMethod(_instructionExecutionHelper);
-            
-            // Update cycles for all instructions in the block
-            for (int i = 0; i < compiledBlock.Instructions.Count; i++) {
-                _state.IncCycles();
-            }
+    private void UpdateExecutionContext(ICfgNode executed) {
+        ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
+        _state.IncCycles();
+        CurrentExecutionContext.LastExecuted = executed;
+        CurrentExecutionContext.NodeToExecuteNextAccordingToGraph = nextToExecute;
+        HandleExternalInterrupt(executed);
+    }
 
-            ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
-            
-            // Register the last instruction as executed
-            CfgInstruction lastInstruction = compiledBlock.LastInstruction;
-            CurrentExecutionContext.LastExecuted = lastInstruction;
-            CurrentExecutionContext.NodeToExecuteNextAccordingToGraph = nextToExecute;
-            HandleExternalInterrupt(lastInstruction);
-        } catch (CpuException e) {
-            // If exception occurs, invalidate the block and fall back to interpretation
-            _jitCompiler?.InvalidateBlock(compiledBlock.Instructions[0].Id);
-            
-            // Execute first instruction normally to handle the exception
-            CfgInstruction firstInstruction = compiledBlock.Instructions[0];
-            _instructionExecutionHelper.HandleCpuException(firstInstruction, e);
-            
-            ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
+    private void ExecuteCompiledBlock(CompiledBlock compiledBlock) {
+        _loggerService.LoggerPropertyBag.CsIp = compiledBlock.Instructions[0].Address;
+        
+        compiledBlock.CompiledMethod(_instructionExecutionHelper);
+        
+        UpdateCyclesForBlock(compiledBlock);
+        UpdateExecutionContextForBlock(compiledBlock);
+    }
+
+    private void UpdateCyclesForBlock(CompiledBlock compiledBlock) {
+        for (int i = 0; i < compiledBlock.Instructions.Count; i++) {
             _state.IncCycles();
-            CurrentExecutionContext.LastExecuted = firstInstruction;
-            CurrentExecutionContext.NodeToExecuteNextAccordingToGraph = nextToExecute;
-            HandleExternalInterrupt(firstInstruction);
         }
+    }
+
+    private void UpdateExecutionContextForBlock(CompiledBlock compiledBlock) {
+        ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
+        CfgInstruction lastInstruction = compiledBlock.LastInstruction;
+        CurrentExecutionContext.LastExecuted = lastInstruction;
+        CurrentExecutionContext.NodeToExecuteNextAccordingToGraph = nextToExecute;
+        HandleExternalInterrupt(lastInstruction);
     }
 
     /// <summary>

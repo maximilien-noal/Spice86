@@ -1,63 +1,61 @@
 namespace Spice86.Core.Emulator.CPU.CfgCpu.Jit;
 
+using Serilog.Events;
+
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
+using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Interfaces;
+using Spice86.Shared.Utils;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 
 /// <summary>
-/// JIT compiler that compiles basic blocks of instructions to native code using System.Reflection.Emit
+/// JIT compiler that compiles basic blocks of instructions into cached delegates
 /// </summary>
-public class JitCompiler {
+public class JitCompiler : IJitCompiler {
+    private const int MinimumBlockSize = 3;
+    private const int MaximumBlockSize = 50;
+    
     private readonly ILoggerService _loggerService;
     private readonly Dictionary<int, CompiledBlock> _compiledBlocks = new();
-    private readonly ModuleBuilder _moduleBuilder;
-    private readonly VM.Breakpoint.EmulatorBreakpointsManager _breakpointsManager;
+    private readonly EmulatorBreakpointsManager _breakpointsManager;
 
-    public JitCompiler(ILoggerService loggerService, VM.Breakpoint.EmulatorBreakpointsManager breakpointsManager) {
+    public JitCompiler(ILoggerService loggerService, EmulatorBreakpointsManager breakpointsManager) {
         _loggerService = loggerService;
         _breakpointsManager = breakpointsManager;
-        
-        // Create dynamic assembly and module for JIT compilation
-        AssemblyName assemblyName = new AssemblyName("Spice86JitAssembly");
-        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-            assemblyName, AssemblyBuilderAccess.Run);
-        _moduleBuilder = assemblyBuilder.DefineDynamicModule("Spice86JitModule");
     }
 
-    /// <summary>
-    /// Try to get a compiled block for the given node. Returns null if not compiled yet.
-    /// </summary>
-    public CompiledBlock? GetCompiledBlock(ICfgNode node) {
+    /// <inheritdoc />
+    public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock compiledBlock) {
         if (_compiledBlocks.TryGetValue(node.Id, out CompiledBlock? block)) {
-            // Check if block is still valid (no self-modifying code)
-            if (!IsBlockStillLive(block)) {
+            if (!AllInstructionsAreStillLive(block)) {
                 _compiledBlocks.Remove(node.Id);
-                return null;
+                compiledBlock = null!;
+                return false;
             }
             
-            // Check if block has breakpoints - if so, invalidate and recompile later
-            if (HasBreakpointsInBlock(block)) {
+            if (BlockContainsExecutionBreakpoint(block)) {
                 _compiledBlocks.Remove(node.Id);
-                return null;
+                compiledBlock = null!;
+                return false;
             }
-            return block;
+            
+            compiledBlock = block;
+            return true;
         }
-        return null;
+        
+        compiledBlock = null!;
+        return false;
     }
 
     /// <summary>
-    /// Check if all instructions in the compiled block are still live (no self-modifying code)
+    /// Check if all instructions in the compiled block match their memory representation
     /// </summary>
-    private bool IsBlockStillLive(CompiledBlock block) {
-        // Verify all instructions in the block are still live
-        // If any instruction is not live, it means the code has been modified
+    private bool AllInstructionsAreStillLive(CompiledBlock block) {
         foreach (CfgInstruction instruction in block.Instructions) {
             if (!instruction.IsLive) {
                 return false;
@@ -67,84 +65,68 @@ public class JitCompiler {
     }
 
     /// <summary>
-    /// Check if a compiled block has any execution breakpoints
+    /// Check if the compiled block contains any execution breakpoints
     /// </summary>
-    private bool HasBreakpointsInBlock(CompiledBlock block) {
-        // For simplicity, we check if any breakpoint is active in the block's address range
-        // This is a conservative approach - we could be more precise
+    private bool BlockContainsExecutionBreakpoint(CompiledBlock block) {
         foreach (CfgInstruction instruction in block.Instructions) {
-            uint physicalAddress = Shared.Utils.MemoryUtils.ToPhysicalAddress(
+            uint physicalAddress = MemoryUtils.ToPhysicalAddress(
                 instruction.Address.Segment, instruction.Address.Offset);
             
-            // Use reflection to check breakpoints - not ideal but works for now
-            // In production, EmulatorBreakpointsManager should expose a public method for this
-            var executionBreakPointsField = _breakpointsManager.GetType()
-                .GetField("_executionBreakPoints", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (executionBreakPointsField != null) {
-                var breakpointHolder = executionBreakPointsField.GetValue(_breakpointsManager);
-                var isBreakpointPresentMethod = breakpointHolder?.GetType()
-                    .GetMethod("IsBreakPointPresent");
-                if (isBreakpointPresentMethod != null) {
-                    bool hasBreakpoint = (bool)(isBreakpointPresentMethod.Invoke(breakpointHolder, new object[] { physicalAddress }) ?? false);
-                    if (hasBreakpoint) {
-                        return true;
-                    }
-                }
+            if (_breakpointsManager.HasExecutionBreakpoint(physicalAddress)) {
+                return true;
             }
         }
         return false;
     }
 
-    /// <summary>
-    /// Compile a basic block starting from the given node.
-    /// A basic block is a sequence of instructions with no branches except at the end.
-    /// </summary>
-    public CompiledBlock? TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper) {
-        // Don't compile if already compiled
-        if (_compiledBlocks.ContainsKey(startNode.Id)) {
-            return _compiledBlocks[startNode.Id];
+    /// <inheritdoc />
+    public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock compiledBlock) {
+        if (_compiledBlocks.TryGetValue(startNode.Id, out CompiledBlock? existingBlock)) {
+            compiledBlock = existingBlock;
+            return true;
         }
 
-        // Collect the basic block - sequence of instructions with single successor
         List<CfgInstruction> instructions = CollectBasicBlock(startNode);
         
-        // Don't compile very small blocks (overhead not worth it)
-        if (instructions.Count < 3) {
-            return null;
+        if (instructions.Count < MinimumBlockSize) {
+            compiledBlock = null!;
+            return false;
         }
 
-        // Verify all instructions are live and compilable
-        foreach (CfgInstruction instruction in instructions) {
-            if (!instruction.IsLive || !IsCompilable(instruction)) {
-                return null;
-            }
+        if (!AllInstructionsAreCompilable(instructions)) {
+            compiledBlock = null!;
+            return false;
         }
 
         try {
-            // Create the compiled block
-            CompiledBlock compiled = CompileBlock(instructions, helper);
+            CompiledBlock compiled = CompileInstructionsToBlock(instructions);
             _compiledBlocks[startNode.Id] = compiled;
-            return compiled;
+            compiledBlock = compiled;
+            return true;
         } catch (Exception ex) {
-            // JIT compilation failed, fall back to interpretation
-            if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Verbose)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
                 _loggerService.Verbose("JIT compilation failed for block at {Address}: {Error}", 
                     startNode.Address, ex.Message);
             }
-            return null;
+            compiledBlock = null!;
+            return false;
         }
     }
 
-    /// <summary>
-    /// Invalidate compiled block when instruction changes (self-modifying code)
-    /// </summary>
+    private bool AllInstructionsAreCompilable(List<CfgInstruction> instructions) {
+        foreach (CfgInstruction instruction in instructions) {
+            if (!instruction.IsLive) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <inheritdoc />
     public void InvalidateBlock(int nodeId) {
         _compiledBlocks.Remove(nodeId);
     }
 
-    /// <summary>
-    /// Collect a basic block - sequence of instructions with linear flow
-    /// </summary>
     private List<CfgInstruction> CollectBasicBlock(ICfgNode startNode) {
         List<CfgInstruction> instructions = new();
         ICfgNode? current = startNode;
@@ -152,19 +134,16 @@ public class JitCompiler {
         while (current is CfgInstruction instruction) {
             instructions.Add(instruction);
 
-            // Stop if there are multiple successors (branch)
-            if (instruction.Successors.Count != 1) {
+            if (HasMultipleSuccessors(instruction)) {
                 break;
             }
 
-            // Stop if the unique successor has multiple predecessors (merge point)
             ICfgNode successor = instruction.UniqueSuccessor ?? instruction.Successors.First();
-            if (successor.Predecessors.Count > 1) {
+            if (IsJoinPoint(successor)) {
                 break;
             }
 
-            // Stop if we've collected a reasonable number of instructions
-            if (instructions.Count >= 50) {
+            if (instructions.Count >= MaximumBlockSize) {
                 break;
             }
 
@@ -174,25 +153,16 @@ public class JitCompiler {
         return instructions;
     }
 
-    /// <summary>
-    /// Check if an instruction can be compiled
-    /// </summary>
-    private bool IsCompilable(CfgInstruction instruction) {
-        // For now, we'll compile most instructions except complex ones
-        // This can be expanded as we add more instruction support
-        return instruction.IsLive;
+    private static bool HasMultipleSuccessors(CfgInstruction instruction) {
+        return instruction.Successors.Count != 1;
     }
 
-    /// <summary>
-    /// Compile a basic block to a delegate
-    /// </summary>
-    private CompiledBlock CompileBlock(List<CfgInstruction> instructions, InstructionExecutionHelper helper) {
-        // For the initial implementation, we create an optimized executor that batches instructions
-        // This avoids the overhead of node traversal and linking for each instruction
-        // Future enhancement: compile to IL for even better performance
-        
-        Action<InstructionExecutionHelper> compiledMethod = (helperParam) => {
-            // Execute all instructions in the block sequentially
+    private static bool IsJoinPoint(ICfgNode node) {
+        return node.Predecessors.Count > 1;
+    }
+
+    private CompiledBlock CompileInstructionsToBlock(List<CfgInstruction> instructions) {
+        Action<InstructionExecutionHelper> compiledMethod = helperParam => {
             foreach (CfgInstruction instruction in instructions) {
                 instruction.Execute(helperParam);
             }
@@ -200,19 +170,4 @@ public class JitCompiler {
 
         return new CompiledBlock(instructions, compiledMethod);
     }
-}
-
-/// <summary>
-/// Represents a compiled basic block
-/// </summary>
-public class CompiledBlock {
-    public CompiledBlock(List<CfgInstruction> instructions, Action<InstructionExecutionHelper> compiledMethod) {
-        Instructions = instructions;
-        CompiledMethod = compiledMethod;
-        LastInstruction = instructions[^1];
-    }
-
-    public List<CfgInstruction> Instructions { get; }
-    public Action<InstructionExecutionHelper> CompiledMethod { get; }
-    public CfgInstruction LastInstruction { get; }
 }

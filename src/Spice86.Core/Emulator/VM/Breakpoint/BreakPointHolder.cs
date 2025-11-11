@@ -16,6 +16,15 @@ public class BreakPointHolder {
     /// </summary>
     public bool HasActiveBreakpoints => _activeBreakpoints > 0;
 
+    /// <summary>
+    /// Checks if a breakpoint exists at the specified address
+    /// </summary>
+    /// <param name="address">The address to check</param>
+    /// <returns>True if a breakpoint exists at the address</returns>
+    public bool IsBreakPointPresent(long address) {
+        return _addressBreakPoints.ContainsKey(address);
+    }
+
     private IEnumerable<BreakPoint> GetAllBreakpoints() {
         return _addressBreakPoints.Values
         .SelectMany(list => list).Concat(_unconditionalBreakPoints);

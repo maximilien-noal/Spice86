@@ -108,6 +108,15 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         _executionBreakPoints.HasActiveBreakpoints || _cycleBreakPoints.HasActiveBreakpoints;
 
     /// <summary>
+    /// Checks if an execution breakpoint exists at the specified physical address
+    /// </summary>
+    /// <param name="physicalAddress">The physical memory address to check</param>
+    /// <returns>True if an execution breakpoint exists at the address</returns>
+    public bool HasExecutionBreakpoint(uint physicalAddress) {
+        return _executionBreakPoints.IsBreakPointPresent(physicalAddress);
+    }
+
+    /// <summary>
     /// Checks the current breakpoints and triggers them if necessary.
     /// </summary>
     public void TriggerBreakpoints() {
