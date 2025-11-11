@@ -1,0 +1,22 @@
+# Build artifacts
+bin/
+obj/
+
+# Performance database
+Database/*.db
+Database/*.db-journal
+Database/*.db-wal
+Database/*.db-shm
+
+# Test results
+Results/
+*.trx
+*.coverage
+*.coveragexml
+
+# Assembly build artifacts (keep the .com file in source control for convenience)
+# Assembly/*.com
+
+# OS files
+.DS_Store
+Thumbs.db
