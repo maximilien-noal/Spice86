@@ -5,6 +5,7 @@ using Serilog.Events;
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
+using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.SelfModifying;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Interfaces;
@@ -97,6 +98,9 @@ public class JitCompiler : IJitCompiler {
     private bool AllInstructionsAreStillLive(CompiledBlock block) {
         // First check the IsLive flag which is updated by CfgCpu
         if (!block.Instructions.All(instruction => instruction.IsLive)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                _loggerService.Verbose("JIT: Block has non-live instructions");
+            }
             return false;
         }
         
@@ -105,6 +109,9 @@ public class JitCompiler : IJitCompiler {
         foreach (CfgInstruction instruction in block.Instructions) {
             if (!InstructionBytesMatchMemory(instruction)) {
                 // Instruction bytes have changed in memory, mark as not live
+                if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                    _loggerService.Verbose("JIT: Instruction bytes don't match memory at {Address}", instruction.Address);
+                }
                 instruction.SetLive(false);
                 return false;
             }
@@ -117,27 +124,26 @@ public class JitCompiler : IJitCompiler {
     /// Check if an instruction's bytes in memory match its parsed representation
     /// </summary>
     private bool InstructionBytesMatchMemory(CfgInstruction instruction) {
+        // Compare the signature bytes (from when instruction was parsed) with current memory
+        IList<byte?> signatureBytes = instruction.Signature.SignatureValue;
         uint physicalAddress = MemoryUtils.ToPhysicalAddress(
             instruction.Address.Segment, instruction.Address.Offset);
         
-        foreach (FieldWithValue field in instruction.FieldsInOrder) {
-            for (int i = 0; i < field.SignatureValue.Count; i++) {
-                byte? expectedByte = field.SignatureValue[i];
-                if (expectedByte is null) {
-                    // Field not read from memory (e.g., computed value)
-                    continue;
+        for (int i = 0; i < signatureBytes.Count; i++) {
+            byte? expectedByte = signatureBytes[i];
+            if (expectedByte is null) {
+                // Wildcard byte in signature, skip
+                continue;
+            }
+            
+            byte actualByte = _memory.UInt8[physicalAddress + (uint)i];
+            
+            if (actualByte != expectedByte.Value) {
+                if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                    _loggerService.Verbose("JIT: Instruction at {Address} byte mismatch at offset {Offset}: expected {Expected:X2}, got {Actual:X2}", 
+                        instruction.Address, i, expectedByte.Value, actualByte);
                 }
-                
-                uint byteAddress = (uint)(field.PhysicalAddress + i);
-                byte actualByte = _memory.UInt8[byteAddress];
-                
-                if (actualByte != expectedByte.Value) {
-                    if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-                        _loggerService.Verbose("JIT: Instruction at {Address} byte mismatch at offset {Offset}: expected {Expected:X2}, got {Actual:X2}", 
-                            instruction.Address, i, expectedByte.Value, actualByte);
-                    }
-                    return false;
-                }
+                return false;
             }
         }
         
@@ -161,6 +167,12 @@ public class JitCompiler : IJitCompiler {
 
     /// <inheritdoc />
     public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock? compiledBlock) {
+        // Don't compile from SelectorNodes - they handle self-modifying code
+        if (startNode is SelectorNode) {
+            compiledBlock = null;
+            return false;
+        }
+        
         if (_compiledBlocks.TryGetValue(startNode.Id, out CompiledBlock? existingBlock)) {
             compiledBlock = existingBlock;
             return true;
@@ -221,6 +233,12 @@ public class JitCompiler : IJitCompiler {
             instructions.Add(instruction);
 
             ICfgNode successor = instruction.UniqueSuccessor ?? instruction.Successors.First();
+            
+            // CRITICAL: Don't compile through SelectorNodes - they handle self-modifying code
+            if (successor is SelectorNode) {
+                break;
+            }
+            
             if (IsJoinPoint(successor)) {
                 break;
             }
