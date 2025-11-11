@@ -144,4 +144,56 @@ public class JitTests {
         spice86.Machine.Cpu.ExecuteNext();
         spice86.Machine.Cpu.ExecuteNext();
     }
+
+    [Fact]
+    public void TestJitWithSelfModifyingCode() {
+        // Test that JIT properly invalidates and recompiles when code is modified
+        using Spice86DependencyInjection spice86 = CreateTestEnvironment(enableJit: true);
+        
+        IMemory memory = spice86.Machine.Memory;
+        State state = spice86.Machine.CpuState;
+        
+        // Write a simple repeating program at a specific location
+        ushort segment = 0x2000;
+        ushort offset = 0x0100;
+        state.CS = segment;
+        state.IP = offset;
+        
+        uint address = MemoryUtils.ToPhysicalAddress(segment, offset);
+        
+        // Initial program: INC AX; INC AX; INC AX; JMP to start
+        memory.UInt8[address] = 0x40;     // INC AX
+        memory.UInt8[address + 1] = 0x40; // INC AX
+        memory.UInt8[address + 2] = 0x40; // INC AX
+        memory.UInt8[address + 3] = 0xEB; // JMP short
+        memory.UInt8[address + 4] = 0xFA; // -6 (back to start)
+        
+        state.AX = 0;
+        
+        // Execute several times - should compile and use JIT
+        for (int i = 0; i < 5; i++) {
+            spice86.Machine.Cpu.ExecuteNext();
+        }
+        
+        ushort axAfterFirstRun = state.AX;
+        Assert.True(axAfterFirstRun > 0, "AX should have been incremented");
+        
+        // Now modify the code (self-modifying code scenario)
+        // Change first INC AX to DEC AX
+        memory.UInt8[address] = 0x48; // DEC AX
+        
+        // Reset state
+        state.CS = segment;
+        state.IP = offset;
+        ushort axBeforeSecondRun = state.AX;
+        
+        // Execute again - JIT should detect the modification and recompile
+        for (int i = 0; i < 3; i++) {
+            spice86.Machine.Cpu.ExecuteNext();
+        }
+        
+        // After modification: DEC AX, INC AX, INC AX = net +1
+        // So AX should be axBeforeSecondRun + 1
+        Assert.Equal(axBeforeSecondRun + 1, state.AX);
+    }
 }

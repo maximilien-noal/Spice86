@@ -36,6 +36,12 @@ public class JitCompiler {
     /// </summary>
     public CompiledBlock? GetCompiledBlock(ICfgNode node) {
         if (_compiledBlocks.TryGetValue(node.Id, out CompiledBlock? block)) {
+            // Check if block is still valid (no self-modifying code)
+            if (!IsBlockStillLive(block)) {
+                _compiledBlocks.Remove(node.Id);
+                return null;
+            }
+            
             // Check if block has breakpoints - if so, invalidate and recompile later
             if (HasBreakpointsInBlock(block)) {
                 _compiledBlocks.Remove(node.Id);
@@ -44,6 +50,20 @@ public class JitCompiler {
             return block;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Check if all instructions in the compiled block are still live (no self-modifying code)
+    /// </summary>
+    private bool IsBlockStillLive(CompiledBlock block) {
+        // Verify all instructions in the block are still live
+        // If any instruction is not live, it means the code has been modified
+        foreach (CfgInstruction instruction in block.Instructions) {
+            if (!instruction.IsLive) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>
