@@ -452,46 +452,93 @@ Performance benchmarks are tracked using the [performance testing system](tests/
 
 ### Recent Performance Trends
 
-The following charts show emulator performance across recent commits for the 5 core benchmark tests:
+The following charts show emulator performance across recent commits for the 5 core benchmark tests. Lower cycle counts indicate better performance.
 
-```
-Integer Arithmetic (10K iterations)      Multiplication (5K ops)
-┌─────────────────────────────────┐     ┌─────────────────────────────────┐
-│ Cycles                          │     │ Cycles                          │
-│ 10,500 ┤                         │     │  5,500 ┤                         │
-│ 10,250 ┤                         │     │  5,250 ┤                         │
-│ 10,000 ┤████████████████████████ │     │  5,000 ┤████████████████████████ │
-│  9,750 ┤                         │     │  4,750 ┤                         │
-│  9,500 ┤                         │     │  4,500 ┤                         │
-└─────────────────────────────────┘     └─────────────────────────────────┘
-   7f1b  bccc  (commits)                    7f1b  bccc  (commits)
+#### Performance Overview - All Tests
 
-Division (3K ops)                        Bit Manipulation (8K iterations)
-┌─────────────────────────────────┐     ┌─────────────────────────────────┐
-│ Cycles                          │     │ Cycles                          │
-│  3,500 ┤                         │     │  8,500 ┤                         │
-│  3,250 ┤                         │     │  8,250 ┤                         │
-│  3,000 ┤████████████████████████ │     │  8,000 ┤████████████████████████ │
-│  2,750 ┤                         │     │  7,750 ┤                         │
-│  2,500 ┤                         │     │  7,500 ┤                         │
-└─────────────────────────────────┘     └─────────────────────────────────┘
-   7f1b  bccc  (commits)                    7f1b  bccc  (commits)
-
-Loop Performance (10K iterations)
-┌─────────────────────────────────┐
-│ Cycles                          │
-│ 10,500 ┤                         │
-│ 10,250 ┤                         │
-│ 10,000 ┤████████████████████████ │
-│  9,750 ┤                         │
-│  9,500 ┤                         │
-└─────────────────────────────────┘
-   7f1b  bccc  (commits)
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','primaryTextColor':'#fff','primaryBorderColor':'#2d6ba8','lineColor':'#4a9eff','secondaryColor':'#2ecc71','tertiaryColor':'#e74c3c'}}}%%
+xychart-beta
+    title "Emulator Performance Across Recent Commits"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 0 --> 11000
+    bar "Test 1: Arithmetic (10K)" [10000, 10000]
+    bar "Test 2: Multiplication (5K)" [5000, 5000]
+    bar "Test 3: Division (3K)" [3000, 3000]
+    bar "Test 4: Bit Ops (8K)" [8000, 8000]
+    bar "Test 5: Loops (10K)" [10000, 10000]
 ```
 
-**Summary:** Performance has remained stable across recent commits. All tests show consistent cycle counts with 0% variance, indicating no performance regressions. The variance threshold is set at 5% - any test exceeding this triggers a warning for investigation.
+#### Test 1: Integer Arithmetic (10,000 iterations)
 
-For detailed performance data and historical trends, see the [Performance Testing README](tests/PerformanceTests/README.md#performance-trends).
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','lineColor':'#4a9eff'}}}%%
+xychart-beta
+    title "Integer Arithmetic Performance"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 9500 --> 10500
+    line [10000, 10000]
+```
+
+#### Test 2: Multiplication (5,000 operations)
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#2ecc71','lineColor':'#2ecc71'}}}%%
+xychart-beta
+    title "Multiplication Performance"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 4500 --> 5500
+    line [5000, 5000]
+```
+
+#### Test 3: Division (3,000 operations)
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e74c3c','lineColor':'#e74c3c'}}}%%
+xychart-beta
+    title "Division Performance"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 2500 --> 3500
+    line [3000, 3000]
+```
+
+#### Test 4: Bit Manipulation (8,000 iterations)
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#f39c12','lineColor':'#f39c12'}}}%%
+xychart-beta
+    title "Bit Manipulation Performance"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 7500 --> 8500
+    line [8000, 8000]
+```
+
+#### Test 5: Loop Performance (10,000 iterations)
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#9b59b6','lineColor':'#9b59b6'}}}%%
+xychart-beta
+    title "Loop and Branch Performance"
+    x-axis [7f1b557, bccc2b6]
+    y-axis "Cycles" 9500 --> 10500
+    line [10000, 10000]
+```
+
+### Performance Summary
+
+**Status:** ✅ All benchmarks stable with 0% variance across recent commits.
+
+| Test | Description | Cycles | Status |
+|------|-------------|--------|--------|
+| 1 | Integer Arithmetic | 10,000 | ✅ Stable |
+| 2 | Multiplication | 5,000 | ✅ Stable |
+| 3 | Division | 3,000 | ✅ Stable |
+| 4 | Bit Manipulation | 8,000 | ✅ Stable |
+| 5 | Loop Performance | 10,000 | ✅ Stable |
+
+**Note:** Performance variance threshold is set at 5% - any test exceeding this triggers a warning for investigation.
+
+For detailed performance data, historical trends, and database queries, see the [Performance Testing README](tests/PerformanceTests/README.md#performance-trends).
 
 ## Credits
 
