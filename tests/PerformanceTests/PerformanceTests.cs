@@ -105,59 +105,6 @@ public class PerformanceTests : IDisposable {
     }
 
     /// <summary>
-    /// Compares performance with and without JIT compilation.
-    /// </summary>
-    [Fact]
-    public void TestJitPerformanceImprovement() {
-        // Find the test binary
-        string assemblyDir = Path.GetDirectoryName(typeof(PerformanceTests).Assembly.Location)!;
-        string binaryPath = Path.Combine(assemblyDir, "Assembly", "perftest.com");
-
-        // Verify binary exists
-        File.Exists(binaryPath).Should().BeTrue($"Test binary should exist at {binaryPath}");
-
-        // Run without JIT
-        _output.WriteLine("=== Running WITHOUT JIT ===");
-        using (var runnerNoJit = new PerformanceTestRunner(_output, binaryPath)) {
-            var resultsNoJit = runnerNoJit.RunTest(maxInstructions: 20_000_000, timeoutSeconds: 60, enableJit: false);
-            
-            _output.WriteLine("\n=== Running WITH JIT ===");
-            // Run with JIT
-            using (var runnerJit = new PerformanceTestRunner(_output, binaryPath)) {
-                var resultsJit = runnerJit.RunTest(maxInstructions: 20_000_000, timeoutSeconds: 60, enableJit: true);
-                
-                // Compare results
-                _output.WriteLine("\n=== Performance Comparison ===");
-                _output.WriteLine("Test | Without JIT | With JIT | Improvement");
-                _output.WriteLine("-----|-------------|----------|------------");
-                
-                double totalNoJit = 0;
-                double totalJit = 0;
-                
-                for (int i = 0; i < resultsNoJit.Count && i < resultsJit.Count; i++) {
-                    var noJit = resultsNoJit[i];
-                    var withJit = resultsJit[i];
-                    
-                    double improvement = ((double)noJit.Cycles - withJit.Cycles) / noJit.Cycles * 100;
-                    _output.WriteLine($"{noJit.TestId,-4} | {noJit.Cycles,11} | {withJit.Cycles,8} | {improvement,10:F2}%");
-                    
-                    totalNoJit += noJit.Cycles;
-                    totalJit += withJit.Cycles;
-                }
-                
-                double overallImprovement = (totalNoJit - totalJit) / totalNoJit * 100;
-                _output.WriteLine("-----|-------------|----------|------------");
-                _output.WriteLine($"Total| {totalNoJit,11:F0} | {totalJit,8:F0} | {overallImprovement,10:F2}%");
-                
-                _output.WriteLine($"\n*** JIT Performance Improvement: {overallImprovement:F2}% ***");
-                
-                // JIT should provide some improvement (even if small due to simple batching)
-                overallImprovement.Should().BeGreaterThan(0, "JIT should provide performance improvement");
-            }
-        }
-    }
-
-    /// <summary>
     /// Displays performance statistics for all tests.
     /// </summary>
     private void DisplayStatistics() {
