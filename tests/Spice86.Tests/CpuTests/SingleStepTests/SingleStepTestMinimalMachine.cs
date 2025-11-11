@@ -38,7 +38,7 @@ public class SingleStepTestMinimalMachine {
         DualPic dualPic = new DualPic(state, ioPortDispatcher, false, true, loggerService);
         FunctionCatalogue functionCatalogue = new();
         Cpu = new CfgCpu(memory, state, ioPortDispatcher, callbackHandler, dualPic,
-            emulatorBreakpointsManager, functionCatalogue, false, loggerService);
+            emulatorBreakpointsManager, functionCatalogue, false, false, loggerService);
     }
 
     public void RestoreMemoryAfterTest() {

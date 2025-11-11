@@ -177,6 +177,12 @@ public sealed class Configuration {
     public bool CfgCpu { get; init; }
 
     /// <summary>
+    /// Determines whether to enable JIT compilation for improved performance. Only available with CfgCpu.
+    /// </summary>
+    [Option(nameof(JitCpu), Default = false, Required = false, HelpText = "Enable JIT (Just-In-Time) compilation for improved performance. Only available with CfgCpu.")]
+    public bool JitCpu { get; init; }
+
+    /// <summary>
     /// Audio engine to use
     /// </summary>
     [Option(nameof(AudioEngine), Default = AudioEngine.PortAudio, Required = false, HelpText = "Audio engine to use. Values are PortAudio or Dummy")]
