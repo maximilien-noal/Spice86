@@ -270,33 +270,17 @@ Initial baseline measurements (reference platform: x86_64, .NET 8):
 
 Performance metrics tracked across recent commits. The charts below visualize cycle counts for each test - lower values indicate better performance.
 
+**Automated Chart Updates:** These charts are automatically generated from the SQLite performance database. When performance tests run on the master branch, results are stored in the database, and a GitHub Actions workflow regenerates all charts with the latest data. See [`.github/workflows/update-perf-charts.yml`](../../.github/workflows/update-perf-charts.yml) and [`.github/scripts/update_performance_charts.py`](../../.github/scripts/update_performance_charts.py) for implementation details.
+
 #### Comprehensive Performance Comparison
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','secondaryColor':'#2ecc71','tertiaryColor':'#e74c3c'}}}%%
-xychart-beta
-    title "Performance Comparison Across All Tests"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 0 --> 11000
-    bar "Test 1: Arithmetic" [10000, 10000]
-    bar "Test 2: Multiply" [5000, 5000]
-    bar "Test 3: Divide" [3000, 3000]
-    bar "Test 4: Bit Ops" [8000, 8000]
-    bar "Test 5: Loops" [10000, 10000]
-```
+![Performance Comparison Across All Tests](perf_comparison.png)
 
 #### Individual Test Trends
 
 ##### Test 1: Integer Arithmetic (10,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Integer Arithmetic - Cycle Count Over Time"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 9500 --> 10500
-    line [10000, 10000]
-```
+![Integer Arithmetic - Cycle Count Over Time](perf_trend_arithmetic.png)
 
 | Commit | Cycles | Δ from baseline | Status |
 |--------|--------|-----------------|--------|
@@ -305,14 +289,7 @@ xychart-beta
 
 ##### Test 2: Multiplication (5,000 operations)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Multiplication - Cycle Count Over Time"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 4500 --> 5500
-    line [5000, 5000]
-```
+![Multiplication - Cycle Count Over Time](perf_trend_multiply.png)
 
 | Commit | Cycles | Δ from baseline | Status |
 |--------|--------|-----------------|--------|
@@ -321,14 +298,7 @@ xychart-beta
 
 ##### Test 3: Division (3,000 operations)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Division - Cycle Count Over Time"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 2500 --> 3500
-    line [3000, 3000]
-```
+![Division - Cycle Count Over Time](perf_trend_divide.png)
 
 | Commit | Cycles | Δ from baseline | Status |
 |--------|--------|-----------------|--------|
@@ -337,14 +307,7 @@ xychart-beta
 
 ##### Test 4: Bit Manipulation (8,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Bit Manipulation - Cycle Count Over Time"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 7500 --> 8500
-    line [8000, 8000]
-```
+![Bit Manipulation - Cycle Count Over Time](perf_trend_bitops.png)
 
 | Commit | Cycles | Δ from baseline | Status |
 |--------|--------|-----------------|--------|
@@ -353,14 +316,7 @@ xychart-beta
 
 ##### Test 5: Loop Performance (10,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Loop Performance - Cycle Count Over Time"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 9500 --> 10500
-    line [10000, 10000]
-```
+![Loop Performance - Cycle Count Over Time](perf_trend_loops.png)
 
 | Commit | Cycles | Δ from baseline | Status |
 |--------|--------|-----------------|--------|

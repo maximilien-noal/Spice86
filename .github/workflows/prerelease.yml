@@ -30,9 +30,42 @@ jobs:
        - name: Install zip
          uses: montudor/action-zip@v1
 
+       - name: Setup Python for chart generation
+         uses: actions/setup-python@v5
+         with:
+           python-version: '3.12'
+       
+       - name: Install Python dependencies
+         run: |
+           python -m pip install --upgrade pip
+           pip install matplotlib numpy
+       
+       - name: Install NASM for assembly tests
+         run: sudo apt-get update && sudo apt-get install -y nasm
+
        - name: Test with dotnet
          working-directory: ./src
          run: dotnet test --configuration Release
+       
+       - name: Run performance tests
+         run: |
+           cd tests/PerformanceTests/Assembly
+           make clean && make
+           cd ..
+           dotnet test PerformanceTests.csproj --configuration Release
+         continue-on-error: true
+       
+       - name: Update performance charts
+         run: |
+           if [ -f "tests/PerformanceTests/Database/performance.db" ]; then
+             python .github/scripts/update_performance_charts.py
+             git config --local user.email "github-actions[bot]@users.noreply.github.com"
+             git config --local user.name "github-actions[bot]"
+             git add doc/perf*.png tests/PerformanceTests/perf*.png tests/PerformanceTests/Database/performance.db || true
+             git diff --quiet && git diff --staged --quiet || git commit -m "Update performance charts [skip ci]"
+             git push || true
+           fi
+         continue-on-error: true
 
        - name: Build with dotnet
          working-directory: ./src/Spice86
