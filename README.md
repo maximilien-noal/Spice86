@@ -456,73 +456,27 @@ The following charts show emulator performance across recent commits for the 5 c
 
 #### Performance Overview - All Tests
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','primaryTextColor':'#fff','primaryBorderColor':'#2d6ba8','lineColor':'#4a9eff','secondaryColor':'#2ecc71','tertiaryColor':'#e74c3c'}}}%%
-xychart-beta
-    title "Emulator Performance Across Recent Commits"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 0 --> 11000
-    bar "Test 1: Arithmetic (10K)" [10000, 10000]
-    bar "Test 2: Multiplication (5K)" [5000, 5000]
-    bar "Test 3: Division (3K)" [3000, 3000]
-    bar "Test 4: Bit Ops (8K)" [8000, 8000]
-    bar "Test 5: Loops (10K)" [10000, 10000]
-```
+![Emulator Performance Across Recent Commits](doc/perf_overview.png)
 
 #### Test 1: Integer Arithmetic (10,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','lineColor':'#4a9eff'}}}%%
-xychart-beta
-    title "Integer Arithmetic Performance"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 9500 --> 10500
-    line [10000, 10000]
-```
+![Integer Arithmetic Performance](doc/perf_test1_arithmetic.png)
 
 #### Test 2: Multiplication (5,000 operations)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#2ecc71','lineColor':'#2ecc71'}}}%%
-xychart-beta
-    title "Multiplication Performance"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 4500 --> 5500
-    line [5000, 5000]
-```
+![Multiplication Performance](doc/perf_test2_multiplication.png)
 
 #### Test 3: Division (3,000 operations)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e74c3c','lineColor':'#e74c3c'}}}%%
-xychart-beta
-    title "Division Performance"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 2500 --> 3500
-    line [3000, 3000]
-```
+![Division Performance](doc/perf_test3_division.png)
 
 #### Test 4: Bit Manipulation (8,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#f39c12','lineColor':'#f39c12'}}}%%
-xychart-beta
-    title "Bit Manipulation Performance"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 7500 --> 8500
-    line [8000, 8000]
-```
+![Bit Manipulation Performance](doc/perf_test4_bitops.png)
 
 #### Test 5: Loop Performance (10,000 iterations)
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#9b59b6','lineColor':'#9b59b6'}}}%%
-xychart-beta
-    title "Loop and Branch Performance"
-    x-axis [7f1b557, bccc2b6]
-    y-axis "Cycles" 9500 --> 10500
-    line [10000, 10000]
-```
+![Loop and Branch Performance](doc/perf_test5_loops.png)
 
 ### Performance Summary
 
