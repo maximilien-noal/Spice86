@@ -39,7 +39,7 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
         _instructionExecutionHelper = new(state, memory, ioPortDispatcher, callbackHandler, emulatorBreakpointsManager.InterruptBreakPoints, _executionContextManager, loggerService);
         
         if (enableJit) {
-            _jitCompiler = new JitCompiler(loggerService, emulatorBreakpointsManager);
+            _jitCompiler = new JitCompiler(loggerService, emulatorBreakpointsManager, memory);
             if (loggerService.IsEnabled(LogEventLevel.Information)) {
                 loggerService.Information("JIT compilation enabled for CfgCpu");
             }

@@ -5,6 +5,7 @@ using Serilog.Events;
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
@@ -23,10 +24,12 @@ public class JitCompiler : IJitCompiler {
     private readonly ILoggerService _loggerService;
     private readonly Dictionary<int, CompiledBlock> _compiledBlocks = new();
     private readonly EmulatorBreakpointsManager _breakpointsManager;
+    private readonly IMemory _memory;
 
-    public JitCompiler(ILoggerService loggerService, EmulatorBreakpointsManager breakpointsManager) {
+    public JitCompiler(ILoggerService loggerService, EmulatorBreakpointsManager breakpointsManager, IMemory memory) {
         _loggerService = loggerService;
         _breakpointsManager = breakpointsManager;
+        _memory = memory;
     }
 
     /// <inheritdoc />
@@ -53,10 +56,57 @@ public class JitCompiler : IJitCompiler {
     }
 
     /// <summary>
-    /// Check if all instructions in the compiled block match their memory representation
+    /// Check if all instructions in the compiled block match their memory representation.
+    /// Also verifies that instruction bytes haven't been modified in memory.
     /// </summary>
     private bool AllInstructionsAreStillLive(CompiledBlock block) {
-        return block.Instructions.All(instruction => instruction.IsLive);
+        // First check the IsLive flag which is updated by CfgCpu
+        if (!block.Instructions.All(instruction => instruction.IsLive)) {
+            return false;
+        }
+        
+        // Additionally verify that instruction bytes match memory
+        // This catches cases where code was overwritten but CfgCpu hasn't re-parsed yet
+        foreach (CfgInstruction instruction in block.Instructions) {
+            if (!InstructionBytesMatchMemory(instruction)) {
+                // Instruction bytes have changed in memory, mark as not live
+                instruction.SetLive(false);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /// <summary>
+    /// Check if an instruction's bytes in memory match its parsed representation
+    /// </summary>
+    private bool InstructionBytesMatchMemory(CfgInstruction instruction) {
+        uint physicalAddress = MemoryUtils.ToPhysicalAddress(
+            instruction.Address.Segment, instruction.Address.Offset);
+        
+        foreach (FieldWithValue field in instruction.FieldsInOrder) {
+            for (int i = 0; i < field.SignatureValue.Count; i++) {
+                byte? expectedByte = field.SignatureValue[i];
+                if (expectedByte is null) {
+                    // Field not read from memory (e.g., computed value)
+                    continue;
+                }
+                
+                uint byteAddress = (uint)(field.PhysicalAddress + i);
+                byte actualByte = _memory.UInt8[byteAddress];
+                
+                if (actualByte != expectedByte.Value) {
+                    if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                        _loggerService.Verbose("JIT: Instruction at {Address} byte mismatch at offset {Offset}: expected {Expected:X2}, got {Actual:X2}", 
+                            instruction.Address, i, expectedByte.Value, actualByte);
+                    }
+                    return false;
+                }
+            }
+        }
+        
+        return true;
     }
 
     /// <summary>
