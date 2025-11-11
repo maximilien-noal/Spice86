@@ -265,4 +265,75 @@ public class JitTests {
         // The test verifies JIT handles stack-based modifications
         Assert.True(state.BX != 0, "BX should have been modified via stack manipulation");
     }
+
+    [Fact]
+    public void TestJitWithSelfModifyingLoopDestination() {
+        // Test self-modifying code that changes the destination address of a loop
+        // This is a common DOS optimization where code modifies its own jump target
+        using Spice86DependencyInjection spice86 = CreateTestEnvironment(enableJit: true);
+        
+        IMemory memory = spice86.Machine.Memory;
+        State state = spice86.Machine.CpuState;
+        
+        ushort codeSegment = 0x2000;
+        ushort codeOffset = 0x0100;
+        state.CS = codeSegment;
+        state.IP = codeOffset;
+        
+        uint codeAddress = MemoryUtils.ToPhysicalAddress(codeSegment, codeOffset);
+        
+        // Initial loop structure:
+        // Loop start:
+        //   INC AX
+        //   INC BX
+        //   JMP short back to loop start (will be modified)
+        
+        memory.UInt8[codeAddress] = 0x40;     // INC AX (loop body)
+        memory.UInt8[codeAddress + 1] = 0x43; // INC BX (loop body)
+        memory.UInt8[codeAddress + 2] = 0xEB; // JMP short
+        memory.UInt8[codeAddress + 3] = 0xFC; // -4 (back to start)
+        
+        // Code after loop (will execute after modification)
+        memory.UInt8[codeAddress + 4] = 0x48; // DEC AX (exit marker)
+        memory.UInt8[codeAddress + 5] = 0xF4; // HLT
+        
+        state.AX = 0;
+        state.BX = 0;
+        
+        // Execute loop a few times to allow JIT compilation
+        for (int i = 0; i < 4; i++) {
+            spice86.Machine.Cpu.ExecuteNext();
+        }
+        
+        ushort axAfterFirstLoop = state.AX;
+        ushort bxAfterFirstLoop = state.BX;
+        
+        // Both should have been incremented during the loop
+        Assert.True(axAfterFirstLoop > 0, "AX should have been incremented in loop");
+        Assert.True(bxAfterFirstLoop > 0, "BX should have been incremented in loop");
+        
+        // Now modify the jump destination to break out of the loop
+        // Change JMP offset from -4 (0xFC) to +2 (0x02) to skip over itself and exit
+        memory.UInt8[codeAddress + 3] = 0x00; // Jump to next instruction (break loop)
+        
+        // Reset to loop start
+        state.CS = codeSegment;
+        state.IP = codeOffset;
+        
+        // Execute - should now do one iteration then exit
+        for (int i = 0; i < 10; i++) {
+            spice86.Machine.Cpu.ExecuteNext();
+            uint currentInstruction = MemoryUtils.ToPhysicalAddress(state.CS, state.IP);
+            if (memory.UInt8[currentInstruction] == 0xF4) {
+                break; // Hit HLT
+            }
+        }
+        
+        // After modification, loop should execute once then exit
+        // AX incremented once by loop, then decremented by exit code
+        Assert.Equal(axAfterFirstLoop, state.AX);
+        
+        // BX incremented once by loop
+        Assert.Equal((ushort)(bxAfterFirstLoop + 1), state.BX);
+    }
 }
