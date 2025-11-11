@@ -42,7 +42,7 @@ public class JitCompiler : IJitCompiler {
         }
         
         int contentHash = ComputeInstructionContentHash(startInstruction);
-        var key = (node.Id, contentHash);
+        (int NodeId, int ContentHash) key = (node.Id, contentHash);
         
         if (_compiledBlocks.TryGetValue(key, out CompiledBlock? block)) {
             if (!AllInstructionsAreStillLive(block)) {
@@ -196,7 +196,7 @@ public class JitCompiler : IJitCompiler {
         }
         
         int contentHash = ComputeInstructionContentHash(startInstruction);
-        var key = (startNode.Id, contentHash);
+        (int NodeId, int ContentHash) key = (startNode.Id, contentHash);
         
         if (_compiledBlocks.TryGetValue(key, out CompiledBlock? existingBlock)) {
             compiledBlock = existingBlock;
@@ -242,8 +242,8 @@ public class JitCompiler : IJitCompiler {
     /// <inheritdoc />
     public void InvalidateBlock(int nodeId) {
         // Remove all cached blocks for this node ID (all content variations)
-        var keysToRemove = _compiledBlocks.Keys.Where(k => k.NodeId == nodeId).ToList();
-        foreach (var key in keysToRemove) {
+        List<(int NodeId, int ContentHash)> keysToRemove = _compiledBlocks.Keys.Where(k => k.NodeId == nodeId).ToList();
+        foreach ((int NodeId, int ContentHash) key in keysToRemove) {
             _compiledBlocks.Remove(key);
         }
     }
