@@ -80,12 +80,12 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
             return false;
         }
 
-        if (_jitCompiler.TryGetCompiledBlock(toExecute, out CompiledBlock compiledBlock)) {
+        if (_jitCompiler.TryGetCompiledBlock(toExecute, out CompiledBlock? compiledBlock) && compiledBlock != null) {
             ExecuteCompiledBlock(compiledBlock);
             return true;
         }
 
-        if (_jitCompiler.TryCompileBasicBlock(toExecute, _instructionExecutionHelper, out compiledBlock)) {
+        if (_jitCompiler.TryCompileBasicBlock(toExecute, _instructionExecutionHelper, out compiledBlock) && compiledBlock != null) {
             ExecuteCompiledBlock(compiledBlock);
             return true;
         }

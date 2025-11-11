@@ -30,17 +30,17 @@ public class JitCompiler : IJitCompiler {
     }
 
     /// <inheritdoc />
-    public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock compiledBlock) {
+    public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock? compiledBlock) {
         if (_compiledBlocks.TryGetValue(node.Id, out CompiledBlock? block)) {
             if (!AllInstructionsAreStillLive(block)) {
                 _compiledBlocks.Remove(node.Id);
-                compiledBlock = null!;
+                compiledBlock = null;
                 return false;
             }
             
             if (BlockContainsExecutionBreakpoint(block)) {
                 _compiledBlocks.Remove(node.Id);
-                compiledBlock = null!;
+                compiledBlock = null;
                 return false;
             }
             
@@ -48,7 +48,7 @@ public class JitCompiler : IJitCompiler {
             return true;
         }
         
-        compiledBlock = null!;
+        compiledBlock = null;
         return false;
     }
 
@@ -56,12 +56,7 @@ public class JitCompiler : IJitCompiler {
     /// Check if all instructions in the compiled block match their memory representation
     /// </summary>
     private bool AllInstructionsAreStillLive(CompiledBlock block) {
-        foreach (CfgInstruction instruction in block.Instructions) {
-            if (!instruction.IsLive) {
-                return false;
-            }
-        }
-        return true;
+        return block.Instructions.All(instruction => instruction.IsLive);
     }
 
     /// <summary>
@@ -80,7 +75,7 @@ public class JitCompiler : IJitCompiler {
     }
 
     /// <inheritdoc />
-    public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock compiledBlock) {
+    public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock? compiledBlock) {
         if (_compiledBlocks.TryGetValue(startNode.Id, out CompiledBlock? existingBlock)) {
             compiledBlock = existingBlock;
             return true;
@@ -89,12 +84,12 @@ public class JitCompiler : IJitCompiler {
         List<CfgInstruction> instructions = CollectBasicBlock(startNode);
         
         if (instructions.Count < MinimumBlockSize) {
-            compiledBlock = null!;
+            compiledBlock = null;
             return false;
         }
 
         if (!AllInstructionsAreCompilable(instructions)) {
-            compiledBlock = null!;
+            compiledBlock = null;
             return false;
         }
 
@@ -108,7 +103,7 @@ public class JitCompiler : IJitCompiler {
                 _loggerService.Verbose("JIT compilation failed for block at {Address}: {Error}", 
                     startNode.Address, ex.Message);
             }
-            compiledBlock = null!;
+            compiledBlock = null;
             return false;
         }
     }

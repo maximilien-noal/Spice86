@@ -13,7 +13,7 @@ public interface IJitCompiler {
     /// <param name="node">The CFG node to check for compilation</param>
     /// <param name="compiledBlock">The compiled block if found and valid</param>
     /// <returns>True if a valid compiled block exists</returns>
-    bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock compiledBlock);
+    bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock? compiledBlock);
 
     /// <summary>
     /// Try to compile a basic block starting from the given node
@@ -22,7 +22,7 @@ public interface IJitCompiler {
     /// <param name="helper">Instruction execution helper</param>
     /// <param name="compiledBlock">The compiled block if compilation succeeded</param>
     /// <returns>True if compilation succeeded</returns>
-    bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock compiledBlock);
+    bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock? compiledBlock);
 
     /// <summary>
     /// Invalidate a compiled block when instruction changes (self-modifying code)

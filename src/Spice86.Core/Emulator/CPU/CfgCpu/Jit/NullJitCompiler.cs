@@ -8,14 +8,14 @@ using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 /// </summary>
 public class NullJitCompiler : IJitCompiler {
     /// <inheritdoc />
-    public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock compiledBlock) {
-        compiledBlock = null!;
+    public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock? compiledBlock) {
+        compiledBlock = null;
         return false;
     }
 
     /// <inheritdoc />
-    public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock compiledBlock) {
-        compiledBlock = null!;
+    public bool TryCompileBasicBlock(ICfgNode startNode, InstructionExecutionHelper helper, out CompiledBlock? compiledBlock) {
+        compiledBlock = null;
         return false;
     }
 
