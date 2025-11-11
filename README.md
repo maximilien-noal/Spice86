@@ -396,6 +396,29 @@ or use this where Spice86.csproj is located:
    dotnet run -e <path to executable>
 ```
 
+### Performance Testing
+
+Spice86 includes a comprehensive performance testing system that uses standalone assembly binaries to benchmark emulator performance.
+
+The performance testing system includes:
+- **Assembly benchmarks** - Math-intensive tests (arithmetic, multiplication, division, bit manipulation, loops)
+- **Port-based reporting** - Custom I/O ports (0x90-0x9F) for metrics collection
+- **SQLite tracking** - Historical performance data with git commit correlation
+- **Regression detection** - Automated variance analysis across test runs
+
+For detailed information, see the [Performance Testing README](tests/PerformanceTests/README.md).
+
+#### Running Performance Tests
+
+```bash
+# Run all performance tests
+dotnet test tests/PerformanceTests/PerformanceTests.csproj
+
+# Build assembly test binary (requires NASM)
+cd tests/PerformanceTests/Assembly
+make
+```
+
 
 ### Ghidra plugin
 

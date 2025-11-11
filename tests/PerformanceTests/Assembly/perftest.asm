@@ -156,8 +156,9 @@ test_division:
     mov bx, 60000
 .loop:
     mov ax, bx
-    mov dx, 7           ; Divide by 7
-    div dx
+    xor dx, dx          ; Clear DX before division (DX:AX dividend)
+    mov si, 7           ; Divisor
+    div si              ; Divide DX:AX by SI, result in AX
     add di, ax          ; Add quotient
     inc cx
     sub bx, 20
