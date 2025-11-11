@@ -57,13 +57,19 @@ public class PerformanceTests : IDisposable {
             result.Cycles.Should().BeGreaterThan(0u, $"Test {result.TestId} should have cycles");
         }
 
-        // Store results in database
+        // Store results in database only on master branch
         _database = new PerformanceDatabase(_databasePath);
         string? gitCommit = GetGitCommit();
-        long runId = _database.StoreTestRun(results, gitCommit);
-        _output.WriteLine($"Stored test run with ID: {runId}");
+        string? currentBranch = GetCurrentBranch();
+        
+        if (currentBranch == "master" || currentBranch == "main") {
+            long runId = _database.StoreTestRun(results, gitCommit);
+            _output.WriteLine($"Stored test run with ID: {runId} (branch: {currentBranch})");
+        } else {
+            _output.WriteLine($"Skipping database storage (not on master/main branch, current: {currentBranch})");
+        }
 
-        // Display statistics
+        // Display statistics (always show, even on PRs)
         DisplayStatistics();
     }
 
@@ -152,6 +158,32 @@ public class PerformanceTests : IDisposable {
                 }
             } else if (headContent.Length >= 8) {
                 return headContent.Substring(0, 8);
+            }
+        } catch {
+            // Ignore errors
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the current git branch name.
+    /// </summary>
+    /// <returns>Branch name or null.</returns>
+    private string? GetCurrentBranch() {
+        try {
+            var gitDir = FindGitDirectory();
+            if (gitDir == null) {
+                return null;
+            }
+
+            string headPath = Path.Combine(gitDir, "HEAD");
+            if (!File.Exists(headPath)) {
+                return null;
+            }
+
+            string headContent = File.ReadAllText(headPath).Trim();
+            if (headContent.StartsWith("ref: refs/heads/")) {
+                return headContent.Substring("ref: refs/heads/".Length);
             }
         } catch {
             // Ignore errors

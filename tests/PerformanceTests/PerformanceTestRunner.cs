@@ -41,7 +41,7 @@ public class PerformanceTestRunner : IDisposable {
         // Create emulator using Spice86Creator pattern
         var creator = new Spice86.Tests.Spice86Creator(
             binName: _testBinaryPath,
-            enableCfgCpu: false,
+            enableCfgCpu: true,
             enablePit: false,
             recordData: false,
             maxCycles: maxInstructions,
