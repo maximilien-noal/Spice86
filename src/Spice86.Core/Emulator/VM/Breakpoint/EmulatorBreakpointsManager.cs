@@ -108,7 +108,10 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         _executionBreakPoints.HasActiveBreakpoints || _cycleBreakPoints.HasActiveBreakpoints;
 
     /// <summary>
-    /// Checks if an execution breakpoint exists at the specified physical address
+    /// Checks if an execution breakpoint exists at the specified physical address.
+    /// This method is used by the JIT compiler to determine if a code block can be compiled.
+    /// Only execution breakpoints need to be checked - memory, IO, and cycle breakpoints
+    /// are handled separately and don't affect JIT compilation decisions.
     /// </summary>
     /// <param name="physicalAddress">The physical memory address to check</param>
     /// <returns>True if an execution breakpoint exists at the address</returns>
