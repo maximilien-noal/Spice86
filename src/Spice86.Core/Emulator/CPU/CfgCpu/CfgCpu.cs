@@ -119,8 +119,8 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
         
         compiledBlock.CompiledMethod(_instructionExecutionHelper);
         
-        UpdateCyclesForBlock(compiledBlock);
         UpdateExecutionContextForBlock(compiledBlock);
+        UpdateCyclesForBlock(compiledBlock);
     }
 
     private void UpdateCyclesForBlock(CompiledBlock compiledBlock) {

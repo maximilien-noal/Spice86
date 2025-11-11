@@ -127,11 +127,13 @@ public class JitCompiler : IJitCompiler {
         ICfgNode? current = startNode;
 
         while (current is CfgInstruction instruction) {
-            instructions.Add(instruction);
-
+            // Check if this instruction has multiple successors BEFORE adding it
+            // Don't include branch instructions in compiled blocks
             if (HasMultipleSuccessors(instruction)) {
                 break;
             }
+
+            instructions.Add(instruction);
 
             ICfgNode successor = instruction.UniqueSuccessor ?? instruction.Successors.First();
             if (IsJoinPoint(successor)) {
