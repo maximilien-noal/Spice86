@@ -41,6 +41,23 @@ General process:
 | `Spice86 -e file.exe` | Run the specified executable |
 | `Spice86 -e file.com` | Run a COM file |
 | `Spice86 -e file.bin` | Run a BIOS file |
+| `Spice86 -e file.exe --CfgCpu --JitCpu` | Run with JIT compilation for improved performance |
+
+### Performance Optimization
+
+For demanding DOS games or programs that require better performance, Spice86 offers JIT (Just-In-Time) compilation:
+
+```bash
+Spice86 -e game.exe --CfgCpu --JitCpu
+```
+
+**JIT Compilation Features:**
+- Compiles basic blocks of x86 instructions for faster execution
+- Automatically falls back to interpretation when needed
+- Compatible with breakpoints and C# overrides
+- Handles self-modifying code detection and invalidation
+
+**Note:** JIT requires the Control Flow Graph CPU (`--CfgCpu`) to be enabled.
 
 ## Dumping data
 
@@ -77,6 +94,8 @@ When there is already data in the specified location, the emulator will load it 
   -o, --OverrideSupplierClassName    Name of a class that will generate the initial function information. See documentation for more information.
   -p, --ProgramEntryPointSegment     (Default: 4096) Segment where to load the program. DOS PSP and MCB will be created before it.
   -u, --UseCodeOverride              (Default: true) <true or false> if false it will use the names provided by overrideSupplierClassName but not the code
+  --CfgCpu                           (Default: false) Enable CFG CPU (Control Flow Graph) for improved execution tracking
+  --JitCpu                           (Default: false) Enable JIT (Just-In-Time) compilation for improved performance. Requires --CfgCpu to be enabled.
   -i, --InstructionsPerSecond        <number of instructions that have to be executed by the emulator to consider a second passed> if blank will use time based timer.
   -t, --TimeMultiplier               (Default: 1) <time multiplier> if >1 will go faster, if <1 will go slower.
   -d, --DumpDataOnExit               (Default: true) When true, records data at runtime and dumps them at exit time
