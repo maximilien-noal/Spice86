@@ -33,10 +33,12 @@ public sealed class PerformanceTestRunner : IDisposable {
     /// </summary>
     /// <param name="maxInstructions">Maximum number of instructions to execute.</param>
     /// <param name="timeoutSeconds">Timeout in seconds.</param>
+    /// <param name="enableJit">Whether to enable JIT compilation.</param>
     /// <returns>List of performance test results.</returns>
-    public List<PerformanceTestResult> RunTest(long maxInstructions = 10_000_000, int timeoutSeconds = 30) {
+    public List<PerformanceTestResult> RunTest(long maxInstructions = 10_000_000, int timeoutSeconds = 30, bool enableJit = false) {
         _output.WriteLine($"Running performance test: {_testBinaryPath}");
         _output.WriteLine($"Max instructions: {maxInstructions:N0}");
+        _output.WriteLine($"JIT enabled: {enableJit}");
 
         // Create emulator using Spice86Creator pattern
         var creator = new Spice86.Tests.Spice86Creator(
@@ -46,7 +48,8 @@ public sealed class PerformanceTestRunner : IDisposable {
             recordData: false,
             maxCycles: maxInstructions,
             installInterruptVectors: true,
-            failOnUnhandledPort: false);
+            failOnUnhandledPort: false,
+            enableJit: enableJit);
         
         _emulator = creator.Create();
         
