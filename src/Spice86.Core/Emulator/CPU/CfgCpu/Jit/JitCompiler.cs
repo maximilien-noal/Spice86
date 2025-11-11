@@ -35,6 +35,14 @@ public class JitCompiler : IJitCompiler {
     /// <inheritdoc />
     public bool TryGetCompiledBlock(ICfgNode node, out CompiledBlock? compiledBlock) {
         if (_compiledBlocks.TryGetValue(node.Id, out CompiledBlock? block)) {
+            // CRITICAL: Check if the node's instruction list has changed
+            // This handles self-modifying code where the same node is reused with different instructions
+            if (!NodeInstructionsMatchCachedBlock(node, block)) {
+                _compiledBlocks.Remove(node.Id);
+                compiledBlock = null;
+                return false;
+            }
+            
             if (!AllInstructionsAreStillLive(block)) {
                 _compiledBlocks.Remove(node.Id);
                 compiledBlock = null;
@@ -53,6 +61,33 @@ public class JitCompiler : IJitCompiler {
         
         compiledBlock = null;
         return false;
+    }
+
+    /// <summary>
+    /// Check if the node's current instruction matches the first instruction in the cached compiled block.
+    /// This is critical for self-modifying code where the same CFG node ID is reused with different instruction content.
+    /// </summary>
+    private bool NodeInstructionsMatchCachedBlock(ICfgNode node, CompiledBlock block) {
+        // The startNode used for compilation should be the first instruction in the block
+        if (node is not CfgInstruction startInstruction) {
+            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                _loggerService.Verbose("JIT: Node is not a CfgInstruction");
+            }
+            return false;
+        }
+        
+        // Check if the start node is still the same instruction object (reference equality)
+        // When CfgCpu replaces code, it creates new CfgInstruction objects
+        bool same = ReferenceEquals(startInstruction, block.Instructions[0]);
+        if (!same) {
+            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                _loggerService.Verbose("JIT: Instruction reference mismatch for node {NodeId} at {Address}",  
+                    node.Id, startInstruction.Address);
+            }
+            return false;
+        }
+        
+        return true;
     }
 
     /// <summary>
