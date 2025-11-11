@@ -84,12 +84,12 @@ public class PerformanceTests : IDisposable {
             _output.WriteLine($"  Max cycles: {stats.MaxCycles}");
             _output.WriteLine($"  Variance: {stats.Variance} ({(stats.Variance / (double)stats.AverageCycles * 100):F2}%)");
 
-            // Check if variance is within acceptable range (e.g., 10%)
+            // Check if variance is within acceptable range (e.g., 5%)
             double variancePercent = stats.Variance / stats.AverageCycles * 100;
-            _output.WriteLine($"Variance check: {variancePercent:F2}% (should be < 10%)");
+            _output.WriteLine($"Variance check: {variancePercent:F2}% (should be < 5%)");
             
             // This is informational - small perf variance can happen
-            if (variancePercent > 10) {
+            if (variancePercent > 5) {
                 _output.WriteLine($"WARNING: Performance variance is high at {variancePercent:F2}%");
             }
         } else {
