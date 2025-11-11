@@ -1,6 +1,7 @@
 namespace Spice86.Tests.PerformanceTests;
 
 using FluentAssertions;
+using LibGit2Sharp;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -139,30 +140,17 @@ public class PerformanceTests : IDisposable {
     /// <returns>Git commit hash or null.</returns>
     private string? GetGitCommit() {
         try {
-            var gitDir = FindGitDirectory();
-            if (gitDir == null) {
+            string? repoPath = FindGitRepository();
+            if (repoPath == null) {
                 return null;
             }
 
-            string headPath = Path.Combine(gitDir, "HEAD");
-            if (!File.Exists(headPath)) {
-                return null;
-            }
-
-            string headContent = File.ReadAllText(headPath).Trim();
-            if (headContent.StartsWith("ref: ")) {
-                string refPath = headContent.Substring(5);
-                string commitPath = Path.Combine(gitDir, refPath);
-                if (File.Exists(commitPath)) {
-                    return File.ReadAllText(commitPath).Trim().Substring(0, 8);
-                }
-            } else if (headContent.Length >= 8) {
-                return headContent.Substring(0, 8);
-            }
-        } catch {
-            // Ignore errors
+            using var repo = new Repository(repoPath);
+            return repo.Head?.Tip?.Sha[..8];
+        } catch (RepositoryNotFoundException) {
+            // Not in a git repository
+            return null;
         }
-        return null;
     }
 
     /// <summary>
@@ -171,36 +159,28 @@ public class PerformanceTests : IDisposable {
     /// <returns>Branch name or null.</returns>
     private string? GetCurrentBranch() {
         try {
-            var gitDir = FindGitDirectory();
-            if (gitDir == null) {
+            string? repoPath = FindGitRepository();
+            if (repoPath == null) {
                 return null;
             }
 
-            string headPath = Path.Combine(gitDir, "HEAD");
-            if (!File.Exists(headPath)) {
-                return null;
-            }
-
-            string headContent = File.ReadAllText(headPath).Trim();
-            if (headContent.StartsWith("ref: refs/heads/")) {
-                return headContent.Substring("ref: refs/heads/".Length);
-            }
-        } catch {
-            // Ignore errors
+            using var repo = new Repository(repoPath);
+            return repo.Head?.FriendlyName;
+        } catch (RepositoryNotFoundException) {
+            // Not in a git repository
+            return null;
         }
-        return null;
     }
 
     /// <summary>
-    /// Finds the .git directory by walking up the directory tree.
+    /// Finds the git repository root by walking up the directory tree.
     /// </summary>
-    /// <returns>Path to .git directory or null.</returns>
-    private string? FindGitDirectory() {
+    /// <returns>Path to git repository root or null.</returns>
+    private string? FindGitRepository() {
         string? dir = Path.GetDirectoryName(typeof(PerformanceTests).Assembly.Location);
         while (dir != null) {
-            string gitDir = Path.Combine(dir, ".git");
-            if (Directory.Exists(gitDir)) {
-                return gitDir;
+            if (Directory.Exists(Path.Combine(dir, ".git"))) {
+                return dir;
             }
             dir = Path.GetDirectoryName(dir);
         }

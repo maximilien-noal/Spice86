@@ -1,11 +1,12 @@
 namespace Spice86.Tests.PerformanceTests;
 
+using Dapper;
 using Microsoft.Data.Sqlite;
 
 /// <summary>
 /// Manages the SQLite database for storing performance test results.
 /// </summary>
-public class PerformanceDatabase : IDisposable {
+public sealed class PerformanceDatabase : IDisposable {
     private readonly string _connectionString;
     private bool _disposed;
 
@@ -52,8 +53,7 @@ public class PerformanceDatabase : IDisposable {
                 ON PerformanceTestResults(RunId, TestId);
         ";
 
-        using var command = new SqliteCommand(createTableSql, connection);
-        command.ExecuteNonQuery();
+        connection.Execute(createTableSql);
     }
 
     /// <summary>
@@ -71,34 +71,32 @@ public class PerformanceDatabase : IDisposable {
             // Insert test run
             string insertRunSql = @"
                 INSERT INTO PerformanceTestRuns (RunTimestamp, GitCommit, MachineName, OsVersion)
-                VALUES (@timestamp, @commit, @machine, @os);
+                VALUES (@Timestamp, @Commit, @Machine, @Os);
                 SELECT last_insert_rowid();
             ";
 
-            long runId;
-            using (var command = new SqliteCommand(insertRunSql, connection, transaction)) {
-                command.Parameters.AddWithValue("@timestamp", DateTime.UtcNow.ToString("O"));
-                command.Parameters.AddWithValue("@commit", gitCommit ?? string.Empty);
-                command.Parameters.AddWithValue("@machine", Environment.MachineName);
-                command.Parameters.AddWithValue("@os", Environment.OSVersion.ToString());
-                runId = (long)command.ExecuteScalar()!;
-            }
+            long runId = connection.ExecuteScalar<long>(insertRunSql, new {
+                Timestamp = DateTime.UtcNow.ToString("O"),
+                Commit = gitCommit ?? string.Empty,
+                Machine = Environment.MachineName,
+                Os = Environment.OSVersion.ToString()
+            }, transaction);
 
             // Insert test results
             string insertResultSql = @"
                 INSERT INTO PerformanceTestResults (RunId, TestId, TestName, Cycles, Result, Timestamp)
-                VALUES (@runId, @testId, @testName, @cycles, @result, @timestamp);
+                VALUES (@RunId, @TestId, @TestName, @Cycles, @Result, @Timestamp);
             ";
 
             foreach (var result in results) {
-                using var command = new SqliteCommand(insertResultSql, connection, transaction);
-                command.Parameters.AddWithValue("@runId", runId);
-                command.Parameters.AddWithValue("@testId", result.TestId);
-                command.Parameters.AddWithValue("@testName", result.TestName);
-                command.Parameters.AddWithValue("@cycles", result.Cycles);
-                command.Parameters.AddWithValue("@result", result.Result);
-                command.Parameters.AddWithValue("@timestamp", result.Timestamp.ToString("O"));
-                command.ExecuteNonQuery();
+                connection.Execute(insertResultSql, new {
+                    RunId = runId,
+                    TestId = result.TestId,
+                    TestName = result.TestName,
+                    Cycles = result.Cycles,
+                    Result = result.Result,
+                    Timestamp = result.Timestamp.ToString("O")
+                }, transaction);
             }
 
             transaction.Commit();
@@ -123,25 +121,19 @@ public class PerformanceDatabase : IDisposable {
             SELECT r.RunTimestamp, r.GitCommit, t.Cycles, t.Result
             FROM PerformanceTestResults t
             INNER JOIN PerformanceTestRuns r ON t.RunId = r.Id
-            WHERE t.TestId = @testId
+            WHERE t.TestId = @TestId
             ORDER BY r.RunTimestamp DESC
-            LIMIT @limit;
+            LIMIT @Limit;
         ";
 
-        var results = new List<HistoricalTestResult>();
-        using var command = new SqliteCommand(sql, connection);
-        command.Parameters.AddWithValue("@testId", testId);
-        command.Parameters.AddWithValue("@limit", limit);
-
-        using var reader = command.ExecuteReader();
-        while (reader.Read()) {
-            results.Add(new HistoricalTestResult {
-                RunTimestamp = DateTime.Parse(reader.GetString(0)),
-                GitCommit = reader.GetString(1),
-                Cycles = reader.GetInt64(2),
-                Result = reader.GetInt64(3)
-            });
-        }
+        var results = connection.Query(sql, new { TestId = testId, Limit = limit })
+            .Select(row => new HistoricalTestResult {
+                RunTimestamp = DateTime.Parse((string)row.RunTimestamp),
+                GitCommit = (string)row.GitCommit,
+                Cycles = (long)row.Cycles,
+                Result = (long)row.Result
+            })
+            .ToList();
 
         return results;
     }
@@ -162,21 +154,22 @@ public class PerformanceDatabase : IDisposable {
                 MIN(Cycles) as MinCycles,
                 MAX(Cycles) as MaxCycles
             FROM PerformanceTestResults
-            WHERE TestId = @testId;
+            WHERE TestId = @TestId;
         ";
 
-        using var command = new SqliteCommand(sql, connection);
-        command.Parameters.AddWithValue("@testId", testId);
-
-        using var reader = command.ExecuteReader();
-        if (reader.Read() && reader.GetInt32(0) > 0) {
-            return new PerformanceStatistics {
-                TestId = testId,
-                RunCount = reader.GetInt32(0),
-                AverageCycles = reader.GetDouble(1),
-                MinCycles = reader.GetInt64(2),
-                MaxCycles = reader.GetInt64(3)
-            };
+        var row = connection.QueryFirstOrDefault(sql, new { TestId = testId });
+        
+        if (row != null) {
+            long runCount = (long)row.RunCount;
+            if (runCount > 0) {
+                return new PerformanceStatistics {
+                    TestId = testId,
+                    RunCount = (int)runCount,
+                    AverageCycles = (double)row.AvgCycles,
+                    MinCycles = (long)row.MinCycles,
+                    MaxCycles = (long)row.MaxCycles
+                };
+            }
         }
 
         return null;
@@ -194,56 +187,56 @@ public class PerformanceDatabase : IDisposable {
 /// <summary>
 /// Represents a historical test result for comparison.
 /// </summary>
-public class HistoricalTestResult {
+public record HistoricalTestResult {
     /// <summary>
     /// Gets or sets the run timestamp.
     /// </summary>
-    public DateTime RunTimestamp { get; set; }
+    public required DateTime RunTimestamp { get; init; }
 
     /// <summary>
     /// Gets or sets the git commit hash.
     /// </summary>
-    public string GitCommit { get; set; } = string.Empty;
+    public required string GitCommit { get; init; }
 
     /// <summary>
     /// Gets or sets the cycle count.
     /// </summary>
-    public long Cycles { get; set; }
+    public required long Cycles { get; init; }
 
     /// <summary>
     /// Gets or sets the result value.
     /// </summary>
-    public long Result { get; set; }
+    public required long Result { get; init; }
 }
 
 /// <summary>
 /// Represents performance statistics for a test.
 /// </summary>
-public class PerformanceStatistics {
+public record PerformanceStatistics {
     /// <summary>
     /// Gets or sets the test ID.
     /// </summary>
-    public int TestId { get; set; }
+    public required int TestId { get; init; }
 
     /// <summary>
     /// Gets or sets the number of runs.
     /// </summary>
-    public int RunCount { get; set; }
+    public required int RunCount { get; init; }
 
     /// <summary>
     /// Gets or sets the average cycle count.
     /// </summary>
-    public double AverageCycles { get; set; }
+    public required double AverageCycles { get; init; }
 
     /// <summary>
     /// Gets or sets the minimum cycle count.
     /// </summary>
-    public long MinCycles { get; set; }
+    public required long MinCycles { get; init; }
 
     /// <summary>
     /// Gets or sets the maximum cycle count.
     /// </summary>
-    public long MaxCycles { get; set; }
+    public required long MaxCycles { get; init; }
 
     /// <summary>
     /// Gets the variance (max - min).
