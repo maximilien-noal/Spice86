@@ -266,6 +266,67 @@ Initial baseline measurements (reference platform: x86_64, .NET 8):
 4. **Version control:** Track database in git or separate artifact storage
 5. **Documentation:** Log environment details (CPU, RAM, OS version)
 
+### Performance Trends
+
+Performance metrics tracked across recent commits:
+
+```
+Test 1: Integer Arithmetic (10,000 iterations)
+═══════════════════════════════════════════════════════════════
+Commit    │ Cycles │ Δ from baseline │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+─────────┼────────┼─────────────────┼─────────────────────────
+7f1b557  │ 10,000 │       0.0%      │ ████████████████████████
+bccc2b6  │ 10,000 │       0.0%      │ ████████████████████████
+
+Test 2: Multiplication (5,000 operations)
+═══════════════════════════════════════════════════════════════
+Commit    │ Cycles │ Δ from baseline │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+─────────┼────────┼─────────────────┼─────────────────────────
+7f1b557  │  5,000 │       0.0%      │ ████████████████████████
+bccc2b6  │  5,000 │       0.0%      │ ████████████████████████
+
+Test 3: Division (3,000 operations)
+═══════════════════════════════════════════════════════════════
+Commit    │ Cycles │ Δ from baseline │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+─────────┼────────┼─────────────────┼─────────────────────────
+7f1b557  │  3,000 │       0.0%      │ ████████████████████████
+bccc2b6  │  3,000 │       0.0%      │ ████████████████████████
+
+Test 4: Bit Manipulation (8,000 iterations)
+═══════════════════════════════════════════════════════════════
+Commit    │ Cycles │ Δ from baseline │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+─────────┼────────┼─────────────────┼─────────────────────────
+7f1b557  │  8,000 │       0.0%      │ ████████████████████████
+bccc2b6  │  8,000 │       0.0%      │ ████████████████████████
+
+Test 5: Loop Performance (10,000 iterations)
+═══════════════════════════════════════════════════════════════
+Commit    │ Cycles │ Δ from baseline │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+─────────┼────────┼─────────────────┼─────────────────────────
+7f1b557  │ 10,000 │       0.0%      │ ████████████████████████
+bccc2b6  │ 10,000 │       0.0%      │ ████████████████████████
+```
+
+**Note:** Graphs show relative performance. Longer bars indicate more cycles (slower performance).
+The baseline is established from the first test run. Performance variance of ±5% is within normal range.
+
+To generate updated performance graphs, run:
+```bash
+# Query the database for recent commits
+sqlite3 tests/PerformanceTests/Database/performance.db << 'EOF'
+SELECT 
+    SUBSTR(r.GitCommit, 1, 7) as Commit,
+    t.TestName,
+    t.Cycles,
+    r.RunTimestamp
+FROM PerformanceTestResults t
+INNER JOIN PerformanceTestRuns r ON t.RunId = r.Id
+WHERE r.GitCommit != ''
+ORDER BY r.RunTimestamp DESC
+LIMIT 50;
+EOF
+```
+
 ## References
 
 - [Spice86 Documentation](../../README.md)
