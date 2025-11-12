@@ -187,7 +187,7 @@ public class BreakpointTests {
             triggers++;
         }, false), true);
         programExecutor.Run();
-        // With deterministic cycle-based timing, we consistently get 358 interrupts
+        // With pure cycle-based deterministic timing (no wall-clock waiting), we consistently get 358 interrupts
         Assert.Equal(358, triggers);
     }
 

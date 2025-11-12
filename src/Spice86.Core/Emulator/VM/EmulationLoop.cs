@@ -42,6 +42,7 @@ public class EmulationLoop : ICyclesLimiter {
     private bool _sliceInitialized;
     private readonly long _sliceDurationTicks;
     private readonly ICyclesBudgeter _cyclesBudgeter;
+    private readonly bool _useDeterministicTiming;
 
     /// <summary>
     ///     Gets a reader exposing CPU performance metrics.
@@ -74,10 +75,12 @@ public class EmulationLoop : ICyclesLimiter {
     /// <param name="dualPic">Programmable interrupt controller driving hardware IRQ delivery.</param>
     /// <param name="cyclesLimiter">Limits the number of executed instructions per slice</param>
     /// <param name="cyclesBudgeter">Budgets how many cycles are available per slice</param>
+    /// <param name="useDeterministicTiming">When true, skips real-time waiting and advances time purely based on CPU cycles</param>
     public EmulationLoop(FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
         PicPitCpuState picPitCpuState, DualPic dualPic,
         EmulatorBreakpointsManager emulatorBreakpointsManager,
-        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter) {
+        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter,
+        bool useDeterministicTiming = false) {
         _loggerService = loggerService;
         _cpu = cpu;
         _functionHandler = functionHandler;
@@ -89,6 +92,7 @@ public class EmulationLoop : ICyclesLimiter {
         _cyclesLimiter = cyclesLimiter;
         _sliceDurationTicks = Math.Max(1, Stopwatch.Frequency / 1000);
         _cyclesBudgeter = cyclesBudgeter;
+        _useDeterministicTiming = useDeterministicTiming;
         _pauseHandler.Paused += OnPauseStateChanged;
         _pauseHandler.Resumed += OnPauseStateChanged;
         _sliceStopwatch.Start();
@@ -252,6 +256,12 @@ public class EmulationLoop : ICyclesLimiter {
     private bool HandleSliceTiming() {
         if (!_sliceInitialized || !_cpuState.IsRunning) {
             return false;
+        }
+
+        // In deterministic timing mode, skip real-time waiting and run slices as fast as possible
+        // Time advances purely based on CPU cycles executed
+        if (_useDeterministicTiming) {
+            return _cpuState.IsRunning;
         }
 
         _nextSliceTick += _sliceDurationTicks;
