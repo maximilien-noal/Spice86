@@ -16,7 +16,7 @@ using Xunit;
 /// Executes tests from https://github.com/SingleStepTests/
 /// </summary>
 public class SingleStepTest {
-    private SingleStepTestMinimalMachine _singleStepTestMinimalMachine = new(CpuModel.INTEL_8086);
+    private SingleStepTestMinimalMachine _singleStepTestMinimalMachine = new(CpuModel.INTEL_80386);
     private readonly ISet<string> _revocationList = new HashSet<string>([
         "7df1d2a948c416f5a4416e2f747d2d357d497570",
         "ab0cea0f2b89ae469a98eaf20dedc9ff2ca08c91",
