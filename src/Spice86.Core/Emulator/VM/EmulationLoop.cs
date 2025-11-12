@@ -2,6 +2,7 @@
 
 using Serilog.Events;
 
+using Spice86.Core.CLI;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Core.Emulator.Errors;
@@ -42,7 +43,7 @@ public class EmulationLoop : ICyclesLimiter {
     private bool _sliceInitialized;
     private readonly long _sliceDurationTicks;
     private readonly ICyclesBudgeter _cyclesBudgeter;
-    private readonly bool _useDeterministicTiming;
+    private readonly Configuration _configuration;
 
     /// <summary>
     ///     Gets a reader exposing CPU performance metrics.
@@ -65,22 +66,22 @@ public class EmulationLoop : ICyclesLimiter {
     /// <summary>
     /// Initializes a new instance.
     /// </summary>
-    /// <param name="loggerService">The logger service implementation.</param>
+    /// <param name="configuration">The emulator configuration.</param>
     /// <param name="functionHandler">The class that handles function calls in the machine code.</param>
     /// <param name="cpu">The emulated CPU, so the emulation loop can call ExecuteNextInstruction().</param>
     /// <param name="cpuState">The emulated CPU State, so that we know when to stop.</param>
-    /// <param name="emulatorBreakpointsManager">The class that stores emulation breakpoints.</param>
-    /// <param name="pauseHandler">The emulation pause handler.</param>
     /// <param name="picPitCpuState">Shared cycle budgeting state consumed by the PIC/PIT scheduler.</param>
     /// <param name="dualPic">Programmable interrupt controller driving hardware IRQ delivery.</param>
+    /// <param name="emulatorBreakpointsManager">The class that stores emulation breakpoints.</param>
+    /// <param name="pauseHandler">The emulation pause handler.</param>
+    /// <param name="loggerService">The logger service implementation.</param>
     /// <param name="cyclesLimiter">Limits the number of executed instructions per slice</param>
     /// <param name="cyclesBudgeter">Budgets how many cycles are available per slice</param>
-    /// <param name="useDeterministicTiming">When true, skips real-time waiting and advances time purely based on CPU cycles</param>
-    public EmulationLoop(FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
+    public EmulationLoop(Configuration configuration, FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
         PicPitCpuState picPitCpuState, DualPic dualPic,
         EmulatorBreakpointsManager emulatorBreakpointsManager,
-        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter,
-        bool useDeterministicTiming = false) {
+        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter) {
+        _configuration = configuration;
         _loggerService = loggerService;
         _cpu = cpu;
         _functionHandler = functionHandler;
@@ -92,7 +93,6 @@ public class EmulationLoop : ICyclesLimiter {
         _cyclesLimiter = cyclesLimiter;
         _sliceDurationTicks = Math.Max(1, Stopwatch.Frequency / 1000);
         _cyclesBudgeter = cyclesBudgeter;
-        _useDeterministicTiming = useDeterministicTiming;
         _pauseHandler.Paused += OnPauseStateChanged;
         _pauseHandler.Resumed += OnPauseStateChanged;
         _sliceStopwatch.Start();
@@ -258,9 +258,9 @@ public class EmulationLoop : ICyclesLimiter {
             return false;
         }
 
-        // In deterministic timing mode, skip real-time waiting and run slices as fast as possible
+        // When InstructionsPerSecond is configured, skip real-time waiting and run slices as fast as possible
         // Time advances purely based on CPU cycles executed
-        if (_useDeterministicTiming) {
+        if (_configuration.InstructionsPerSecond.HasValue) {
             return _cpuState.IsRunning;
         }
 

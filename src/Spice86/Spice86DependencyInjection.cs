@@ -365,14 +365,10 @@ public class Spice86DependencyInjection : IDisposable {
 
         ICyclesLimiter cyclesLimiter = CycleLimiterFactory.Create(configuration);
         ICyclesBudgeter cyclesBudgeter = configuration.CyclesBudgeter ?? CreateDefaultCyclesBudgeter(cyclesLimiter);
-        
-        // Use deterministic timing when InstructionsPerSecond is configured for cycle-based time advancement
-        bool useDeterministicTiming = configuration.InstructionsPerSecond.HasValue;
 
-        EmulationLoop emulationLoop = new(functionHandler,
+        EmulationLoop emulationLoop = new(configuration, functionHandler,
             cpuForEmulationLoop, state, picPitCpuState, dualPic,
-            emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter,
-            useDeterministicTiming);
+            emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("Emulator state serializer created...");
