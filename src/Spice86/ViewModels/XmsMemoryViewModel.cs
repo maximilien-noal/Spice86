@@ -15,10 +15,7 @@ using Spice86.ViewModels.Services;
 
 /// <summary>
 /// ViewModel for viewing XMS (Extended Memory Specification) memory.
-/// Note: XMS memory is stored in ExtendedMemoryManager.XmsRam which is a separate RAM
-/// not part of main memory. This view currently shows the HMA (High Memory Area) which
-/// is the only part of XMS accessible in real mode. To view the full XMS RAM, a wrapper
-/// implementation would be needed to present IMemoryDevice as IMemory.
+/// Uses the separate XMS RAM that is managed by the XMS driver, not main memory.
 /// </summary>
 public partial class XmsMemoryViewModel : MemoryViewModel {
     private readonly ExtendedMemoryManager? _xmsManager;
@@ -30,31 +27,32 @@ public partial class XmsMemoryViewModel : MemoryViewModel {
         ExtendedMemoryManager? xmsManager,
         bool canCloseTab = false, string? startAddress = null,
         string? endAddress = null) :
-            base(memory, memoryDataExporter, state, breakpointsViewModel, pauseHandler, messenger,
+            base(xmsManager != null ? new XmsMemory(xmsManager) : memory,
+                memoryDataExporter, state, breakpointsViewModel, pauseHandler, messenger,
                 uiDispatcher, textClipboard, storageProvider, structureViewModelFactory,
                 canCloseTab, startAddress, endAddress) {
         _xmsManager = xmsManager;
-        Title = "XMS Memory (HMA in Main Memory)";
+        Title = "XMS Memory";
         if (xmsManager != null) {
-            pauseHandler.Paused += () => uiDispatcher.Post(() => UpdateXmsMemoryViewModel(this, memory, xmsManager),
+            pauseHandler.Paused += () => uiDispatcher.Post(() => UpdateXmsMemoryViewModel(this, xmsManager),
                 DispatcherPriority.Background);
         }
     }
 
-    private static void UpdateXmsMemoryViewModel(MemoryViewModel xmsMemoryViewModel, IMemory memory, ExtendedMemoryManager xmsManager) {
-        // Show the HMA (High Memory Area) which is in main memory
-        // Note: The bulk of XMS memory (ExtendedMemoryManager.XmsRam) is separate and not shown here
-        xmsMemoryViewModel.StartAddress = ConvertUtils.ToHex32(A20Gate.StartOfHighMemoryArea);
-        xmsMemoryViewModel.EndAddress = ConvertUtils.ToHex32(Math.Min((uint)memory.Length - 1, A20Gate.EndOfHighMemoryArea));
+    private static void UpdateXmsMemoryViewModel(MemoryViewModel xmsMemoryViewModel, ExtendedMemoryManager xmsManager) {
+        // XMS memory view starts at 0 in the XmsRam (separate from main memory)
+        xmsMemoryViewModel.StartAddress = ConvertUtils.ToHex32(0);
+        xmsMemoryViewModel.EndAddress = ConvertUtils.ToHex32(xmsManager.XmsRam.Size - 1);
     }
 
     /// <summary>
-    /// Override to allow addresses in the HMA range
+    /// Override to allow addresses up to XMS memory size
     /// </summary>
     protected override void ValidateMemoryAddressIsWithinLimit(State state, string? value,
         uint limit = A20Gate.EndOfHighMemoryArea,
         [System.Runtime.CompilerServices.CallerMemberName] string? bindedPropertyName = null) {
-        // Allow addresses up to the end of HMA
-        base.ValidateMemoryAddressIsWithinLimit(state, value, A20Gate.EndOfHighMemoryArea, bindedPropertyName);
+        // For XMS memory, use the XMS RAM size as the limit
+        uint xmsLimit = _xmsManager?.XmsRam.Size ?? A20Gate.EndOfHighMemoryArea;
+        base.ValidateMemoryAddressIsWithinLimit(state, value, xmsLimit, bindedPropertyName);
     }
 }

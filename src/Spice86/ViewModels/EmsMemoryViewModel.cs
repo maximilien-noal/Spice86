@@ -15,10 +15,8 @@ using Spice86.ViewModels.Services;
 
 /// <summary>
 /// ViewModel for viewing EMS (Expanded Memory Specification) memory.
-/// Note: EMS memory is stored in separate EmmPage objects (each with its own Ram)
-/// that are not part of main memory. This view shows the EMS Page Frame in main memory
-/// at segment 0xE000, which is a 64KB window that maps to the separate EMS pages.
-/// To view the actual EMS pages directly, a wrapper implementation would be needed.
+/// Uses the separate EMS pages that are not part of main memory.
+/// All allocated EMS pages are shown as a contiguous memory space.
 /// </summary>
 public partial class EmsMemoryViewModel : MemoryViewModel {
     private readonly ExpandedMemoryManager? _emsManager;
@@ -30,33 +28,47 @@ public partial class EmsMemoryViewModel : MemoryViewModel {
         ExpandedMemoryManager? emsManager,
         bool canCloseTab = false, string? startAddress = null,
         string? endAddress = null) :
-            base(memory, memoryDataExporter, state, breakpointsViewModel, pauseHandler, messenger,
+            base(emsManager != null ? new EmsMemory(emsManager) : memory,
+                memoryDataExporter, state, breakpointsViewModel, pauseHandler, messenger,
                 uiDispatcher, textClipboard, storageProvider, structureViewModelFactory,
                 canCloseTab, startAddress, endAddress) {
         _emsManager = emsManager;
-        Title = "EMS Memory (Page Frame in Main Memory)";
+        Title = "EMS Memory";
         if (emsManager != null) {
-            pauseHandler.Paused += () => uiDispatcher.Post(() => UpdateEmsMemoryViewModel(this),
+            pauseHandler.Paused += () => uiDispatcher.Post(() => UpdateEmsMemoryViewModel(this, emsManager),
                 DispatcherPriority.Background);
         }
     }
 
-    private static void UpdateEmsMemoryViewModel(MemoryViewModel emsMemoryViewModel) {
-        // Show the EMS Page Frame at segment 0xE000 in main memory
-        // This is a 64KB window that provides access to mapped EMS pages
-        // Note: The actual EMS pages (EmmHandle.LogicalPages) are separate and not shown directly
-        uint emsPageFrameAddress = MemoryUtils.ToPhysicalAddress(ExpandedMemoryManager.EmmPageFrameSegment, 0);
-        emsMemoryViewModel.StartAddress = ConvertUtils.ToHex32(emsPageFrameAddress);
-        emsMemoryViewModel.EndAddress = ConvertUtils.ToHex32(emsPageFrameAddress + ExpandedMemoryManager.EmmPageFrameSize - 1);
+    private static void UpdateEmsMemoryViewModel(MemoryViewModel emsMemoryViewModel, ExpandedMemoryManager emsManager) {
+        // Calculate total allocated EMS memory across all handles
+        int totalPages = 0;
+        foreach (var handle in emsManager.EmmHandles.Values) {
+            totalPages += handle.LogicalPages.Count;
+        }
+        uint totalSize = (uint)(totalPages * ExpandedMemoryManager.EmmPageSize);
+        
+        // EMS memory view starts at 0 (separate from main memory)
+        emsMemoryViewModel.StartAddress = ConvertUtils.ToHex32(0);
+        emsMemoryViewModel.EndAddress = ConvertUtils.ToHex32(totalSize > 0 ? totalSize - 1 : 0);
     }
 
     /// <summary>
-    /// Override to allow addresses in the EMS page frame range
+    /// Override to allow addresses up to EMS memory size
     /// </summary>
     protected override void ValidateMemoryAddressIsWithinLimit(State state, string? value,
         uint limit = A20Gate.EndOfHighMemoryArea,
         [System.Runtime.CompilerServices.CallerMemberName] string? bindedPropertyName = null) {
-        // EMS page frame is in main memory, so use normal limit
-        base.ValidateMemoryAddressIsWithinLimit(state, value, A20Gate.EndOfHighMemoryArea, bindedPropertyName);
+        // For EMS memory, calculate the limit based on allocated pages
+        if (_emsManager != null) {
+            int totalPages = 0;
+            foreach (var handle in _emsManager.EmmHandles.Values) {
+                totalPages += handle.LogicalPages.Count;
+            }
+            uint emsLimit = (uint)(totalPages * ExpandedMemoryManager.EmmPageSize);
+            base.ValidateMemoryAddressIsWithinLimit(state, value, emsLimit, bindedPropertyName);
+        } else {
+            base.ValidateMemoryAddressIsWithinLimit(state, value, limit, bindedPropertyName);
+        }
     }
 }
