@@ -24,11 +24,11 @@ public class SingleStepTest {
         "eaaf835a6600a351ee70375c7f6996931411bca5",
         "1b586a46891182a22b3f55f71e4db4c601ac26e4"]);
     [Theory(Skip = "Not ready yet to be run in CI")]
-    [InlineData(CpuModel.INTEL_8086, "00-FF", 1)]
-    [InlineData(CpuModel.INTEL_80286, "00-3F", 2)]
-    [InlineData(CpuModel.INTEL_80286, "40-7F", 2)]
-    [InlineData(CpuModel.INTEL_80286, "80-BF", 2)]
-    [InlineData(CpuModel.INTEL_80286, "C0-FF", 2)]
+    [InlineData(CpuModel.INTEL_80386, "00-65", 3)]
+    [InlineData(CpuModel.INTEL_80386, "66-66", 3)]
+    [InlineData(CpuModel.INTEL_80386, "67.00-67.7F", 3)]
+    [InlineData(CpuModel.INTEL_80386, "67.80-67.FF", 3)]
+    [InlineData(CpuModel.INTEL_80386, "68-FF", 3)]
     public void TestCpu(CpuModel cpuModel, string range, int maxCycles) {
         _singleStepTestMinimalMachine = new(cpuModel);
         string cpuModelString = FromCpuModel(cpuModel);
@@ -58,6 +58,7 @@ public class SingleStepTest {
         return cpuModel switch {
             CpuModel.INTEL_8086 => "8086",
             CpuModel.INTEL_80286 => "80286",
+            CpuModel.INTEL_80386 => "80386",
             _ => throw new InvalidEnumArgumentException()
         };
     }
