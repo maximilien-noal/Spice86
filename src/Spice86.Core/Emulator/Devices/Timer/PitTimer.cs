@@ -96,12 +96,13 @@ public sealed class PitTimer : IDisposable, IPitControl, ITimeMultiplier {
     /// <param name="pic">Programmable interrupt controller that receives channel 0 callbacks.</param>
     /// <param name="pcSpeaker">Speaker shim that mirrors channel 2 reloads and control words.</param>
     /// <param name="logger">Optional logger for trace output. A null value installs a no-op logger.</param>
-    public PitTimer(IoSystem ioSystem, DualPic pic, IPitSpeaker pcSpeaker, ILoggerService logger) {
+    /// <param name="wallClock">Clock implementation for time tracking. If null, uses wall-clock time.</param>
+    public PitTimer(IoSystem ioSystem, DualPic pic, IPitSpeaker pcSpeaker, ILoggerService logger, IWallClock? wallClock = null) {
         _ioSystem = ioSystem;
         _pic = pic;
         _pcSpeaker = pcSpeaker;
         _logger = logger;
-        _wallClock = new WallClock();
+        _wallClock = wallClock ?? new WallClock();
         SystemStartTime = _wallClock.UtcNow;
 
         InstallHandlers();

@@ -187,7 +187,8 @@ public class BreakpointTests {
             triggers++;
         }, false), true);
         programExecutor.Run();
-        Assert.Equal(356, triggers);
+        // With deterministic cycle-based timing, we consistently get 358 interrupts
+        Assert.Equal(358, triggers);
     }
 
     [Theory]

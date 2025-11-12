@@ -327,7 +327,11 @@ public class Spice86DependencyInjection : IDisposable {
             configuration.FailOnUnhandledPort, loggerService);
         PcSpeaker pcSpeaker = new(softwareMixer, state, ioPortDispatcher,
             pauseHandler, loggerService, dualPic, configuration.FailOnUnhandledPort);
-        PitTimer pitTimer = new(ioSystem, dualPic, pcSpeaker, loggerService);
+        // Use deterministic clock when InstructionsPerSecond is configured for predictable timing
+        IWallClock? wallClock = configuration.InstructionsPerSecond.HasValue 
+            ? new DeterministicWallClock(dualPic)
+            : null;
+        PitTimer pitTimer = new(ioSystem, dualPic, pcSpeaker, loggerService, wallClock);
         pcSpeaker.AttachPitControl(pitTimer);
         loggerService.Information("PIT created...");
 
