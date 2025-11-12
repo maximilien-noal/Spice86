@@ -560,11 +560,13 @@ public class Spice86DependencyInjection : IDisposable {
             XmsMemoryViewModel xmsMemoryViewModel = new(memory, memoryDataExporter, state,
                 breakpointsViewModel, pauseHandler, messenger, uiDispatcher,
                 textClipboard, hostStorageProvider, structureViewModelFactory,
+                xms,
                 canCloseTab: false);
 
             EmsMemoryViewModel emsMemoryViewModel = new(memory, memoryDataExporter, state,
                 breakpointsViewModel, pauseHandler, messenger, uiDispatcher,
                 textClipboard, hostStorageProvider, structureViewModelFactory,
+                dos.Ems,
                 canCloseTab: false);
 
             DebugWindowViewModel debugWindowViewModel = new(

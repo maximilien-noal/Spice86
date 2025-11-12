@@ -34,7 +34,7 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
             propertyName));
     }
 
-    protected void ValidateMemoryAddressIsWithinLimit(State state, string? value,
+    protected virtual void ValidateMemoryAddressIsWithinLimit(State state, string? value,
         uint limit = A20Gate.EndOfHighMemoryArea,
         [CallerMemberName] string? bindedPropertyName = null) {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(
