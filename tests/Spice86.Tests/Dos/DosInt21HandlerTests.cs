@@ -45,7 +45,6 @@ public class DosInt21HandlerTests {
             null!,
             dosFileManager,
             driveManager,
-            null!,  // realTimeClock
             logger);
 
         state.AL = (byte)SeekOrigin.Current;
