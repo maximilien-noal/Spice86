@@ -18,9 +18,10 @@
 ;   - Date values should be in valid ranges (month 1-12, day 1-31)
 ; ==============================================================================
 
-.model small
+org 100h                    ; COM file starts at offset 100h
 
-my_code_seg segment
+section .text
+
 start:
     ; ==============================================================================
     ; Test 1: Read CMOS Seconds Register (0x00)
@@ -28,258 +29,259 @@ start:
     ; The seconds register should contain a value in BCD format (0x00-0x59)
     ; This tests basic CMOS read functionality
     
-    mov al, 0x00            ; Select register 0x00 (Seconds)
-    out 0x70, al            ; Write to CMOS address port
-    in al, 0x71             ; Read from CMOS data port
+    mov al, 0x00            ; Register 0x00 = Seconds
+    out 0x70, al            ; Select register via address port
+    in al, 0x71             ; Read value from data port
     
-    ; Validate that the value is valid BCD (both nibbles 0-9)
-    mov bl, al              ; Save the value
-    and al, 0x0F            ; Check low nibble
-    cmp al, 0x09
-    ja test1_fail           ; Low nibble > 9 is invalid
+    ; Validate BCD format (both nibbles should be 0-9)
+    call validate_bcd
+    jc test1_fail
     
-    mov al, bl              ; Restore value
-    shr al, 4               ; Check high nibble
-    cmp al, 0x05            ; Seconds high nibble should be 0-5
+    ; Validate seconds range (0-59 in BCD = 0x00-0x59)
+    cmp al, 0x59
     ja test1_fail
     
-    ; Seconds read successfully
-    mov al, 0x01            ; Test 1 passed marker
+test1_pass:
+    mov al, 0x01            ; Test 1 passed
     out 0x998, al
     jmp test2
-    
+
 test1_fail:
-    mov al, 0xFF            ; Failure
+    mov al, 0xFF            ; Test failed
     out 0x999, al
-    mov al, 0x01            ; Test 1 failed
+    mov al, 0x01            ; Test number
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 2: Read CMOS Minutes Register (0x02)
     ; ==============================================================================
+    ; The minutes register should contain a value in BCD format (0x00-0x59)
+    
 test2:
-    mov al, 0x02            ; Select register 0x02 (Minutes)
+    mov al, 0x02            ; Register 0x02 = Minutes
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (0x00-0x59)
-    mov bl, al
-    and al, 0x0F            ; Check low nibble
-    cmp al, 0x09
+    ; Validate BCD format
+    call validate_bcd
+    jc test2_fail
+    
+    ; Validate minutes range (0-59 in BCD)
+    cmp al, 0x59
     ja test2_fail
     
-    mov al, bl
-    shr al, 4               ; Check high nibble
-    cmp al, 0x05            ; Minutes high nibble should be 0-5
-    ja test2_fail
-    
-    mov al, 0x02            ; Test 2 passed marker
+test2_pass:
+    mov al, 0x02            ; Test 2 passed
     out 0x998, al
     jmp test3
-    
+
 test2_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x02
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 3: Read CMOS Hours Register (0x04)
     ; ==============================================================================
+    ; The hours register should contain a value in BCD format (0x00-0x23)
+    
 test3:
-    mov al, 0x04            ; Select register 0x04 (Hours)
+    mov al, 0x04            ; Register 0x04 = Hours
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (0x00-0x23 for 24-hour format)
-    mov bl, al
-    and al, 0x0F            ; Check low nibble
-    cmp al, 0x09
+    ; Validate BCD format
+    call validate_bcd
+    jc test3_fail
+    
+    ; Validate hours range (0-23 in BCD = 0x00-0x23)
+    cmp al, 0x23
     ja test3_fail
     
-    mov al, bl
-    shr al, 4               ; Check high nibble
-    cmp al, 0x02            ; Hours high nibble should be 0-2
-    ja test3_fail
-    
-    ; Additional check: if high nibble is 2, low nibble must be 0-3
-    cmp al, 0x02
-    jne test3_ok
-    mov al, bl
-    and al, 0x0F
-    cmp al, 0x03
-    ja test3_fail
-    
-test3_ok:
-    mov al, 0x03            ; Test 3 passed marker
+test3_pass:
+    mov al, 0x03            ; Test 3 passed
     out 0x998, al
     jmp test4
-    
+
 test3_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x03
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 4: Read CMOS Day of Month Register (0x07)
     ; ==============================================================================
+    ; The day register should contain a value in BCD format (0x01-0x31)
+    
 test4:
-    mov al, 0x07            ; Select register 0x07 (Day of Month)
+    mov al, 0x07            ; Register 0x07 = Day of Month
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (0x01-0x31)
-    mov bl, al
+    ; Validate BCD format
+    call validate_bcd
+    jc test4_fail
     
-    ; Check if value is at least 0x01
-    cmp bl, 0x01
-    jb test4_fail
-    
-    ; Check low nibble
-    and al, 0x0F
-    cmp al, 0x09
+    ; Validate day range (1-31 in BCD = 0x01-0x31)
+    cmp al, 0x00
+    je test4_fail           ; Day cannot be 0
+    cmp al, 0x31
     ja test4_fail
     
-    ; Check high nibble (should be 0-3)
-    mov al, bl
-    shr al, 4
-    cmp al, 0x03
-    ja test4_fail
-    
-    mov al, 0x04            ; Test 4 passed marker
+test4_pass:
+    mov al, 0x04            ; Test 4 passed
     out 0x998, al
     jmp test5
-    
+
 test4_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x04
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 5: Read CMOS Month Register (0x08)
     ; ==============================================================================
+    ; The month register should contain a value in BCD format (0x01-0x12)
+    
 test5:
-    mov al, 0x08            ; Select register 0x08 (Month)
+    mov al, 0x08            ; Register 0x08 = Month
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (0x01-0x12)
-    mov bl, al
+    ; Validate BCD format
+    call validate_bcd
+    jc test5_fail
     
-    ; Check if value is at least 0x01
-    cmp bl, 0x01
-    jb test5_fail
-    
-    ; Check if value is at most 0x12
-    cmp bl, 0x12
+    ; Validate month range (1-12 in BCD = 0x01-0x12)
+    cmp al, 0x00
+    je test5_fail           ; Month cannot be 0
+    cmp al, 0x12
     ja test5_fail
     
-    ; Check low nibble
-    and al, 0x0F
-    cmp al, 0x09
-    ja test5_fail
-    
-    ; Check high nibble (should be 0-1)
-    mov al, bl
-    shr al, 4
-    cmp al, 0x01
-    ja test5_fail
-    
-    mov al, 0x05            ; Test 5 passed marker
+test5_pass:
+    mov al, 0x05            ; Test 5 passed
     out 0x998, al
     jmp test6
-    
+
 test5_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x05
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 6: Read CMOS Year Register (0x09)
     ; ==============================================================================
+    ; The year register should contain a value in BCD format (0x00-0x99)
+    
 test6:
-    mov al, 0x09            ; Select register 0x09 (Year)
+    mov al, 0x09            ; Register 0x09 = Year
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (0x00-0x99)
-    mov bl, al
-    and al, 0x0F            ; Check low nibble
-    cmp al, 0x09
+    ; Validate BCD format
+    call validate_bcd
+    jc test6_fail
+    
+    ; Validate year range (0-99 in BCD = 0x00-0x99)
+    cmp al, 0x99
     ja test6_fail
     
-    mov al, bl
-    shr al, 4               ; Check high nibble
-    cmp al, 0x09
-    ja test6_fail
-    
-    mov al, 0x06            ; Test 6 passed marker
+test6_pass:
+    mov al, 0x06            ; Test 6 passed
     out 0x998, al
     jmp test7
-    
+
 test6_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x06
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
     ; ==============================================================================
     ; Test 7: Read CMOS Century Register (0x32)
     ; ==============================================================================
+    ; The century register should contain a value in BCD format (typically 0x19-0x20)
+    
 test7:
-    mov al, 0x32            ; Select register 0x32 (Century)
+    mov al, 0x32            ; Register 0x32 = Century
     out 0x70, al
     in al, 0x71
     
-    ; Validate BCD format (should be 0x19 or 0x20 for years 1900-2099)
+    ; Validate BCD format
+    call validate_bcd
+    jc test7_fail
+    
+    ; Validate century range (19-20 in BCD for years 1900-2099)
     cmp al, 0x19
-    je test7_ok
+    jb test7_fail
     cmp al, 0x20
-    je test7_ok
-    cmp al, 0x21            ; Allow 0x21 for future compatibility
-    je test7_ok
-    jmp test7_fail
+    ja test7_fail
     
-test7_ok:
-    mov al, 0x07            ; Test 7 passed marker
+test7_pass:
+    mov al, 0x07            ; Test 7 passed
     out 0x998, al
-    jmp all_tests_pass
-    
+    jmp all_tests_passed
+
 test7_fail:
     mov al, 0xFF
     out 0x999, al
     mov al, 0x07
     out 0x998, al
-    jmp test_end
+    jmp exit_program
 
-    ; ==============================================================================
-    ; All Tests Passed
-    ; ==============================================================================
-all_tests_pass:
-    mov al, 0x00            ; Success
+all_tests_passed:
+    mov al, 0x00            ; All tests passed (success code)
     out 0x999, al
-    mov al, 0xFF            ; All tests passed marker
+    mov al, 0x07            ; 7 tests completed
     out 0x998, al
 
-test_end:
-    ; Terminate program
-    mov ah, 0x4C            ; DOS terminate
+exit_program:
+    mov ax, 0x4C00          ; DOS terminate program
     int 0x21
-    hlt                     ; Halt as fallback
 
-my_code_seg ends
+; ==============================================================================
+; validate_bcd - Validates that AL contains a valid BCD value
+; ==============================================================================
+; Input: AL = value to validate
+; Output: Carry flag set if invalid, clear if valid
+; Preserves: AL
+;
+; A valid BCD byte has both nibbles in range 0-9
+; ==============================================================================
+validate_bcd:
+    push ax
+    push bx
+    
+    ; Check high nibble (bits 4-7)
+    mov bl, al
+    shr bl, 4               ; Shift high nibble to low position
+    cmp bl, 9
+    ja .invalid             ; If > 9, invalid BCD
+    
+    ; Check low nibble (bits 0-3)
+    mov bl, al
+    and bl, 0x0F            ; Mask low nibble
+    cmp bl, 9
+    ja .invalid             ; If > 9, invalid BCD
+    
+.valid:
+    pop bx
+    pop ax
+    clc                     ; Clear carry = valid
+    ret
 
-my_stack_seg segment stack
-    db 100h dup(?)
-my_stack_seg ends
-
-end start
+.invalid:
+    pop bx
+    pop ax
+    stc                     ; Set carry = invalid
+    ret
