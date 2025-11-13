@@ -103,6 +103,10 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         _cmosRegisters[CmosRegisterAddresses.StatusRegisterB] = 0x02;  // 24-hour mode, no interrupts
         _cmosRegisters[CmosRegisterAddresses.StatusRegisterD] = 0x80;  // Valid RAM + battery good
         
+        // Initialize BCD mode based on Status Register B (bit 2: 0=BCD, 1=binary)
+        // Default 0x02 has bit 2 clear, so BCD mode is enabled
+        _cmosRegisters.IsBcdMode = (_cmosRegisters[CmosRegisterAddresses.StatusRegisterB] & 0x04) == 0;
+        
         // Initialize CMOS RAM with base memory size (640KB)
         _cmosRegisters[0x15] = 0x80;  // Low byte: 640KB = 0x280
         _cmosRegisters[0x16] = 0x02;  // High byte
