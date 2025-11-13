@@ -11,6 +11,7 @@
 ; Test Results Protocol:
 ;   Port 0x999 = Result port (0x00 = success, 0xFF = failure)
 ;   Port 0x998 = Details port (error codes or diagnostic info)
+;   Screen: Visual output via INT 10h (text mode)
 ;
 ; Expected behavior:
 ;   - CMOS registers should return valid BCD values (both nibbles 0-9)
@@ -23,11 +24,17 @@ org 100h                    ; COM file starts at offset 100h
 section .text
 
 start:
+    ; Clear screen and print header
+    call clear_screen
+    mov si, msg_header
+    call print_string
+    call print_newline
+    
     ; ==============================================================================
     ; Test 1: Read CMOS Seconds Register (0x00)
     ; ==============================================================================
-    ; The seconds register should contain a value in BCD format (0x00-0x59)
-    ; This tests basic CMOS read functionality
+    mov si, msg_test1
+    call print_string
     
     mov al, 0x00            ; Register 0x00 = Seconds
     out 0x70, al            ; Select register via address port
@@ -42,11 +49,17 @@ start:
     ja test1_fail
     
 test1_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x01            ; Test 1 passed
     out 0x998, al
     jmp test2
 
 test1_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF            ; Test failed
     out 0x999, al
     mov al, 0x01            ; Test number
@@ -56,9 +69,10 @@ test1_fail:
     ; ==============================================================================
     ; Test 2: Read CMOS Minutes Register (0x02)
     ; ==============================================================================
-    ; The minutes register should contain a value in BCD format (0x00-0x59)
-    
 test2:
+    mov si, msg_test2
+    call print_string
+    
     mov al, 0x02            ; Register 0x02 = Minutes
     out 0x70, al
     in al, 0x71
@@ -72,11 +86,17 @@ test2:
     ja test2_fail
     
 test2_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x02            ; Test 2 passed
     out 0x998, al
     jmp test3
 
 test2_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x02
@@ -86,9 +106,10 @@ test2_fail:
     ; ==============================================================================
     ; Test 3: Read CMOS Hours Register (0x04)
     ; ==============================================================================
-    ; The hours register should contain a value in BCD format (0x00-0x23)
-    
 test3:
+    mov si, msg_test3
+    call print_string
+    
     mov al, 0x04            ; Register 0x04 = Hours
     out 0x70, al
     in al, 0x71
@@ -102,11 +123,17 @@ test3:
     ja test3_fail
     
 test3_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x03            ; Test 3 passed
     out 0x998, al
     jmp test4
 
 test3_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x03
@@ -116,9 +143,10 @@ test3_fail:
     ; ==============================================================================
     ; Test 4: Read CMOS Day of Month Register (0x07)
     ; ==============================================================================
-    ; The day register should contain a value in BCD format (0x01-0x31)
-    
 test4:
+    mov si, msg_test4
+    call print_string
+    
     mov al, 0x07            ; Register 0x07 = Day of Month
     out 0x70, al
     in al, 0x71
@@ -134,11 +162,17 @@ test4:
     ja test4_fail
     
 test4_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x04            ; Test 4 passed
     out 0x998, al
     jmp test5
 
 test4_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x04
@@ -148,9 +182,10 @@ test4_fail:
     ; ==============================================================================
     ; Test 5: Read CMOS Month Register (0x08)
     ; ==============================================================================
-    ; The month register should contain a value in BCD format (0x01-0x12)
-    
 test5:
+    mov si, msg_test5
+    call print_string
+    
     mov al, 0x08            ; Register 0x08 = Month
     out 0x70, al
     in al, 0x71
@@ -166,11 +201,17 @@ test5:
     ja test5_fail
     
 test5_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x05            ; Test 5 passed
     out 0x998, al
     jmp test6
 
 test5_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x05
@@ -180,9 +221,10 @@ test5_fail:
     ; ==============================================================================
     ; Test 6: Read CMOS Year Register (0x09)
     ; ==============================================================================
-    ; The year register should contain a value in BCD format (0x00-0x99)
-    
 test6:
+    mov si, msg_test6
+    call print_string
+    
     mov al, 0x09            ; Register 0x09 = Year
     out 0x70, al
     in al, 0x71
@@ -196,11 +238,17 @@ test6:
     ja test6_fail
     
 test6_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x06            ; Test 6 passed
     out 0x998, al
     jmp test7
 
 test6_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x06
@@ -210,9 +258,10 @@ test6_fail:
     ; ==============================================================================
     ; Test 7: Read CMOS Century Register (0x32)
     ; ==============================================================================
-    ; The century register should contain a value in BCD format (typically 0x19-0x20)
-    
 test7:
+    mov si, msg_test7
+    call print_string
+    
     mov al, 0x32            ; Register 0x32 = Century
     out 0x70, al
     in al, 0x71
@@ -228,11 +277,17 @@ test7:
     ja test7_fail
     
 test7_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x07            ; Test 7 passed
     out 0x998, al
     jmp all_tests_passed
 
 test7_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x07
@@ -240,6 +295,10 @@ test7_fail:
     jmp exit_program
 
 all_tests_passed:
+    call print_newline
+    mov si, msg_all_pass
+    call print_string
+    call print_newline
     mov al, 0x00            ; All tests passed (success code)
     out 0x999, al
     mov al, 0x07            ; 7 tests completed
@@ -285,3 +344,68 @@ validate_bcd:
     pop ax
     stc                     ; Set carry = invalid
     ret
+
+; ==============================================================================
+; clear_screen - Clears the screen using INT 10h
+; ==============================================================================
+clear_screen:
+    push ax
+    mov ax, 0x0003          ; Set video mode 3 (80x25 text, clears screen)
+    int 0x10
+    pop ax
+    ret
+
+; ==============================================================================
+; print_string - Prints a null-terminated string using INT 10h
+; ==============================================================================
+; Input: SI = pointer to null-terminated string
+; Modifies: AX, BX, SI
+; ==============================================================================
+print_string:
+    push ax
+    push bx
+.loop:
+    lodsb                   ; Load byte from [SI] into AL, increment SI
+    cmp al, 0               ; Check for null terminator
+    je .done
+    mov ah, 0x0E            ; BIOS teletype output
+    mov bx, 0x0007          ; Page 0, light gray color
+    int 0x10
+    jmp .loop
+.done:
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; print_newline - Prints CR+LF
+; ==============================================================================
+print_newline:
+    push ax
+    push bx
+    mov ah, 0x0E
+    mov bx, 0x0007
+    mov al, 13              ; Carriage return
+    int 0x10
+    mov al, 10              ; Line feed
+    int 0x10
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; Data section - Test messages
+; ==============================================================================
+section .data
+
+msg_header      db 'CMOS RTC Direct Port Access Test', 0
+msg_test1       db 'Test 1: Read Seconds Register (0x00)...', 0
+msg_test2       db 'Test 2: Read Minutes Register (0x02)...', 0
+msg_test3       db 'Test 3: Read Hours Register (0x04)...', 0
+msg_test4       db 'Test 4: Read Day Register (0x07)...', 0
+msg_test5       db 'Test 5: Read Month Register (0x08)...', 0
+msg_test6       db 'Test 6: Read Year Register (0x09)...', 0
+msg_test7       db 'Test 7: Read Century Register (0x32)...', 0
+msg_pass        db ' PASS', 0
+msg_fail        db ' FAIL', 0
+msg_all_pass    db 'All tests PASSED!', 0

@@ -14,6 +14,7 @@
 ; Test Results Protocol:
 ;   Port 0x999 = Result port (0x00 = success, 0xFF = failure)
 ;   Port 0x998 = Details port (test number or error codes)
+;   Screen: Visual output via INT 10h (text mode)
 ; ==============================================================================
 
 org 100h
@@ -21,16 +22,29 @@ org 100h
 section .text
 
 start:
+    ; Clear screen and print header
+    call clear_screen
+    mov si, msg_header
+    call print_string
+    call print_newline
+    call print_newline
+    
     ; ==============================================================================
     ; Test 1: INT 1A Function 00h - Get System Clock Counter
     ; ==============================================================================
     ; Returns tick counter (18.2 Hz timer) in CX:DX
     ; AL = midnight flag (non-zero if midnight passed since last read)
     
+    mov si, msg_test1
+    call print_string
+    
     mov ah, 0x00            ; Function 00h = Get tick count
     int 0x1A                ; BIOS time service
     
     ; Just verify the function didn't crash - any tick value is valid
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x01            ; Test 1 passed
     out 0x998, al
     
@@ -38,6 +52,9 @@ start:
     ; Test 2: INT 1A Function 01h - Set System Clock Counter
     ; ==============================================================================
     ; Sets tick counter to value in CX:DX
+    
+    mov si, msg_test2
+    call print_string
     
     mov ah, 0x01            ; Function 01h = Set tick count
     mov cx, 0x1234          ; Set test value
@@ -55,11 +72,17 @@ start:
     jne test2_fail
     
 test2_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x02            ; Test 2 passed
     out 0x998, al
     jmp test3
 
 test2_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x02
@@ -76,6 +99,9 @@ test2_fail:
     ;   Carry flag clear if valid
     
 test3:
+    mov si, msg_test3
+    call print_string
+    
     mov ah, 0x02            ; Function 02h = Read RTC time
     int 0x1A
     
@@ -103,11 +129,17 @@ test3:
     ja test3_fail
     
 test3_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x03            ; Test 3 passed
     out 0x998, al
     jmp test4
 
 test3_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x03
@@ -125,6 +157,9 @@ test3_fail:
     ;   DL = Daylight savings flag (00h standard, 01h daylight)
     
 test4:
+    mov si, msg_test4
+    call print_string
+    
     mov ah, 0x03            ; Function 03h = Set RTC time
     mov ch, 0x12            ; 12 hours
     mov cl, 0x34            ; 34 minutes
@@ -133,6 +168,9 @@ test4:
     int 0x1A
     
     ; If we got here without crashing, test passed
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x04            ; Test 4 passed
     out 0x998, al
     
@@ -147,6 +185,9 @@ test4:
     ;   Carry flag clear if valid
     
 test5:
+    mov si, msg_test5
+    call print_string
+    
     mov ah, 0x04            ; Function 04h = Read RTC date
     int 0x1A
     
@@ -187,11 +228,17 @@ test5:
     ja test5_fail
     
 test5_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x05            ; Test 5 passed
     out 0x998, al
     jmp test6
 
 test5_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x05
@@ -209,6 +256,9 @@ test5_fail:
     ;   DL = Day (BCD)
     
 test6:
+    mov si, msg_test6
+    call print_string
+    
     mov ah, 0x05            ; Function 05h = Set RTC date
     mov ch, 0x20            ; Century 20
     mov cl, 0x25            ; Year 25 (2025)
@@ -217,10 +267,17 @@ test6:
     int 0x1A
     
     ; If we got here without crashing, test passed
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x06            ; Test 6 passed
     out 0x998, al
     
 all_tests_passed:
+    call print_newline
+    mov si, msg_all_pass
+    call print_string
+    call print_newline
     mov al, 0x00            ; All tests passed
     out 0x999, al
     mov al, 0x06            ; 6 tests completed
@@ -264,3 +321,67 @@ validate_bcd:
     pop ax
     stc
     ret
+
+; ==============================================================================
+; clear_screen - Clears the screen using INT 10h
+; ==============================================================================
+clear_screen:
+    push ax
+    mov ax, 0x0003          ; Set video mode 3 (80x25 text, clears screen)
+    int 0x10
+    pop ax
+    ret
+
+; ==============================================================================
+; print_string - Prints a null-terminated string using INT 10h
+; ==============================================================================
+; Input: SI = pointer to null-terminated string
+; Modifies: AX, BX, SI
+; ==============================================================================
+print_string:
+    push ax
+    push bx
+.loop:
+    lodsb                   ; Load byte from [SI] into AL, increment SI
+    cmp al, 0               ; Check for null terminator
+    je .done
+    mov ah, 0x0E            ; BIOS teletype output
+    mov bx, 0x0007          ; Page 0, light gray color
+    int 0x10
+    jmp .loop
+.done:
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; print_newline - Prints CR+LF
+; ==============================================================================
+print_newline:
+    push ax
+    push bx
+    mov ah, 0x0E
+    mov bx, 0x0007
+    mov al, 13              ; Carriage return
+    int 0x10
+    mov al, 10              ; Line feed
+    int 0x10
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; Data section - Test messages
+; ==============================================================================
+section .data
+
+msg_header      db 'BIOS INT 1A Time Services Test', 0
+msg_test1       db 'Test 1: Get System Clock Counter...', 0
+msg_test2       db 'Test 2: Set System Clock Counter...', 0
+msg_test3       db 'Test 3: Read RTC Time...', 0
+msg_test4       db 'Test 4: Set RTC Time (stub)...', 0
+msg_test5       db 'Test 5: Read RTC Date...', 0
+msg_test6       db 'Test 6: Set RTC Date (stub)...', 0
+msg_pass        db ' PASS', 0
+msg_fail        db ' FAIL', 0
+msg_all_pass    db 'All tests PASSED!', 0
