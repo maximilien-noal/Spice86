@@ -41,6 +41,26 @@ using Serilog.Events;
 /// <para>
 /// Reference: DOSBox Staging CMOS implementation, MC146818 datasheet
 /// </para>
+/// <para>
+/// <b>Known deviations and simplifications:</b>
+/// <list type="bullet">
+/// <item>
+/// <description>
+/// <b>UIP (Update In Progress) timing:</b> The UIP flag is set/cleared based on elapsed real time, but timing is approximate and not cycle-accurate as on real hardware.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <b>Alarm functionality:</b> Alarm registers are stored but alarm interrupts are not implemented; alarm events are not generated.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <b>CMOS configuration registers:</b> Only a subset of configuration registers are implemented; many are stubbed or return default values as in DOSBox Staging. Unimplemented registers may return 0 or fixed values.
+/// </description>
+/// </item>
+/// </list>
+/// </para>
 /// </summary>
 public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     private readonly DualPic _dualPic;

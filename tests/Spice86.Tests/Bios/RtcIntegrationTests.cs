@@ -38,8 +38,8 @@ public class RtcIntegrationTests {
             "CMOS registers should return valid BCD time/date values");
         testHandler.Results.Should().NotContain((byte)TestResult.Failure);
         
-        // All 7 tests should have passed (marked as 0x01-0x07 in details port)
-        testHandler.Details.Should().Contain(0xFF, "All tests marker should be present");
+        // All 7 tests should have passed (last test writes 0x07 to details port)
+        testHandler.Details.Should().Contain(0x07, "All 7 tests should have completed");
     }
 
     /// <summary>
@@ -61,8 +61,8 @@ public class RtcIntegrationTests {
             "BIOS INT 1A functions should execute successfully");
         testHandler.Results.Should().NotContain((byte)TestResult.Failure);
         
-        // All 6 tests should have passed (marked as 0x01-0x06 in details port)
-        testHandler.Details.Should().Contain(0xFF, "All tests marker should be present");
+        // All 6 tests should have passed (last test writes 0x06 to details port)
+        testHandler.Details.Should().Contain(0x06, "All 6 tests should have completed");
     }
 
     /// <summary>
@@ -82,8 +82,8 @@ public class RtcIntegrationTests {
             "DOS INT 21H date/time functions should execute successfully");
         testHandler.Results.Should().NotContain((byte)TestResult.Failure);
         
-        // All 11 tests should have passed (marked as 0x01-0x0B in details port)
-        testHandler.Details.Should().Contain(0xFF, "All tests marker should be present");
+        // All 11 tests should have passed (last test writes 0x0B to details port)
+        testHandler.Details.Should().Contain(0x0B, "All 11 tests should have completed");
     }
 
     /// <summary>
@@ -102,11 +102,14 @@ public class RtcIntegrationTests {
                 "Please compile the ASM source files in Resources/RtcTests/ using NASM or MASM.");
         }
 
+        // Read the program bytes and write to a temporary file with .com extension
         byte[] program = File.ReadAllBytes(fullPath);
+        string tempFilePath = Path.GetFullPath($"{unitTestName}.com");
+        File.WriteAllBytes(tempFilePath, program);
 
         // Setup emulator with .com extension
         Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
-            binName: fullPath,
+            binName: tempFilePath,
             enableCfgCpu: true,
             enablePit: true,
             recordData: false,

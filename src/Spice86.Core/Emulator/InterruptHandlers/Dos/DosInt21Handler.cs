@@ -789,15 +789,6 @@ public class DosInt21Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Gets the current data from the host's DateTime.Now.
-    /// </summary>
-    /// <returns>
-    /// AL = day of the week <br/>
-    /// CX = year <br/>
-    /// DH = month <br/>
-    /// DL = day <br/>
-    /// </returns>
-    /// <summary>
     /// INT 21h, AH=2Ah - Get DOS Date.
     /// <para>
     /// Returns the current date from the CMOS RTC via I/O ports.
@@ -828,8 +819,16 @@ public class DosInt21Handler : InterruptHandler {
         
         // DOS day of week: 0=Sunday, 1=Monday, etc.
         // CMOS day of week: 1=Sunday, 2=Monday, etc., so subtract 1
-        int dosDayOfWeek = dayOfWeek - 1;
-        if (dosDayOfWeek < 0) dosDayOfWeek = 0;
+        int dosDayOfWeek;
+        if (dayOfWeek == 0) {
+            // Invalid value from CMOS, default to Sunday and log a warning
+            dosDayOfWeek = 0;
+            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                LoggerService.Warning("CMOS DayOfWeek register returned 0 (invalid). Defaulting DOS day of week to Sunday (0).");
+            }
+        } else {
+            dosDayOfWeek = dayOfWeek - 1;
+        }
         
         State.CX = (ushort)fullYear;
         State.DH = (byte)month;
@@ -977,9 +976,6 @@ public class DosInt21Handler : InterruptHandler {
         State.BX = DosSwappableDataArea.InDosFlagOffset;
     }
 
-    /// <summary>
-    /// Returns the current MS-DOS time in CH (hour), CL (minute), DH (second), and DL (millisecond) from the host's DateTime.Now.
-    /// </summary>
     /// <summary>
     /// INT 21h, AH=2Ch - Get DOS Time.
     /// <para>
@@ -1406,17 +1402,27 @@ public class DosInt21Handler : InterruptHandler {
 
     /// <summary>
     /// Converts a BCD value to binary.
+    /// Validates that the input is proper BCD format (each nibble 0-9).
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is not valid BCD</exception>
     private static byte FromBcd(byte bcd) {
         int highNibble = (bcd >> 4) & 0x0F;
         int lowNibble = bcd & 0x0F;
+        if (highNibble > 9 || lowNibble > 9) {
+            throw new ArgumentOutOfRangeException(nameof(bcd), bcd, $"Invalid BCD value: 0x{bcd:X2}");
+        }
         return (byte)(highNibble * 10 + lowNibble);
     }
 
     /// <summary>
     /// Converts a binary value to BCD format.
+    /// Validates that the input is 0-99 (BCD can only represent two decimal digits).
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is > 99</exception>
     private static byte ToBcd(byte binary) {
+        if (binary > 99) {
+            throw new ArgumentOutOfRangeException(nameof(binary), binary, "Value must be 0-99 for BCD encoding");
+        }
         int tens = binary / 10;
         int ones = binary % 10;
         return (byte)((tens << 4) | ones);

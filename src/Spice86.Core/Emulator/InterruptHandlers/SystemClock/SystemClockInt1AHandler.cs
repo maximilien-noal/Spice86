@@ -147,10 +147,15 @@ public class SystemClockInt1AHandler : InterruptHandler {
 
     /// <summary>
     /// Converts a binary value to BCD (Binary Coded Decimal) format.
+    /// Validates that the input is 0-99 (BCD can only represent two decimal digits).
     /// </summary>
     /// <param name="binary">The binary value to convert.</param>
     /// <returns>The BCD representation.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is > 99</exception>
     private static byte ToBcd(byte binary) {
+        if (binary > 99) {
+            throw new ArgumentOutOfRangeException(nameof(binary), binary, "Value must be 0-99 for BCD encoding");
+        }
         int tens = binary / 10;
         int ones = binary % 10;
         return (byte)((tens << 4) | ones);
