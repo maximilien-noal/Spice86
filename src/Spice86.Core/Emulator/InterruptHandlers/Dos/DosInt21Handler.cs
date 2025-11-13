@@ -3,6 +3,7 @@
 using Serilog.Events;
 
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.Devices.Cmos;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
@@ -138,6 +139,7 @@ public class DosInt21Handler : InterruptHandler {
     /// <para>
     /// Sets the DOS system date by writing to CMOS RTC via I/O ports.
     /// On AT/PS2 systems, this sets the time in battery-backed CMOS memory.
+    /// Converts date values to BCD format before writing to MC146818 RTC registers.
     /// </para>
     /// <b>Expects:</b><br/>
     /// CX = year (1980-2099)<br/>
@@ -168,11 +170,10 @@ public class DosInt21Handler : InterruptHandler {
             byte dayBcd = ToBcd(day);
             byte centuryBcd = ToBcd((byte)century);
             
-            // Write to CMOS registers
-            WriteCmosRegister(0x09, yearBcd);      // Year
-            WriteCmosRegister(0x08, monthBcd);     // Month
-            WriteCmosRegister(0x07, dayBcd);       // Day of month
-            WriteCmosRegister(0x32, centuryBcd);   // Century
+            WriteCmosRegister(CmosRegisterAddresses.Year, yearBcd);
+            WriteCmosRegister(CmosRegisterAddresses.Month, monthBcd);
+            WriteCmosRegister(CmosRegisterAddresses.DayOfMonth, dayBcd);
+            WriteCmosRegister(CmosRegisterAddresses.Century, centuryBcd);
             
             State.AL = 0;
             
@@ -195,6 +196,8 @@ public class DosInt21Handler : InterruptHandler {
     /// <para>
     /// Sets the DOS system time by writing to CMOS RTC via I/O ports.
     /// DOS 3.3+ on AT/PS2 systems sets the time in battery-backed CMOS memory.
+    /// Converts time values to BCD format before writing to MC146818 RTC registers.
+    /// Note: CMOS does not store hundredths of a second.
     /// </para>
     /// <b>Expects:</b><br/>
     /// CH = hour (0-23)<br/>
@@ -223,10 +226,9 @@ public class DosInt21Handler : InterruptHandler {
             byte minutesBcd = ToBcd(minutes);
             byte secondsBcd = ToBcd(seconds);
             
-            // Write to CMOS registers (hundredths not stored in CMOS)
-            WriteCmosRegister(0x04, hourBcd);      // Hours
-            WriteCmosRegister(0x02, minutesBcd);   // Minutes
-            WriteCmosRegister(0x00, secondsBcd);   // Seconds
+            WriteCmosRegister(CmosRegisterAddresses.Hours, hourBcd);
+            WriteCmosRegister(CmosRegisterAddresses.Minutes, minutesBcd);
+            WriteCmosRegister(CmosRegisterAddresses.Seconds, secondsBcd);
             
             State.AL = 0;
             
@@ -799,6 +801,7 @@ public class DosInt21Handler : InterruptHandler {
     /// INT 21h, AH=2Ah - Get DOS Date.
     /// <para>
     /// Returns the current date from the CMOS RTC via I/O ports.
+    /// Reads time/date registers from the MC146818 RTC chip and converts from BCD to binary format.
     /// </para>
     /// <b>Returns:</b><br/>
     /// CX = year (1980-2099)<br/>
@@ -807,14 +810,11 @@ public class DosInt21Handler : InterruptHandler {
     /// AL = day of week (0=Sunday, 1=Monday, ... 6=Saturday)
     /// </summary>
     public void GetDate() {
-        // Read date from CMOS registers
-        // Register 0x09 = year (BCD), 0x08 = month (BCD), 0x07 = day (BCD)
-        // Register 0x06 = day of week (BCD), 0x32 = century (BCD)
-        byte yearBcd = ReadCmosRegister(0x09);
-        byte monthBcd = ReadCmosRegister(0x08);
-        byte dayBcd = ReadCmosRegister(0x07);
-        byte dayOfWeekBcd = ReadCmosRegister(0x06);
-        byte centuryBcd = ReadCmosRegister(0x32);
+        byte yearBcd = ReadCmosRegister(CmosRegisterAddresses.Year);
+        byte monthBcd = ReadCmosRegister(CmosRegisterAddresses.Month);
+        byte dayBcd = ReadCmosRegister(CmosRegisterAddresses.DayOfMonth);
+        byte dayOfWeekBcd = ReadCmosRegister(CmosRegisterAddresses.DayOfWeek);
+        byte centuryBcd = ReadCmosRegister(CmosRegisterAddresses.Century);
         
         // Convert from BCD to binary
         int year = FromBcd(yearBcd);
@@ -984,6 +984,8 @@ public class DosInt21Handler : InterruptHandler {
     /// INT 21h, AH=2Ch - Get DOS Time.
     /// <para>
     /// Returns the current time from the CMOS RTC via I/O ports.
+    /// Reads time registers from the MC146818 RTC chip and converts from BCD to binary format.
+    /// Note: CMOS does not store hundredths of a second (sub-second precision).
     /// </para>
     /// <b>Returns:</b><br/>
     /// CH = hour (0-23)<br/>
@@ -992,11 +994,9 @@ public class DosInt21Handler : InterruptHandler {
     /// DL = hundredths of a second (0-99)
     /// </summary>
     public void GetTime() {
-        // Read time from CMOS registers
-        // Register 0x04 = hours (BCD), 0x02 = minutes (BCD), 0x00 = seconds (BCD)
-        byte hourBcd = ReadCmosRegister(0x04);
-        byte minuteBcd = ReadCmosRegister(0x02);
-        byte secondBcd = ReadCmosRegister(0x00);
+        byte hourBcd = ReadCmosRegister(CmosRegisterAddresses.Hours);
+        byte minuteBcd = ReadCmosRegister(CmosRegisterAddresses.Minutes);
+        byte secondBcd = ReadCmosRegister(CmosRegisterAddresses.Seconds);
         
         // Convert from BCD to binary
         byte hour = FromBcd(hourBcd);
@@ -1383,27 +1383,25 @@ public class DosInt21Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Reads a CMOS register value via I/O ports (0x70 for index, 0x71 for data).
+    /// Reads a CMOS register value via I/O ports.
+    /// Writes the register index to the address port and reads the data from the data port.
     /// </summary>
-    /// <param name="register">The CMOS register number to read</param>
+    /// <param name="register">The CMOS register address to read</param>
     /// <returns>The value in the specified CMOS register</returns>
     private byte ReadCmosRegister(byte register) {
-        // Write register index to port 0x70
-        _ioPortDispatcher.WriteByte(0x70, register);
-        // Read data from port 0x71
-        return _ioPortDispatcher.ReadByte(0x71);
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, register);
+        return _ioPortDispatcher.ReadByte(CmosPorts.Data);
     }
 
     /// <summary>
-    /// Writes a value to a CMOS register via I/O ports (0x70 for index, 0x71 for data).
+    /// Writes a value to a CMOS register via I/O ports.
+    /// Writes the register index to the address port and the value to the data port.
     /// </summary>
-    /// <param name="register">The CMOS register number to write</param>
+    /// <param name="register">The CMOS register address to write</param>
     /// <param name="value">The value to write to the register</param>
     private void WriteCmosRegister(byte register, byte value) {
-        // Write register index to port 0x70
-        _ioPortDispatcher.WriteByte(0x70, register);
-        // Write data to port 0x71
-        _ioPortDispatcher.WriteByte(0x71, value);
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, register);
+        _ioPortDispatcher.WriteByte(CmosPorts.Data, value);
     }
 
     /// <summary>

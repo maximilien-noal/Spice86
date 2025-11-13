@@ -43,27 +43,6 @@ using Serilog.Events;
 /// </para>
 /// </summary>
 public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
-    // I/O Port addresses for RTC/CMOS
-    private const ushort AddressPort = 0x70;  // Index register (write-only)
-    private const ushort DataPort = 0x71;     // Data register (read/write)
-    
-    // RTC Status and Control Registers
-    private const byte RegisterA = 0x0A;              // Status Register A (UIP, rate selection)
-    private const byte RegisterB = 0x0B;              // Status Register B (format, enables)
-    private const byte RegisterC = 0x0C;              // Status Register C (interrupt flags)
-    private const byte RegisterD = 0x0D;              // Status Register D (valid RAM/battery)
-    private const byte RegisterStatusShutdown = 0x0F; // Shutdown status byte
-    
-    // RTC Time/Date Registers
-    private const byte RegisterSeconds = 0x00;
-    private const byte RegisterMinutes = 0x02;
-    private const byte RegisterHours = 0x04;
-    private const byte RegisterDayOfWeek = 0x06;
-    private const byte RegisterDayOfMonth = 0x07;
-    private const byte RegisterMonth = 0x08;
-    private const byte RegisterYear = 0x09;
-    private const byte RegisterCentury = 0x32;  // Century register (19 or 20)
-
     private readonly DualPic _dualPic;
     private readonly CmosRegisters _cmosRegisters = new();
     private readonly IPauseHandler _pauseHandler;
@@ -100,16 +79,16 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         _pauseHandler.Resumed += OnResumed;
 
         // Initialize RTC control registers with defaults matching DOSBox/real hardware
-        _cmosRegisters[RegisterA] = 0x26;  // Default rate (1024 Hz) + 22-stage divider
-        _cmosRegisters[RegisterB] = 0x02;  // 24-hour mode, no interrupts
-        _cmosRegisters[RegisterD] = 0x80;  // Valid RAM + battery good
+        _cmosRegisters[CmosRegisterAddresses.StatusRegisterA] = 0x26;  // Default rate (1024 Hz) + 22-stage divider
+        _cmosRegisters[CmosRegisterAddresses.StatusRegisterB] = 0x02;  // 24-hour mode, no interrupts
+        _cmosRegisters[CmosRegisterAddresses.StatusRegisterD] = 0x80;  // Valid RAM + battery good
         
         // Initialize CMOS RAM with base memory size (640KB)
         _cmosRegisters[0x15] = 0x80;  // Low byte: 640KB = 0x280
         _cmosRegisters[0x16] = 0x02;  // High byte
 
-        ioPortDispatcher.AddIOPortHandler(AddressPort, this);
-        ioPortDispatcher.AddIOPortHandler(DataPort, this);
+        ioPortDispatcher.AddIOPortHandler(CmosPorts.Address, this);
+        ioPortDispatcher.AddIOPortHandler(CmosPorts.Data, this);
 
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("CMOS/RTC initialized");
@@ -121,14 +100,14 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     /// </summary>
     public override void WriteByte(ushort port, byte value) {
         // Process any pending periodic timer events before handling the write
-        if (port == AddressPort || port == DataPort) {
+        if (port == CmosPorts.Address || port == CmosPorts.Data) {
             ProcessPendingPeriodicEvents();
         }
         switch (port) {
-            case AddressPort:
+            case CmosPorts.Address:
                 HandleAddressPortWrite(value);
                 break;
-            case DataPort:
+            case CmosPorts.Data:
                 HandleDataPortWrite(value);
                 break;
             default:
@@ -142,7 +121,7 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     /// Port 0x70 is write-only.
     /// </summary>
     public override byte ReadByte(ushort port) {
-        if (port == DataPort) {
+        if (port == CmosPorts.Data) {
             ProcessPendingPeriodicEvents();
             return HandleDataPortRead();
         }
@@ -167,14 +146,14 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         byte reg = _cmosRegisters.CurrentRegister;
         switch (reg) {
             // Time/date registers - ignore writes (read-only in this implementation)
-            case RegisterSeconds:      // 0x00
-            case RegisterMinutes:      // 0x02
-            case RegisterHours:        // 0x04
-            case RegisterDayOfWeek:    // 0x06
-            case RegisterDayOfMonth:   // 0x07
-            case RegisterMonth:        // 0x08
-            case RegisterYear:         // 0x09
-            case RegisterCentury:      // 0x32
+            case CmosRegisterAddresses.Seconds:      // 0x00
+            case CmosRegisterAddresses.Minutes:      // 0x02
+            case CmosRegisterAddresses.Hours:        // 0x04
+            case CmosRegisterAddresses.DayOfWeek:    // 0x06
+            case CmosRegisterAddresses.DayOfMonth:   // 0x07
+            case CmosRegisterAddresses.Month:        // 0x08
+            case CmosRegisterAddresses.Year:         // 0x09
+            case CmosRegisterAddresses.Century:      // 0x32
                 // Ignore writes to time/date registers (we use host system time)
                 return;
 
@@ -188,7 +167,7 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
                 }
                 return;
 
-            case RegisterA:  // 0x0A - Status Register A (rate/divider control)
+            case CmosRegisterAddresses.StatusRegisterA:  // 0x0A - Status Register A (rate/divider control)
                 _cmosRegisters[reg] = (byte)(value & 0x7F);
                 byte newDiv = (byte)(value & 0x0F);
                 // DOSBox compatibility: adjust divider values 0-2
@@ -200,7 +179,7 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
                 ValidateDivider(value);
                 return;
 
-            case RegisterB:  // 0x0B - Status Register B (format/interrupt control)
+            case CmosRegisterAddresses.StatusRegisterB:  // 0x0B - Status Register B (format/interrupt control)
                 _cmosRegisters.IsBcdMode = (value & 0x04) == 0;
                 _cmosRegisters[reg] = (byte)(value & 0x7F);
                 bool prevEnabled = _cmosRegisters.Timer.Enabled;
@@ -213,11 +192,11 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
                 }
                 return;
 
-            case RegisterD:  // 0x0D - Status Register D (battery status)
+            case CmosRegisterAddresses.StatusRegisterD:  // 0x0D - Status Register D (battery status)
                 _cmosRegisters[reg] = (byte)(value & 0x80);  // Bit 7 = RTC power on
                 return;
 
-            case RegisterStatusShutdown:  // 0x0F - Shutdown status byte
+            case CmosRegisterAddresses.ShutdownStatus:  // 0x0F - Shutdown status byte
                 _cmosRegisters[reg] = (byte)(value & 0x7F);
                 return;
 
@@ -248,14 +227,14 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         DateTime now = DateTime.Now;
         switch (reg) {
             // Time registers - return current system time
-            case RegisterSeconds:      return EncodeTimeComponent(now.Second);
-            case RegisterMinutes:      return EncodeTimeComponent(now.Minute);
-            case RegisterHours:        return EncodeTimeComponent(now.Hour);
-            case RegisterDayOfWeek:    return EncodeTimeComponent(((int)now.DayOfWeek + 1));
-            case RegisterDayOfMonth:   return EncodeTimeComponent(now.Day);
-            case RegisterMonth:        return EncodeTimeComponent(now.Month);
-            case RegisterYear:         return EncodeTimeComponent(now.Year % 100);
-            case RegisterCentury:      return EncodeTimeComponent(now.Year / 100);
+            case CmosRegisterAddresses.Seconds:      return EncodeTimeComponent(now.Second);
+            case CmosRegisterAddresses.Minutes:      return EncodeTimeComponent(now.Minute);
+            case CmosRegisterAddresses.Hours:        return EncodeTimeComponent(now.Hour);
+            case CmosRegisterAddresses.DayOfWeek:    return EncodeTimeComponent(((int)now.DayOfWeek + 1));
+            case CmosRegisterAddresses.DayOfMonth:   return EncodeTimeComponent(now.Day);
+            case CmosRegisterAddresses.Month:        return EncodeTimeComponent(now.Month);
+            case CmosRegisterAddresses.Year:         return EncodeTimeComponent(now.Year % 100);
+            case CmosRegisterAddresses.Century:      return EncodeTimeComponent(now.Year / 100);
             
             // Alarm registers
             case 0x01:  // Seconds alarm
@@ -263,19 +242,19 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
             case 0x05:  // Hours alarm
                 return _cmosRegisters[reg];
                 
-            case RegisterA: {  // 0x0A - Status Register A
+            case CmosRegisterAddresses.StatusRegisterA: {  // 0x0A - Status Register A
                 // Bit 7 = Update In Progress (UIP) - set during time update cycle
                 byte baseA = (byte)(_cmosRegisters[reg] & 0x7F);
                 return IsUpdateInProgress(now) ? (byte)(baseA | 0x80) : baseA;
             }
             
-            case RegisterC:  // 0x0C - Status Register C (interrupt flags, read clears)
+            case CmosRegisterAddresses.StatusRegisterC:  // 0x0C - Status Register C (interrupt flags, read clears)
                 return ReadStatusC();
                 
             // Control and status registers
-            case RegisterB:              // 0x0B - Status Register B
-            case RegisterD:              // 0x0D - Status Register D
-            case RegisterStatusShutdown: // 0x0F - Shutdown status
+            case CmosRegisterAddresses.StatusRegisterB:              // 0x0B - Status Register B
+            case CmosRegisterAddresses.StatusRegisterD:              // 0x0D - Status Register D
+            case CmosRegisterAddresses.ShutdownStatus: // 0x0F - Shutdown status
             
             // CMOS configuration registers
             case 0x14:  // Equipment byte
@@ -312,8 +291,8 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
 
         if (_cmosRegisters.Timer.Enabled) {
             // In periodic interrupt mode, return and clear latched flags
-            byte latched = _cmosRegisters[RegisterC];
-            _cmosRegisters[RegisterC] = 0;
+            byte latched = _cmosRegisters[CmosRegisterAddresses.StatusRegisterC];
+            _cmosRegisters[CmosRegisterAddresses.StatusRegisterC] = 0;
             return latched;
         }
 
@@ -404,7 +383,7 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         }
         double nowMs = GetElapsedMilliseconds();
         if (nowMs >= _nextPeriodicTriggerMs) {
-            _cmosRegisters[RegisterC] |= 0xC0; // Contraption Zack (music)
+            _cmosRegisters[CmosRegisterAddresses.StatusRegisterC] |= 0xC0; // Contraption Zack (music)
             _cmosRegisters.Timer.Acknowledged = false;
             _cmosRegisters.Last.Timer = nowMs;
             while (nowMs >= _nextPeriodicTriggerMs) {
