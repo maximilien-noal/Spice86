@@ -6,6 +6,7 @@ using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
+using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
@@ -30,6 +31,7 @@ public class DosInt21Handler : InterruptHandler {
     private readonly KeyboardInt16Handler _keyboardInt16Handler;
     private readonly DosStringDecoder _dosStringDecoder;
     private readonly CountryInfo _countryInfo;
+    private readonly IOPortDispatcher _ioPortDispatcher;
 
     private byte _lastDisplayOutputCharacter = 0x0;
     private bool _isCtrlCFlag;
@@ -48,13 +50,14 @@ public class DosInt21Handler : InterruptHandler {
     /// <param name="dosMemoryManager">The DOS class used to manage DOS MCBs.</param>
     /// <param name="dosFileManager">The DOS class responsible for DOS file access.</param>
     /// <param name="dosDriveManager">The DOS class responsible for DOS volumes.</param>
+    /// <param name="ioPortDispatcher">The I/O port dispatcher for accessing hardware ports (e.g., CMOS).</param>
     /// <param name="loggerService">The logger service implementation.</param>
     public DosInt21Handler(IMemory memory, DosProgramSegmentPrefixTracker dosPspTracker,
         IFunctionHandlerProvider functionHandlerProvider, Stack stack, State state,
         KeyboardInt16Handler keyboardInt16Handler, CountryInfo countryInfo,
         DosStringDecoder dosStringDecoder, DosMemoryManager dosMemoryManager,
         DosFileManager dosFileManager, DosDriveManager dosDriveManager,
-        ILoggerService loggerService)
+        IOPortDispatcher ioPortDispatcher, ILoggerService loggerService)
             : base(memory, functionHandlerProvider, stack, state, loggerService) {
         _countryInfo = countryInfo;
         _dosPspTracker = dosPspTracker;
@@ -63,6 +66,7 @@ public class DosInt21Handler : InterruptHandler {
         _dosMemoryManager = dosMemoryManager;
         _dosFileManager = dosFileManager;
         _dosDriveManager = dosDriveManager;
+        _ioPortDispatcher = ioPortDispatcher;
         _interruptVectorTable = new InterruptVectorTable(memory);
         FillDispatchTable();
     }
@@ -132,8 +136,8 @@ public class DosInt21Handler : InterruptHandler {
     /// <summary>
     /// INT 21h, AH=2Bh - Set DOS Date.
     /// <para>
-    /// Sets the DOS system date. This is a stub implementation.
-    /// On AT/PS2 systems, this would also set the time in CMOS memory.
+    /// Sets the DOS system date by writing to CMOS RTC via I/O ports.
+    /// On AT/PS2 systems, this sets the time in battery-backed CMOS memory.
     /// </para>
     /// <b>Expects:</b><br/>
     /// CX = year (1980-2099)<br/>
@@ -153,24 +157,44 @@ public class DosInt21Handler : InterruptHandler {
                      month >= 1 && month <= 12 &&
                      day >= 1 && day <= 31;
         
-        State.AL = valid ? (byte)0 : (byte)0xFF;
-        
-        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("SET DOS DATE: {Year}-{Month:D2}-{Day:D2} (Result: {Result})",
-                year, month, day, valid ? "valid" : "invalid");
-        }
-        
-        if (!valid && LoggerService.IsEnabled(LogEventLevel.Warning)) {
-            LoggerService.Warning("SET DOS DATE called with invalid date: {Year}-{Month:D2}-{Day:D2}",
-                year, month, day);
+        if (valid) {
+            // Split year into century and year components
+            int century = year / 100;
+            int yearPart = year % 100;
+            
+            // Convert to BCD
+            byte yearBcd = ToBcd((byte)yearPart);
+            byte monthBcd = ToBcd(month);
+            byte dayBcd = ToBcd(day);
+            byte centuryBcd = ToBcd((byte)century);
+            
+            // Write to CMOS registers
+            WriteCmosRegister(0x09, yearBcd);      // Year
+            WriteCmosRegister(0x08, monthBcd);     // Month
+            WriteCmosRegister(0x07, dayBcd);       // Day of month
+            WriteCmosRegister(0x32, centuryBcd);   // Century
+            
+            State.AL = 0;
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                LoggerService.Verbose("SET DOS DATE to CMOS: {Year}-{Month:D2}-{Day:D2}",
+                    year, month, day);
+            }
+        } else {
+            State.AL = 0xFF;
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                LoggerService.Warning("SET DOS DATE called with invalid date: {Year}-{Month:D2}-{Day:D2}",
+                    year, month, day);
+            }
         }
     }
 
     /// <summary>
     /// INT 21h, AH=2Dh - Set DOS Time.
     /// <para>
-    /// Sets the DOS system time. This is a stub implementation.
-    /// DOS 3.3+ on AT/PS2 systems would also set the time in CMOS memory.
+    /// Sets the DOS system time by writing to CMOS RTC via I/O ports.
+    /// DOS 3.3+ on AT/PS2 systems sets the time in battery-backed CMOS memory.
     /// </para>
     /// <b>Expects:</b><br/>
     /// CH = hour (0-23)<br/>
@@ -193,16 +217,30 @@ public class DosInt21Handler : InterruptHandler {
                      seconds <= 59 &&
                      hundredths <= 99;
         
-        State.AL = valid ? (byte)0 : (byte)0xFF;
-        
-        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("SET DOS TIME: {Hour:D2}:{Minutes:D2}:{Seconds:D2}.{Hundredths:D2} (Result: {Result})",
-                hour, minutes, seconds, hundredths, valid ? "valid" : "invalid");
-        }
-        
-        if (!valid && LoggerService.IsEnabled(LogEventLevel.Warning)) {
-            LoggerService.Warning("SET DOS TIME called with invalid time: {Hour:D2}:{Minutes:D2}:{Seconds:D2}.{Hundredths:D2}",
-                hour, minutes, seconds, hundredths);
+        if (valid) {
+            // Convert to BCD
+            byte hourBcd = ToBcd(hour);
+            byte minutesBcd = ToBcd(minutes);
+            byte secondsBcd = ToBcd(seconds);
+            
+            // Write to CMOS registers (hundredths not stored in CMOS)
+            WriteCmosRegister(0x04, hourBcd);      // Hours
+            WriteCmosRegister(0x02, minutesBcd);   // Minutes
+            WriteCmosRegister(0x00, secondsBcd);   // Seconds
+            
+            State.AL = 0;
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                LoggerService.Verbose("SET DOS TIME to CMOS: {Hour:D2}:{Minutes:D2}:{Seconds:D2}.{Hundredths:D2}",
+                    hour, minutes, seconds, hundredths);
+            }
+        } else {
+            State.AL = 0xFF;
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                LoggerService.Warning("SET DOS TIME called with invalid time: {Hour:D2}:{Minutes:D2}:{Seconds:D2}.{Hundredths:D2}",
+                    hour, minutes, seconds, hundredths);
+            }
         }
     }
 
@@ -760,7 +798,7 @@ public class DosInt21Handler : InterruptHandler {
     /// <summary>
     /// INT 21h, AH=2Ah - Get DOS Date.
     /// <para>
-    /// Returns the current date from the system (via CMOS RTC).
+    /// Returns the current date from the CMOS RTC via I/O ports.
     /// </para>
     /// <b>Returns:</b><br/>
     /// CX = year (1980-2099)<br/>
@@ -769,15 +807,38 @@ public class DosInt21Handler : InterruptHandler {
     /// AL = day of week (0=Sunday, 1=Monday, ... 6=Saturday)
     /// </summary>
     public void GetDate() {
-        DateTime now = DateTime.Now;
-        State.CX = (ushort)now.Year;
-        State.DH = (byte)now.Month;
-        State.DL = (byte)now.Day;
-        State.AL = (byte)now.DayOfWeek;  // 0=Sunday, 1=Monday, etc.
+        // Read date from CMOS registers
+        // Register 0x09 = year (BCD), 0x08 = month (BCD), 0x07 = day (BCD)
+        // Register 0x06 = day of week (BCD), 0x32 = century (BCD)
+        byte yearBcd = ReadCmosRegister(0x09);
+        byte monthBcd = ReadCmosRegister(0x08);
+        byte dayBcd = ReadCmosRegister(0x07);
+        byte dayOfWeekBcd = ReadCmosRegister(0x06);
+        byte centuryBcd = ReadCmosRegister(0x32);
+        
+        // Convert from BCD to binary
+        int year = FromBcd(yearBcd);
+        int century = FromBcd(centuryBcd);
+        int month = FromBcd(monthBcd);
+        int day = FromBcd(dayBcd);
+        int dayOfWeek = FromBcd(dayOfWeekBcd);
+        
+        // Calculate full year
+        int fullYear = century * 100 + year;
+        
+        // DOS day of week: 0=Sunday, 1=Monday, etc.
+        // CMOS day of week: 1=Sunday, 2=Monday, etc., so subtract 1
+        int dosDayOfWeek = dayOfWeek - 1;
+        if (dosDayOfWeek < 0) dosDayOfWeek = 0;
+        
+        State.CX = (ushort)fullYear;
+        State.DH = (byte)month;
+        State.DL = (byte)day;
+        State.AL = (byte)dosDayOfWeek;
         
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("GET DOS DATE: {Year}-{Month:D2}-{Day:D2} (Day of week: {DayOfWeek})",
-                now.Year, now.Month, now.Day, now.DayOfWeek);
+            LoggerService.Verbose("GET DOS DATE from CMOS: {Year}-{Month:D2}-{Day:D2} (Day of week: {DayOfWeek})",
+                fullYear, month, day, dosDayOfWeek);
         }
     }
 
@@ -922,7 +983,7 @@ public class DosInt21Handler : InterruptHandler {
     /// <summary>
     /// INT 21h, AH=2Ch - Get DOS Time.
     /// <para>
-    /// Returns the current time from the system (via CMOS RTC).
+    /// Returns the current time from the CMOS RTC via I/O ports.
     /// </para>
     /// <b>Returns:</b><br/>
     /// CH = hour (0-23)<br/>
@@ -931,15 +992,29 @@ public class DosInt21Handler : InterruptHandler {
     /// DL = hundredths of a second (0-99)
     /// </summary>
     public void GetTime() {
-        DateTime now = DateTime.Now;
-        State.CH = (byte)now.Hour;
-        State.CL = (byte)now.Minute;
-        State.DH = (byte)now.Second;
-        State.DL = (byte)(now.Millisecond / 10);  // Convert milliseconds to hundredths
+        // Read time from CMOS registers
+        // Register 0x04 = hours (BCD), 0x02 = minutes (BCD), 0x00 = seconds (BCD)
+        byte hourBcd = ReadCmosRegister(0x04);
+        byte minuteBcd = ReadCmosRegister(0x02);
+        byte secondBcd = ReadCmosRegister(0x00);
+        
+        // Convert from BCD to binary
+        byte hour = FromBcd(hourBcd);
+        byte minute = FromBcd(minuteBcd);
+        byte second = FromBcd(secondBcd);
+        
+        // CMOS doesn't store hundredths of a second, so we approximate with 0
+        // In a real system, this would use a higher resolution timer
+        byte hundredths = 0;
+        
+        State.CH = hour;
+        State.CL = minute;
+        State.DH = second;
+        State.DL = hundredths;
         
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("GET DOS TIME: {Hour:D2}:{Minute:D2}:{Second:D2}.{Hundredths:D2}",
-                now.Hour, now.Minute, now.Second, now.Millisecond / 10);
+            LoggerService.Verbose("GET DOS TIME from CMOS: {Hour:D2}:{Minute:D2}:{Second:D2}.{Hundredths:D2}",
+                hour, minute, second, hundredths);
         }
     }
 
@@ -1305,5 +1380,47 @@ public class DosInt21Handler : InterruptHandler {
         if (dosFileOperationResult.IsValueIsUint32) {
             State.DX = (ushort)(value >> 16);
         }
+    }
+
+    /// <summary>
+    /// Reads a CMOS register value via I/O ports (0x70 for index, 0x71 for data).
+    /// </summary>
+    /// <param name="register">The CMOS register number to read</param>
+    /// <returns>The value in the specified CMOS register</returns>
+    private byte ReadCmosRegister(byte register) {
+        // Write register index to port 0x70
+        _ioPortDispatcher.WriteByte(0x70, register);
+        // Read data from port 0x71
+        return _ioPortDispatcher.ReadByte(0x71);
+    }
+
+    /// <summary>
+    /// Writes a value to a CMOS register via I/O ports (0x70 for index, 0x71 for data).
+    /// </summary>
+    /// <param name="register">The CMOS register number to write</param>
+    /// <param name="value">The value to write to the register</param>
+    private void WriteCmosRegister(byte register, byte value) {
+        // Write register index to port 0x70
+        _ioPortDispatcher.WriteByte(0x70, register);
+        // Write data to port 0x71
+        _ioPortDispatcher.WriteByte(0x71, value);
+    }
+
+    /// <summary>
+    /// Converts a BCD value to binary.
+    /// </summary>
+    private static byte FromBcd(byte bcd) {
+        int highNibble = (bcd >> 4) & 0x0F;
+        int lowNibble = bcd & 0x0F;
+        return (byte)(highNibble * 10 + lowNibble);
+    }
+
+    /// <summary>
+    /// Converts a binary value to BCD format.
+    /// </summary>
+    private static byte ToBcd(byte binary) {
+        int tens = binary / 10;
+        int ones = binary % 10;
+        return (byte)((tens << 4) | ones);
     }
 }

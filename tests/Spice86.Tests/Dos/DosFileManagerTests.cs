@@ -166,7 +166,7 @@ public class DosFileManagerTests {
         Dos dos = new Dos(configuration, memory, functionHandlerProvider, stack, state,
             biosKeyboardBuffer, keyboardInt16Handler, biosDataArea,
             vgaFunctionality, new Dictionary<string, string> { { "BLASTER", soundBlaster.BlasterString } },
-            loggerService);
+            loggerService, null!);  // ioPortDispatcher
 
         return dos.FileManager;
     }
