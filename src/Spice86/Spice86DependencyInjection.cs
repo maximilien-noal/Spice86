@@ -465,7 +465,7 @@ public class Spice86DependencyInjection : IDisposable {
             keyboardInt16Handler, biosDataArea, vgaFunctionality,
             new Dictionary<string, string> {
                 { "BLASTER", soundBlaster.BlasterString } }, loggerService,
-            xms);
+            realTimeClock, xms);
 
         if (configuration.InitializeDOS is not false) {
             // Register the DOS interrupt handlers
