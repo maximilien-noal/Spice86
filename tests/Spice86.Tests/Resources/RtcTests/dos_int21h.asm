@@ -12,6 +12,7 @@
 ; Test Results Protocol:
 ;   Port 0x999 = Result port (0x00 = success, 0xFF = failure)
 ;   Port 0x998 = Details port (test number)
+;   Screen: Visual output via INT 10h (text mode)
 ; ==============================================================================
 
 org 100h
@@ -19,6 +20,13 @@ org 100h
 section .text
 
 start:
+    ; Clear screen and print header
+    call clear_screen
+    mov si, msg_header
+    call print_string
+    call print_newline
+    call print_newline
+    
     ; ==============================================================================
     ; Test 1: INT 21H Function 2Ah - Get DOS Date
     ; ==============================================================================
@@ -27,6 +35,9 @@ start:
     ;   DH = Month (1-12)
     ;   DL = Day (1-31)
     ;   AL = Day of week (0=Sunday, 6=Saturday)
+    
+    mov si, msg_test1
+    call print_string
     
     mov ah, 0x2A            ; Function 2Ah = Get date
     int 0x21
@@ -54,11 +65,17 @@ start:
     ja test1_fail
     
 test1_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x01            ; Test 1 passed
     out 0x998, al
     jmp test2
 
 test1_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x01
@@ -76,7 +93,9 @@ test1_fail:
     ;   AL = 00h if successful, FFh if invalid
     
 test2:
-    mov ah, 0x2B            ; Function 2Bh = Set date
+    mov si, msg_test2
+    call print_string
+        mov ah, 0x2B            ; Function 2Bh = Set date
     mov cx, 2025            ; Year 2025
     mov dh, 11              ; November
     mov dl, 13              ; 13th
@@ -86,11 +105,17 @@ test2:
     jne test2_fail
     
 test2_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x02            ; Test 2 passed
     out 0x998, al
     jmp test3
 
 test2_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x02
@@ -102,7 +127,9 @@ test2_fail:
     ; ==============================================================================
     
 test3:
-    mov ah, 0x2B            ; Function 2Bh = Set date
+    mov si, msg_test3
+    call print_string
+        mov ah, 0x2B            ; Function 2Bh = Set date
     mov cx, 1979            ; Invalid year (< 1980)
     mov dh, 11
     mov dl, 13
@@ -112,11 +139,17 @@ test3:
     jne test3_fail
     
 test3_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x03            ; Test 3 passed
     out 0x998, al
     jmp test4
 
 test3_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x03
@@ -128,7 +161,9 @@ test3_fail:
     ; ==============================================================================
     
 test4:
-    mov ah, 0x2B
+    mov si, msg_test4
+    call print_string
+        mov ah, 0x2B
     mov cx, 2025
     mov dh, 13              ; Invalid month (> 12)
     mov dl, 13
@@ -138,11 +173,17 @@ test4:
     jne test4_fail
     
 test4_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x04            ; Test 4 passed
     out 0x998, al
     jmp test5
 
 test4_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x04
@@ -154,7 +195,9 @@ test4_fail:
     ; ==============================================================================
     
 test5:
-    mov ah, 0x2B
+    mov si, msg_test5
+    call print_string
+        mov ah, 0x2B
     mov cx, 2025
     mov dh, 11
     mov dl, 32              ; Invalid day (> 31)
@@ -164,11 +207,17 @@ test5:
     jne test5_fail
     
 test5_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x05            ; Test 5 passed
     out 0x998, al
     jmp test6
 
 test5_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x05
@@ -185,7 +234,9 @@ test5_fail:
     ;   DL = Hundredths (0-99)
     
 test6:
-    mov ah, 0x2C            ; Function 2Ch = Get time
+    mov si, msg_test6
+    call print_string
+        mov ah, 0x2C            ; Function 2Ch = Get time
     int 0x21
     
     ; Validate hour (0-23)
@@ -205,11 +256,17 @@ test6:
     ja test6_fail
     
 test6_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x06            ; Test 6 passed
     out 0x998, al
     jmp test7
 
 test6_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x06
@@ -228,7 +285,9 @@ test6_fail:
     ;   AL = 00h if successful, FFh if invalid
     
 test7:
-    mov ah, 0x2D            ; Function 2Dh = Set time
+    mov si, msg_test7
+    call print_string
+        mov ah, 0x2D            ; Function 2Dh = Set time
     mov ch, 12              ; 12 hours
     mov cl, 30              ; 30 minutes
     mov dh, 45              ; 45 seconds
@@ -239,11 +298,17 @@ test7:
     jne test7_fail
     
 test7_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x07            ; Test 7 passed
     out 0x998, al
     jmp test8
 
 test7_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x07
@@ -255,7 +320,9 @@ test7_fail:
     ; ==============================================================================
     
 test8:
-    mov ah, 0x2D
+    mov si, msg_test8
+    call print_string
+        mov ah, 0x2D
     mov ch, 24              ; Invalid hour (>= 24)
     mov cl, 30
     mov dh, 45
@@ -266,11 +333,17 @@ test8:
     jne test8_fail
     
 test8_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x08            ; Test 8 passed
     out 0x998, al
     jmp test9
 
 test8_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x08
@@ -282,7 +355,9 @@ test8_fail:
     ; ==============================================================================
     
 test9:
-    mov ah, 0x2D
+    mov si, msg_test9
+    call print_string
+        mov ah, 0x2D
     mov ch, 12
     mov cl, 60              ; Invalid minutes (>= 60)
     mov dh, 45
@@ -293,11 +368,17 @@ test9:
     jne test9_fail
     
 test9_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x09            ; Test 9 passed
     out 0x998, al
     jmp test10
 
 test9_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x09
@@ -309,7 +390,9 @@ test9_fail:
     ; ==============================================================================
     
 test10:
-    mov ah, 0x2D
+    mov si, msg_test10
+    call print_string
+        mov ah, 0x2D
     mov ch, 12
     mov cl, 30
     mov dh, 60              ; Invalid seconds (>= 60)
@@ -320,11 +403,17 @@ test10:
     jne test10_fail
     
 test10_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x0A            ; Test 10 passed
     out 0x998, al
     jmp test11
 
 test10_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x0A
@@ -336,7 +425,9 @@ test10_fail:
     ; ==============================================================================
     
 test11:
-    mov ah, 0x2D
+    mov si, msg_test11
+    call print_string
+        mov ah, 0x2D
     mov ch, 12
     mov cl, 30
     mov dh, 45
@@ -347,11 +438,17 @@ test11:
     jne test11_fail
     
 test11_pass:
+    mov si, msg_pass
+    call print_string
+    call print_newline
     mov al, 0x0B            ; Test 11 passed
     out 0x998, al
     jmp all_tests_passed
 
 test11_fail:
+    mov si, msg_fail
+    call print_string
+    call print_newline
     mov al, 0xFF
     out 0x999, al
     mov al, 0x0B
@@ -359,6 +456,10 @@ test11_fail:
     jmp exit_program
 
 all_tests_passed:
+    call print_newline
+    mov si, msg_all_pass
+    call print_string
+    call print_newline
     mov al, 0x00            ; All tests passed
     out 0x999, al
     mov al, 0x0B            ; 11 tests completed
@@ -367,3 +468,76 @@ all_tests_passed:
 exit_program:
     mov ax, 0x4C00          ; DOS terminate
     int 0x21
+
+; ==============================================================================
+; Helper Functions for Screen Output
+; ==============================================================================
+
+; ==============================================================================
+; clear_screen - Clears the screen using INT 10h
+; ==============================================================================
+clear_screen:
+    push ax
+    mov ax, 0x0003          ; Set video mode 3 (80x25 text, clears screen)
+    int 0x10
+    pop ax
+    ret
+
+; ==============================================================================
+; print_string - Prints a null-terminated string using INT 10h
+; ==============================================================================
+; Input: SI = pointer to null-terminated string
+; Modifies: AX, BX, SI
+; ==============================================================================
+print_string:
+    push ax
+    push bx
+.loop:
+    lodsb                   ; Load byte from [SI] into AL, increment SI
+    cmp al, 0               ; Check for null terminator
+    je .done
+    mov ah, 0x0E            ; BIOS teletype output
+    mov bx, 0x0007          ; Page 0, light gray color
+    int 0x10
+    jmp .loop
+.done:
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; print_newline - Prints CR+LF
+; ==============================================================================
+print_newline:
+    push ax
+    push bx
+    mov ah, 0x0E
+    mov bx, 0x0007
+    mov al, 13              ; Carriage return
+    int 0x10
+    mov al, 10              ; Line feed
+    int 0x10
+    pop bx
+    pop ax
+    ret
+
+; ==============================================================================
+; Data section - Test messages
+; ==============================================================================
+section .data
+
+msg_header      db 'DOS INT 21H Date/Time Functions Test', 0
+msg_test1       db 'Test 1: Get DOS Date (2Ah)...', 0
+msg_test2       db 'Test 2: Set DOS Date - Valid (2Bh)...', 0
+msg_test3       db 'Test 3: Set DOS Date - Invalid Year...', 0
+msg_test4       db 'Test 4: Set DOS Date - Invalid Month...', 0
+msg_test5       db 'Test 5: Set DOS Date - Invalid Day...', 0
+msg_test6       db 'Test 6: Get DOS Time (2Ch)...', 0
+msg_test7       db 'Test 7: Set DOS Time - Valid (2Dh)...', 0
+msg_test8       db 'Test 8: Set DOS Time - Invalid Hour...', 0
+msg_test9       db 'Test 9: Set DOS Time - Invalid Minutes...', 0
+msg_test10      db 'Test 10: Set DOS Time - Invalid Seconds...', 0
+msg_test11      db 'Test 11: Set DOS Time - Invalid Hundredths...', 0
+msg_pass        db ' PASS', 0
+msg_fail        db ' FAIL', 0
+msg_all_pass    db 'All tests PASSED!', 0
