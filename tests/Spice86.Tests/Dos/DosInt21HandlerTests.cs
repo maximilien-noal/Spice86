@@ -7,12 +7,10 @@ using NSubstitute;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Dos;
-using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
-using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Interfaces;
 
 using Xunit;
@@ -35,12 +33,6 @@ public class DosInt21HandlerTests {
         const ushort fileHandle = 0x0003;
         dosFileManager.OpenFiles[fileHandle] = recordingFile;
 
-        var ioPortDispatcher = Substitute.For<IOPortDispatcher>(
-            Substitute.For<AddressReadWriteBreakpoints>(),
-            state,
-            logger,
-            false);
-
         var handler = new DosInt21Handler(
             memory,
             null!,
@@ -53,7 +45,7 @@ public class DosInt21HandlerTests {
             null!,
             dosFileManager,
             driveManager,
-            ioPortDispatcher,
+            null!,  // ioPortDispatcher
             logger);
 
         state.AL = (byte)SeekOrigin.Current;
