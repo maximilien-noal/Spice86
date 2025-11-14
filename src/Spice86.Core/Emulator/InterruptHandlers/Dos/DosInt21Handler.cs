@@ -154,10 +154,17 @@ public class DosInt21Handler : InterruptHandler {
         byte month = State.DH;
         byte day = State.DL;
         
-        // Validate the date
-        bool valid = year >= 1980 && year <= 2099 &&
-                     month >= 1 && month <= 12 &&
-                     day >= 1 && day <= 31;
+        // Validate the date using DateTime to ensure day is valid for the given month/year
+        bool valid = false;
+        try {
+            if (year >= 1980 && year <= 2099 && month >= 1 && month <= 12 && day >= 1) {
+                _ = new DateTime(year, month, day);
+                valid = true;
+            }
+        } catch (ArgumentOutOfRangeException) {
+            // Invalid date combination (e.g., Feb 31, Apr 31)
+            valid = false;
+        }
         
         if (valid) {
             // Split year into century and year components

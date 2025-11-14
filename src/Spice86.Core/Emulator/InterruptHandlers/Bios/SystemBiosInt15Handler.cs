@@ -79,7 +79,12 @@ public class SystemBiosInt15Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// INT 15h, AH=83h - SYSTEM - WAIT (WAIT FUNCTION)
+    /// INT 15h, AH=83h - SYSTEM - WAIT (WAIT FUNCTION) - **PARTIALLY IMPLEMENTED / STUB**
+    /// <para>
+    /// <b>WARNING:</b> This is a <b>partial/stub implementation</b>. The wait completion mechanism is <b>not implemented</b>.
+    /// Programs calling this function will NOT have their waits automatically completed, which may cause programs to hang
+    /// unless they cancel the wait with AL=01h.
+    /// </para>
     /// <para>
     /// This function allows programs to request a timed delay with optional user callback.
     /// The function uses the RTC periodic interrupt to implement the delay.

@@ -36,7 +36,7 @@ public static class CmosRegisterAddresses {
     public const byte Month = 0x08;
 
     /// <summary>
-    /// Year register (0x09). Stores current year in BCD or binary format (00-99, representing 2000-2099 or 1900-1999).
+    /// Year register (0x09). Stores the two-digit year (00-99) within the century specified by the Century register (0x32), in BCD or binary format.
     /// </summary>
     public const byte Year = 0x09;
 
