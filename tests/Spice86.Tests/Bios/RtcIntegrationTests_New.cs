@@ -16,8 +16,7 @@ public class RtcIntegrationTests_New
     private const int ResultPort = 0x999;
     private const int DetailsPort = 0x998;
 
-    enum TestResult : byte
-    {
+    enum TestResult : byte {
         Success = 0x00,
         Failure = 0xFF
     }
@@ -26,8 +25,7 @@ public class RtcIntegrationTests_New
     /// Tests BIOS INT 1A function 00h - Get System Clock Counter
     /// </summary>
     [Fact]
-    public void Int1A_GetSystemClockCounter_ShouldWork()
-    {
+    public void Int1A_GetSystemClockCounter_ShouldWork() {
         // Test INT 1A, AH=00h - Get system clock counter
         // Just verify the interrupt executes without crashing
         byte[] program = new byte[]
@@ -51,8 +49,7 @@ public class RtcIntegrationTests_New
     /// Tests DOS INT 21H function 2Ah - Get System Date  
     /// </summary>
     [Fact]
-    public void Int21H_GetSystemDate_ShouldWork()
-    {
+    public void Int21H_GetSystemDate_ShouldWork() {
         // Test INT 21H, AH=2Ah - Get system date
         // Returns: CX=year, DH=month, DL=day, AL=day of week
         byte[] program = new byte[]
@@ -88,8 +85,7 @@ public class RtcIntegrationTests_New
     /// Tests DOS INT 21H function 2Ch - Get System Time
     /// </summary>
     [Fact]
-    public void Int21H_GetSystemTime_ShouldWork()
-    {
+    public void Int21H_GetSystemTime_ShouldWork() {
         // Test INT 21H, AH=2Ch - Get system time
         // Returns: CH=hour, CL=minutes, DH=seconds, DL=hundredths
         byte[] program = new byte[]
@@ -122,8 +118,7 @@ public class RtcIntegrationTests_New
     /// <summary>
     /// Runs RTC test program and returns handler with results
     /// </summary>
-    private RtcTestHandler RunRtcTest(byte[] program, [CallerMemberName] string unitTestName = "test")
-    {
+    private RtcTestHandler RunRtcTest(byte[] program, [CallerMemberName] string unitTestName = "test") {
         // Write program to temp file
         string filePath = Path.GetFullPath($"{unitTestName}.com");
         File.WriteAllBytes(filePath, program);
@@ -154,20 +149,16 @@ public class RtcIntegrationTests_New
     /// <summary>
     /// Captures RTC test results from designated I/O ports
     /// </summary>
-    private class RtcTestHandler : DefaultIOPortHandler
-    {
+    private class RtcTestHandler : DefaultIOPortHandler {
         public List<byte> Results { get; } = new();
         
         public RtcTestHandler(State state, ILoggerService loggerService,
-            IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService)
-        {
+            IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService) {
             ioPortDispatcher.AddIOPortHandler(ResultPort, this);
         }
 
-        public override void WriteByte(ushort port, byte value)
-        {
-            if (port == ResultPort)
-            {
+        public override void WriteByte(ushort port, byte value) {
+            if (port == ResultPort) {
                 Results.Add(value);
             }
         }
