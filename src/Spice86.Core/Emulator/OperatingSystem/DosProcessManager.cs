@@ -103,16 +103,19 @@ public class DosProcessManager : DosFileLoader {
 
         byte[] environmentBlock = CreateEnvironmentBlock(file);
 
-        // In the PSP, the Environment Block Segment field (defined at offset 0x2C) is a word, and is a pointer.
-        ushort envBlockPointer = (ushort)(pspSegment + 1);
-        SegmentedAddress envBlockSegmentAddress = new SegmentedAddress(envBlockPointer, 0);
-
-        // Copy the environment block to memory in a separated segment.
-        _memory.LoadData(MemoryUtils.ToPhysicalAddress(envBlockSegmentAddress.Segment,
-            envBlockSegmentAddress.Offset), environmentBlock);
+        // Allocate memory for the environment block with an MCB
+        ushort envBlockSegment = AllocateEnvironmentBlock(environmentBlock, pspSegment);
+        if (envBlockSegment == 0) {
+            // Fallback: use the old method if allocation fails
+            envBlockSegment = (ushort)(pspSegment + 1);
+            _memory.LoadData(MemoryUtils.ToPhysicalAddress(envBlockSegment, 0), environmentBlock);
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("Failed to allocate environment block with MCB, using fallback method");
+            }
+        }
 
         // Point the PSP's environment segment to the environment block.
-        psp.EnvironmentTableSegment = envBlockSegmentAddress.Segment;
+        psp.EnvironmentTableSegment = envBlockSegment;
 
         // Set the disk transfer area address to the command-line offset in the PSP.
         _fileManager.SetDiskTransferAreaAddress(
@@ -154,6 +157,41 @@ public class DosProcessManager : DosFileLoader {
         ms.WriteByte(0); // Null terminator for program path
     
         return ms.ToArray();
+    }
+
+    /// <summary>
+    /// Allocates memory for an environment block and creates an MCB for it.
+    /// </summary>
+    /// <param name="environmentData">The environment block data to allocate.</param>
+    /// <param name="pspSegment">The PSP segment that owns this environment block.</param>
+    /// <returns>The segment address where the environment block was allocated, or 0 if allocation failed.</returns>
+    private ushort AllocateEnvironmentBlock(byte[] environmentData, ushort pspSegment) {
+        // Calculate size in paragraphs (round up)
+        ushort sizeInParagraphs = (ushort)((environmentData.Length + 15) / 16);
+        
+        // Allocate memory block for environment
+        DosMemoryControlBlock? envMcb = _memoryManager.AllocateMemoryBlock(sizeInParagraphs);
+        if (envMcb is null) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Failed to allocate environment block of {Size} paragraphs", sizeInParagraphs);
+            }
+            return 0;
+        }
+
+        // Set the MCB owner to the PSP segment
+        envMcb.PspSegment = pspSegment;
+        envMcb.Owner = "ENV";
+
+        // Copy environment data to the allocated memory
+        uint envBlockAddress = MemoryUtils.ToPhysicalAddress(envMcb.DataBlockSegment, 0);
+        _memory.LoadData(envBlockAddress, environmentData);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("Allocated environment block at segment {Segment} ({Size} paragraphs) for PSP {Psp}",
+                ConvertUtils.ToHex16(envMcb.DataBlockSegment), sizeInParagraphs, ConvertUtils.ToHex16(pspSegment));
+        }
+
+        return envMcb.DataBlockSegment;
     }
 
     private void LoadComFile(byte[] com) {

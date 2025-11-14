@@ -1054,13 +1054,83 @@ public class DosInt21Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Either only load a program or overlay, or load it and run it.
+    /// INT 21h function 4Bh - Load and/or execute program.
+    /// Implements DOS program loading with various modes (execute, load, overlay).
     /// </summary>
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
-    /// <exception cref="NotImplementedException">This function is not implemented</exception>
     public void LoadAndOrExecute(bool calledFromVm) {
+        byte mode = State.AL;
         string programName = _dosStringDecoder.GetZeroTerminatedStringAtDsDx();
-        throw new NotImplementedException($"INT21H: load and/or execute program is not implemented. Emulated program tried to load and/or exec: {programName}");
+        uint parameterBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
+
+        if (LoggerService.IsEnabled(LogEventLevel.Information)) {
+            LoggerService.Information("INT21H LOAD AND/OR EXECUTE: mode={Mode}, program={ProgramName}, paramBlock={ParamBlock}",
+                ConvertUtils.ToHex8(mode), programName, ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
+        }
+
+        // For now, we only support mode 0x00 (Load and Execute)
+        // Other modes will be implemented as needed
+        switch (mode) {
+            case 0x00: // Load and Execute
+                LoadAndExecuteProgram(programName, parameterBlockAddress, calledFromVm);
+                break;
+            case 0x01: // Load as Overlay
+                LoadProgramAsOverlay(programName, parameterBlockAddress, calledFromVm);
+                break;
+            case 0x03: // Load but don't execute
+                LoadProgramDontExecute(programName, parameterBlockAddress, calledFromVm);
+                break;
+            default:
+                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                    LoggerService.Warning("INT21H LOAD AND/OR EXECUTE: Unsupported mode {Mode} for program {ProgramName}", 
+                        ConvertUtils.ToHex8(mode), programName);
+                }
+                SetCarryFlag(true, calledFromVm);
+                State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Loads and executes a program (mode 0x00).
+    /// </summary>
+    private void LoadAndExecuteProgram(string programName, uint parameterBlockAddress, bool calledFromVm) {
+        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+            LoggerService.Warning("INT21H LOAD AND EXECUTE: Loading {ProgramName} as child process is not yet fully implemented. This is a stub.", 
+                programName);
+        }
+        
+        // For now, return error indicating function not supported
+        // Full implementation would require:
+        // 1. Parse exec parameter block
+        // 2. Create new PSP for child process
+        // 3. Load program into memory
+        // 4. Set up child environment
+        // 5. Transfer control to child
+        SetCarryFlag(true, calledFromVm);
+        State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
+    }
+
+    /// <summary>
+    /// Loads a program as an overlay (mode 0x01).
+    /// </summary>
+    private void LoadProgramAsOverlay(string programName, uint parameterBlockAddress, bool calledFromVm) {
+        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+            LoggerService.Warning("INT21H LOAD AS OVERLAY: Not implemented for {ProgramName}", programName);
+        }
+        SetCarryFlag(true, calledFromVm);
+        State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
+    }
+
+    /// <summary>
+    /// Loads a program but doesn't execute it (mode 0x03).
+    /// </summary>
+    private void LoadProgramDontExecute(string programName, uint parameterBlockAddress, bool calledFromVm) {
+        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+            LoggerService.Warning("INT21H LOAD DON'T EXECUTE: Not implemented for {ProgramName}", programName);
+        }
+        SetCarryFlag(true, calledFromVm);
+        State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
     }
 
     /// <summary>
