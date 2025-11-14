@@ -169,7 +169,8 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     private void HandleDataPortWrite(byte value) {
         byte reg = _cmosRegisters.CurrentRegister;
         switch (reg) {
-            // Time/date registers - ignore writes (read-only in this implementation)
+            // Time/date registers - store values (allows DOS/BIOS to set date/time)
+            // Note: Reads still return current host system time, not these stored values
             case CmosRegisterAddresses.Seconds:      // 0x00
             case CmosRegisterAddresses.Minutes:      // 0x02
             case CmosRegisterAddresses.Hours:        // 0x04
@@ -178,7 +179,10 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
             case CmosRegisterAddresses.Month:        // 0x08
             case CmosRegisterAddresses.Year:         // 0x09
             case CmosRegisterAddresses.Century:      // 0x32
-                // Ignore writes to time/date registers (we use host system time)
+                _cmosRegisters[reg] = value;
+                if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                    _loggerService.Verbose("CMOS: Time/date register {Reg:X2} set to {Val:X2} (stored but not used for time reads)", reg, value);
+                }
                 return;
 
             // Alarm registers - store but don't implement alarm functionality

@@ -106,14 +106,14 @@ public class SystemClockInt1AHandler : InterruptHandler {
 
     /// <summary>
     /// INT 1A, AH=03h - Set RTC Time.
-    /// This is a stub implementation as setting actual system time is not supported.
+    /// This is a stub implementation - returns error as setting system time is not supported.
     /// </summary>
     private void SetRTCTime() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("INT 1A, AH=03h - Set RTC Time (stub - not implemented)");
+            LoggerService.Verbose("INT 1A, AH=03h - Set RTC Time (stub - not implemented, returning error)");
         }
-        // Stub - we don't actually change the system time
-        State.CarryFlag = false;
+        // Return error - we don't support changing the system time
+        State.CarryFlag = true;
     }
 
     /// <summary>
@@ -135,13 +135,13 @@ public class SystemClockInt1AHandler : InterruptHandler {
 
     /// <summary>
     /// INT 1A, AH=05h - Set RTC Date.
-    /// This is a stub implementation as setting actual system date is not supported.
+    /// This is a stub implementation - returns error as setting system date is not supported.
     /// </summary>
     private void SetRTCDate() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("INT 1A, AH=05h - Set RTC Date (stub - not implemented)");
+            LoggerService.Verbose("INT 1A, AH=05h - Set RTC Date (stub - not implemented, returning error)");
         }
-        // Stub - we don't actually change the system date
-        State.CarryFlag = false;
+        // Return error - we don't support changing the system date
+        State.CarryFlag = true;
     }
 }
