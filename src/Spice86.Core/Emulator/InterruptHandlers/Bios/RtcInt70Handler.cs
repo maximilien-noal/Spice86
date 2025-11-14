@@ -4,8 +4,8 @@ using Serilog.Events;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.Cmos;
 using Spice86.Core.Emulator.Devices.ExternalInput;
+using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
-using Spice86.Core.Emulator.InterruptHandlers.Common.MemoryWriter;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Emulator.Memory;
@@ -30,54 +30,45 @@ using Spice86.Shared.Interfaces;
 /// and alarm interrupts from the CMOS timer.
 /// </para>
 /// </summary>
-public sealed class RtcInt70Handler : IInterruptHandler {
-    private readonly State _state;
+public sealed class RtcInt70Handler : InterruptHandler {
     private readonly DualPic _dualPic;
     private readonly BiosDataArea _biosDataArea;
     private readonly IOPortDispatcher _ioPortDispatcher;
-    private readonly ILoggerService _loggerService;
-    private readonly IMemory _memory;
-    private readonly InterruptVectorTable _interruptVectorTable;
 
     /// <summary>
     /// Initializes a new instance.
     /// </summary>
-    /// <param name="state">The CPU state for register access.</param>
     /// <param name="memory">The memory bus for accessing user flags.</param>
-    /// <param name="interruptVectorTable">The interrupt vector table for calling INT 4Ah.</param>
+    /// <param name="functionHandlerProvider">Provides current call flow handler to peek call stack.</param>
+    /// <param name="stack">The CPU stack.</param>
+    /// <param name="state">The CPU state.</param>
     /// <param name="dualPic">The PIC for interrupt acknowledgment.</param>
     /// <param name="biosDataArea">The BIOS data area for wait flag and counter access.</param>
     /// <param name="ioPortDispatcher">The I/O port dispatcher for CMOS register access.</param>
     /// <param name="loggerService">The logger service.</param>
-    public RtcInt70Handler(State state, IMemory memory, InterruptVectorTable interruptVectorTable,
-        DualPic dualPic, BiosDataArea biosDataArea,
-        IOPortDispatcher ioPortDispatcher, ILoggerService loggerService) {
-        _state = state;
-        _memory = memory;
-        _interruptVectorTable = interruptVectorTable;
+    public RtcInt70Handler(IMemory memory, IFunctionHandlerProvider functionHandlerProvider, 
+        Stack stack, State state, DualPic dualPic, BiosDataArea biosDataArea,
+        IOPortDispatcher ioPortDispatcher, ILoggerService loggerService)
+        : base(memory, functionHandlerProvider, stack, state, loggerService) {
         _dualPic = dualPic;
         _biosDataArea = biosDataArea;
         _ioPortDispatcher = ioPortDispatcher;
-        _loggerService = loggerService;
     }
 
     /// <inheritdoc />
-    public byte VectorNumber => 0x70;
+    public override byte VectorNumber => 0x70;
 
     /// <inheritdoc />
-    public SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
-        SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
-        memoryAsmWriter.RegisterAndWriteCallback(HandleRtcInterrupt);
-        memoryAsmWriter.WriteIret();
-        return handlerAddress;
+    public override void Run() {
+        HandleRtcInterrupt();
     }
 
     /// <summary>
     /// Handles the RTC interrupt by processing periodic and alarm events.
     /// </summary>
     private void HandleRtcInterrupt() {
-        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-            _loggerService.Verbose("INT 70h - RTC Alarm/Periodic Interrupt Handler");
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("INT 70h - RTC Alarm/Periodic Interrupt Handler");
         }
 
         // Read Status Register C (0x0C) to check interrupt source and clear flags
@@ -146,8 +137,8 @@ public sealed class RtcInt70Handler : IInterruptHandler {
     /// and setting the user flag.
     /// </summary>
     private void CompleteWait() {
-        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-            _loggerService.Verbose("RTC wait completed");
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("RTC wait completed");
         }
 
         // Disable periodic interrupt (clear bit 6 of Status Register B)
@@ -165,10 +156,10 @@ public sealed class RtcInt70Handler : IInterruptHandler {
         SegmentedAddress userFlagAddress = _biosDataArea.UserWaitCompleteFlag;
         if (userFlagAddress.Segment != 0 || userFlagAddress.Offset != 0) {
             // Only set the flag if a valid address was provided
-            _memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = 0x80;
+            Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = 0x80;
             
-            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-                _loggerService.Verbose("Set user wait flag at {Segment:X4}:{Offset:X4} to 0x80",
+            if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                LoggerService.Verbose("Set user wait flag at {Segment:X4}:{Offset:X4} to 0x80",
                     userFlagAddress.Segment, userFlagAddress.Offset);
             }
         }
@@ -184,8 +175,8 @@ public sealed class RtcInt70Handler : IInterruptHandler {
     /// </para>
     /// </summary>
     private void HandleAlarmInterrupt() {
-        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-            _loggerService.Verbose("RTC alarm interrupt detected");
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("RTC alarm interrupt detected");
         }
 
         // The BIOS code points CMOS to default register D before enabling interrupts
@@ -196,8 +187,8 @@ public sealed class RtcInt70Handler : IInterruptHandler {
         // Since we're implementing this in C#, we can't easily trigger the software interrupt
         // from within an interrupt handler context. Programs that need alarm support should
         // install their own INT 70h handler that calls INT 4Ah.
-        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
-            _loggerService.Information("RTC alarm interrupt - INT 4Ah callback should be implemented by program if needed");
+        if (LoggerService.IsEnabled(LogEventLevel.Information)) {
+            LoggerService.Information("RTC alarm interrupt - INT 4Ah callback should be implemented by program if needed");
         }
     }
 
@@ -212,8 +203,8 @@ public sealed class RtcInt70Handler : IInterruptHandler {
         // Send EOI to both PICs (IRQ 8 is on secondary PIC)
         _dualPic.AcknowledgeInterrupt(8);
 
-        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-            _loggerService.Verbose("RTC interrupt acknowledged");
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("RTC interrupt acknowledged");
         }
     }
 }

@@ -322,7 +322,7 @@ public class Spice86DependencyInjection : IDisposable {
             realTimeClock, functionHandlerProvider, stack, state, loggerService);
         SystemBiosInt13Handler systemBiosInt13Handler = new(memory,
             functionHandlerProvider, stack, state, loggerService);
-        RtcInt70Handler rtcInt70Handler = new(state, memory, interruptVectorTable,
+        RtcInt70Handler rtcInt70Handler = new(memory, functionHandlerProvider, stack, state,
             dualPic, biosDataArea, ioPortDispatcher, loggerService);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
