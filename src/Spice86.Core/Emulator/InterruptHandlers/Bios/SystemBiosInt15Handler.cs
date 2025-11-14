@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.InterruptHandlers;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Enums;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
 
@@ -87,6 +88,14 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// CF clear if successful<br/>
     /// CF set on error<br/>
     /// AH = status (80h if event already in progress)<br/>
+    /// <para>
+    /// <b>Implementation Note:</b> This implementation stores the callback pointer and timeout values in the BIOS data area
+    /// and enables/disables the RTC periodic interrupt (bit 6 of Status Register B). However, it does <b>not</b> currently
+    /// implement the IRQ 8 (INT 70h) handler that would periodically decrement the timeout, set bit 7 of RtcWaitFlag upon
+    /// completion, disable the periodic interrupt, and invoke the callback at UserWaitCompleteFlag (if non-zero).
+    /// The actual wait completion mechanism is not yet implemented and programs relying on this function for timing
+    /// may experience issues until an IRQ 8 handler is added to complete the wait operation.
+    /// </para>
     /// </summary>
     /// <param name="calledFromVm">Whether this function is called directly from the VM.</param>
     public void WaitFunction(bool calledFromVm) {
@@ -100,10 +109,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
             _biosDataArea.RtcWaitFlag = 0;
             
             // Disable RTC periodic interrupt (clear bit 6 of Status Register B)
-            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
-            byte statusB = _ioPortDispatcher.ReadByte(Devices.Cmos.CmosPorts.Data);
-            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
-            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, (byte)(statusB & ~0x40));
+            ModifyCmosRegister(Devices.Cmos.CmosRegisterAddresses.StatusRegisterB, value => (byte)(value & ~0x40));
             
             SetCarryFlag(false, calledFromVm);
             
@@ -128,7 +134,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
         uint count = ((uint)State.CX << 16) | State.DX;
         
         // Store the callback pointer (ES:BX)
-        _biosDataArea.UserWaitCompleteFlag = new Spice86.Shared.Emulator.Memory.SegmentedAddress(State.ES, State.BX);
+        _biosDataArea.UserWaitCompleteFlag = new SegmentedAddress(State.ES, State.BX);
         
         // Store the wait count (microseconds)
         _biosDataArea.UserWaitTimeout = count;
@@ -137,10 +143,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
         _biosDataArea.RtcWaitFlag = 1;
         
         // Enable RTC periodic interrupt (set bit 6 of Status Register B)
-        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
-        byte statusBSet = _ioPortDispatcher.ReadByte(Devices.Cmos.CmosPorts.Data);
-        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
-        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, (byte)(statusBSet | 0x40));
+        ModifyCmosRegister(Devices.Cmos.CmosRegisterAddresses.StatusRegisterB, value => (byte)(value | 0x40));
         
         SetCarryFlag(false, calledFromVm);
         
@@ -315,5 +318,20 @@ public class SystemBiosInt15Handler : InterruptHandler {
         // We are not an IBM PS/2
         SetCarryFlag(true, true);
         State.AH = 0x86;
+    }
+
+    /// <summary>
+    /// Modifies a CMOS register by reading its current value, applying a transformation function,
+    /// and writing the result back. This encapsulates the read-modify-write pattern required
+    /// for the MC146818 chip (write address, read data, write address again, write data).
+    /// </summary>
+    /// <param name="register">The CMOS register address to modify.</param>
+    /// <param name="modifier">A function that takes the current register value and returns the new value.</param>
+    private void ModifyCmosRegister(byte register, Func<byte, byte> modifier) {
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, register);
+        byte currentValue = _ioPortDispatcher.ReadByte(Devices.Cmos.CmosPorts.Data);
+        byte newValue = modifier(currentValue);
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, register);
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, newValue);
     }
 }
