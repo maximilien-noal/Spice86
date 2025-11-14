@@ -1099,6 +1099,11 @@ public class DosInt21Handler : InterruptHandler {
     /// <summary>
     /// Loads and executes a program (mode 0x00).
     /// </summary>
+    /// <remarks>
+    /// INT 21h AH=4Bh expects an already resolved absolute DOS path from COMMAND.COM or AUTOEXEC.BAT.
+    /// Example: "C:\GAMES\PROGRAM.EXE" not just "PROGRAM.EXE"
+    /// The DOS path is then resolved to a host file system path for actual loading.
+    /// </remarks>
     private void LoadAndExecuteProgram(string programName, uint parameterBlockAddress, bool calledFromVm) {
         if (_dosProcessManager is null) {
             if (LoggerService.IsEnabled(LogEventLevel.Error)) {
@@ -1128,27 +1133,29 @@ public class DosInt21Handler : InterruptHandler {
         }
 
         if (LoggerService.IsEnabled(LogEventLevel.Information)) {
-            LoggerService.Information("INT21H LOAD AND EXECUTE: {ProgramName} with command line: {CommandLine}", 
+            LoggerService.Information("INT21H LOAD AND EXECUTE: DOS path={DosPath}, command line={CommandLine}", 
                 programName, commandLine ?? "(none)");
         }
 
-        // Try to resolve the program path
+        // Resolve the DOS path to a host file system path
+        // The programName should already be an absolute DOS path (e.g., "C:\GAMES\PROGRAM.EXE")
         string? fullPath = _dosFileManager.TryGetFullHostPathFromDos(programName);
         if (fullPath is null || !File.Exists(fullPath)) {
             if (LoggerService.IsEnabled(LogEventLevel.Error)) {
-                LoggerService.Error("INT21H LOAD AND EXECUTE: Program not found: {ProgramName}", programName);
+                LoggerService.Error("INT21H LOAD AND EXECUTE: Program not found - DOS path: {DosPath}, resolved host path: {HostPath}", 
+                    programName, fullPath ?? "(null)");
             }
             SetCarryFlag(true, calledFromVm);
             State.AX = (byte)DosErrorCode.FileNotFound;
             return;
         }
 
-        // Load the child process
+        // Load the child process using the resolved host path
         ushort childPspSegment = _dosProcessManager.LoadChildProcess(fullPath, commandLine, execBlock.EnvironmentSegment);
         
         if (childPspSegment == 0) {
             if (LoggerService.IsEnabled(LogEventLevel.Error)) {
-                LoggerService.Error("INT21H LOAD AND EXECUTE: Failed to load child process: {ProgramName}", programName);
+                LoggerService.Error("INT21H LOAD AND EXECUTE: Failed to load child process: {DosPath}", programName);
             }
             SetCarryFlag(true, calledFromVm);
             State.AX = (byte)DosErrorCode.InsufficientMemory;
@@ -1159,7 +1166,7 @@ public class DosInt21Handler : InterruptHandler {
         SetCarryFlag(false, calledFromVm);
         
         if (LoggerService.IsEnabled(LogEventLevel.Information)) {
-            LoggerService.Information("INT21H LOAD AND EXECUTE: Successfully loaded {ProgramName} at PSP {Psp}", 
+            LoggerService.Information("INT21H LOAD AND EXECUTE: Successfully loaded {DosPath} at PSP {Psp}", 
                 programName, ConvertUtils.ToHex16(childPspSegment));
         }
     }
