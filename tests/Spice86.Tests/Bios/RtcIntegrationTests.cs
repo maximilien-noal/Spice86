@@ -126,30 +126,38 @@ public class RtcIntegrationTests {
 
         // Read the program bytes and write to a temporary file with .com extension
         byte[] program = File.ReadAllBytes(fullPath);
-        string tempFilePath = Path.GetFullPath($"{unitTestName}.com");
+        // Create a unique temp file with .com extension
+        string tempFilePath = Path.Combine(Path.GetTempPath(), $"{unitTestName}_{Guid.NewGuid()}.com");
         File.WriteAllBytes(tempFilePath, program);
+        try {
+            // Setup emulator with .com extension
+            Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+                binName: tempFilePath,
+                enableCfgCpu: true,
+                enablePit: true,
+                recordData: false,
+                maxCycles: 100000L,
+                installInterruptVectors: true,
+                enableA20Gate: false,
+                enableXms: false,
+                enableEms: false
+            ).Create();
 
-        // Setup emulator with .com extension
-        Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
-            binName: tempFilePath,
-            enableCfgCpu: true,
-            enablePit: true,
-            recordData: false,
-            maxCycles: 100000L,
-            installInterruptVectors: true,
-            enableA20Gate: false,
-            enableXms: false,
-            enableEms: false
-        ).Create();
+            RtcTestHandler testHandler = new(
+                spice86DependencyInjection.Machine.CpuState,
+                NSubstitute.Substitute.For<ILoggerService>(),
+                spice86DependencyInjection.Machine.IoPortDispatcher
+            );
+            spice86DependencyInjection.ProgramExecutor.Run();
 
-        RtcTestHandler testHandler = new(
-            spice86DependencyInjection.Machine.CpuState,
-            NSubstitute.Substitute.For<ILoggerService>(),
-            spice86DependencyInjection.Machine.IoPortDispatcher
-        );
-        spice86DependencyInjection.ProgramExecutor.Run();
-
-        return testHandler;
+            return testHandler;
+        }
+        finally {
+            // Clean up the temp file
+            if (File.Exists(tempFilePath)) {
+                try { File.Delete(tempFilePath); } catch { /* ignore */ }
+            }
+        }
     }
 
     /// <summary>
