@@ -6,16 +6,25 @@ using Spice86.Core.CLI;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.Sound;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
+using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.VM.CpuSpeedLimit;
 using Spice86.Core.Emulator.VM.CycleBudget;
+using Spice86.Shared.Interfaces;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 /// <summary>
 /// Integration tests for INT 15h AH=86h BIOS Wait function.
-/// Note: These tests call the BiosWait() method directly to test the core wait logic.
-/// The full ASM handler path (via INT 15h) is tested implicitly through system integration.
+/// Includes both direct C# tests and machine code integration tests.
 /// </summary>
 public class BiosWaitIntegrationTest {
+    private const int ResultPort = 0x999;    // Port to write test results
+    private const int DetailsPort = 0x998;   // Port to write test details/error messages
+
+    enum TestResult : byte {
+        Success = 0x00,
+        Failure = 0xFF
+    }
     static BiosWaitIntegrationTest() {
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
@@ -125,5 +134,115 @@ public class BiosWaitIntegrationTest {
 
         // Note: This test verifies that the INT 15h handler was installed.
         // The exact ASM generation logic is tested indirectly through the BiosWait() tests.
+    }
+
+    /// <summary>
+    /// Integration test that executes INT 15h AH=86h through machine code.
+    /// Tests the full ASM handler path including the wait loop.
+    /// </summary>
+    [Fact]
+    public void TestBiosWaitThroughInt15h_Success() {
+        // Test program that calls INT 15h AH=86h with a short wait (1ms = 1000 microseconds)
+        byte[] program = new byte[]
+        {
+            0xB4, 0x86,             // mov ah, 86h - BIOS Wait function
+            0xB9, 0x00, 0x00,       // mov cx, 0 - high word of microseconds
+            0xBA, 0xE8, 0x03,       // mov dx, 1000 (0x03E8) - low word = 1000 microseconds (1ms)
+            0xCD, 0x15,             // int 15h - call BIOS
+            0x73, 0x04,             // jnc success - carry clear means success
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+            0xEB, 0x02,             // jmp writeResult
+            // success:
+            0xB0, 0x00,             // mov al, TestResult.Success
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        BiosWaitTestHandler testHandler = RunBiosWaitTest(program);
+        
+        testHandler.Results.Should().Contain((byte)TestResult.Success, 
+            "INT 15h AH=86h should complete successfully");
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
+    /// Integration test for zero microseconds wait.
+    /// </summary>
+    [Fact]
+    public void TestBiosWaitThroughInt15h_ZeroMicroseconds() {
+        // Test program that calls INT 15h AH=86h with zero microseconds
+        byte[] program = new byte[]
+        {
+            0xB4, 0x86,             // mov ah, 86h - BIOS Wait function
+            0xB9, 0x00, 0x00,       // mov cx, 0 - high word of microseconds
+            0xBA, 0x00, 0x00,       // mov dx, 0 - low word = 0 microseconds
+            0xCD, 0x15,             // int 15h - call BIOS
+            0x73, 0x04,             // jnc success - carry clear means success
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+            0xEB, 0x02,             // jmp writeResult
+            // success:
+            0xB0, 0x00,             // mov al, TestResult.Success
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        BiosWaitTestHandler testHandler = RunBiosWaitTest(program);
+        
+        testHandler.Results.Should().Contain((byte)TestResult.Success,
+            "INT 15h AH=86h should handle zero microseconds without error");
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
+    /// Runs a BIOS wait test program and returns a test handler with results.
+    /// </summary>
+    private BiosWaitTestHandler RunBiosWaitTest(byte[] program,
+        [CallerMemberName] string unitTestName = "test") {
+        // Write program to a file
+        string filePath = Path.GetFullPath($"{unitTestName}.com");
+        File.WriteAllBytes(filePath, program);
+
+        // Setup emulator with interrupt vectors and PIT enabled
+        Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+            binName: filePath,
+            enableCfgCpu: false,  // Use regular CPU for simpler debugging
+            enablePit: true,      // Enable PIT for timer support
+            recordData: false,
+            maxCycles: 1000000L,  // More cycles to allow wait loop to execute
+            installInterruptVectors: true,
+            enableA20Gate: false
+        ).Create();
+
+        BiosWaitTestHandler testHandler = new(
+            spice86DependencyInjection.Machine.CpuState,
+            NSubstitute.Substitute.For<ILoggerService>(),
+            spice86DependencyInjection.Machine.IoPortDispatcher
+        );
+        
+        spice86DependencyInjection.ProgramExecutor.Run();
+
+        return testHandler;
+    }
+
+    /// <summary>
+    /// Captures BIOS wait test results from designated I/O ports.
+    /// </summary>
+    private class BiosWaitTestHandler : DefaultIOPortHandler {
+        public List<byte> Results { get; } = new();
+        
+        public BiosWaitTestHandler(State state, ILoggerService loggerService,
+            IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService) {
+            ioPortDispatcher.AddIOPortHandler(ResultPort, this);
+        }
+
+        public override void WriteByte(ushort port, byte value) {
+            if (port == ResultPort) {
+                Results.Add(value);
+            }
+        }
     }
 }
