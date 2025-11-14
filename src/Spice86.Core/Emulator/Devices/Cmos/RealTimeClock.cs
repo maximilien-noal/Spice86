@@ -412,7 +412,9 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         }
         double nowMs = GetElapsedMilliseconds();
         if (nowMs >= _nextPeriodicTriggerMs) {
-            _cmosRegisters[CmosRegisterAddresses.StatusRegisterC] |= 0xC0; // Contraption Zack (music)
+            // 0xC0 = IRQF (bit 7) + PF (bit 6) - both flags must be set for games like Contraption Zack to detect periodic timer events correctly.
+            // Contraption Zack (music) relies on both IRQF and PF being set in Status Register C to process timer interrupts.
+            _cmosRegisters[CmosRegisterAddresses.StatusRegisterC] |= 0xC0;
             _cmosRegisters.Timer.Acknowledged = false;
             _cmosRegisters.Last.Timer = nowMs;
             while (nowMs >= _nextPeriodicTriggerMs) {
