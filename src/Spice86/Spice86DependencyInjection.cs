@@ -233,8 +233,10 @@ public class Spice86DependencyInjection : IDisposable {
         CounterConfiguratorFactory counterConfiguratorFactory = new
             CounterConfiguratorFactory(configuration, state, pauseHandler, loggerService);
 
+        PitPicEventQueue pitPicEventQueue = new(loggerService);
+
         Timer timer = new Timer(configuration, state, ioPortDispatcher,
-            counterConfiguratorFactory, loggerService, dualPic);
+            counterConfiguratorFactory, loggerService, dualPic, pitPicEventQueue);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("Timer created...");
@@ -362,8 +364,6 @@ public class Spice86DependencyInjection : IDisposable {
 
         InputEventQueue inputEventQueue = new InputEventQueue(
             _gui as IGuiKeyboardEvents, _gui as IGuiMouseEvents);
-
-        PitPicEventQueue pitPicEventQueue = new(loggerService);
 
         EmulationLoop emulationLoop = new(perfMeasurer, functionHandler,
             cpuForEmulationLoop, state, timer,

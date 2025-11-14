@@ -11,7 +11,7 @@ namespace Spice86.Core.Emulator.Devices.Timer;
 /// - PS/2 controller delays
 /// - Keyboard reset timing
 /// </summary>
-public sealed class PitPicEventQueue {
+public sealed class PitPicEventQueue : ITimeMultiplier {
     private readonly ILoggerService _loggerService;
     private readonly Func<long> _nowTicks;
     private readonly long _ticksPerSecond;
