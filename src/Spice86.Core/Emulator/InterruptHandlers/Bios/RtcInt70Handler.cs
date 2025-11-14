@@ -1,0 +1,219 @@
+namespace Spice86.Core.Emulator.InterruptHandlers.Bios;
+
+using Serilog.Events;
+using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.Devices.Cmos;
+using Spice86.Core.Emulator.Devices.ExternalInput;
+using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
+using Spice86.Core.Emulator.InterruptHandlers.Common.MemoryWriter;
+using Spice86.Core.Emulator.IOPorts;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Interfaces;
+
+/// <summary>
+/// INT 70h - RTC Alarm/Periodic Interrupt Handler (IRQ 8).
+/// <para>
+/// This handler services the Real-Time Clock periodic and alarm interrupts.
+/// The periodic interrupt fires at a configurable rate (typically 1024 Hz) and is used
+/// to implement the BIOS WAIT function (INT 15h, AH=83h).
+/// </para>
+/// <para>
+/// The handler:
+/// - Decrements the wait counter for INT 15h, AH=83h
+/// - Sets the user flag when the wait expires
+/// - Disables the periodic interrupt when the wait completes
+/// - Invokes INT 4Ah for alarm interrupts (user callback)
+/// </para>
+/// <para>
+/// Based on the IBM BIOS RTC_INT procedure which handles both periodic
+/// and alarm interrupts from the CMOS timer.
+/// </para>
+/// </summary>
+public sealed class RtcInt70Handler : IInterruptHandler {
+    private readonly State _state;
+    private readonly DualPic _dualPic;
+    private readonly BiosDataArea _biosDataArea;
+    private readonly IOPortDispatcher _ioPortDispatcher;
+    private readonly ILoggerService _loggerService;
+    private readonly IMemory _memory;
+    private readonly InterruptVectorTable _interruptVectorTable;
+
+    /// <summary>
+    /// Initializes a new instance.
+    /// </summary>
+    /// <param name="state">The CPU state for register access.</param>
+    /// <param name="memory">The memory bus for accessing user flags.</param>
+    /// <param name="interruptVectorTable">The interrupt vector table for calling INT 4Ah.</param>
+    /// <param name="dualPic">The PIC for interrupt acknowledgment.</param>
+    /// <param name="biosDataArea">The BIOS data area for wait flag and counter access.</param>
+    /// <param name="ioPortDispatcher">The I/O port dispatcher for CMOS register access.</param>
+    /// <param name="loggerService">The logger service.</param>
+    public RtcInt70Handler(State state, IMemory memory, InterruptVectorTable interruptVectorTable,
+        DualPic dualPic, BiosDataArea biosDataArea,
+        IOPortDispatcher ioPortDispatcher, ILoggerService loggerService) {
+        _state = state;
+        _memory = memory;
+        _interruptVectorTable = interruptVectorTable;
+        _dualPic = dualPic;
+        _biosDataArea = biosDataArea;
+        _ioPortDispatcher = ioPortDispatcher;
+        _loggerService = loggerService;
+    }
+
+    /// <inheritdoc />
+    public byte VectorNumber => 0x70;
+
+    /// <inheritdoc />
+    public SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
+        SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
+        memoryAsmWriter.RegisterAndWriteCallback(HandleRtcInterrupt);
+        memoryAsmWriter.WriteIret();
+        return handlerAddress;
+    }
+
+    /// <summary>
+    /// Handles the RTC interrupt by processing periodic and alarm events.
+    /// </summary>
+    private void HandleRtcInterrupt() {
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("INT 70h - RTC Alarm/Periodic Interrupt Handler");
+        }
+
+        // Read Status Register C (0x0C) to check interrupt source and clear flags
+        // Reading this register clears the interrupt flags
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterC);
+        byte statusC = _ioPortDispatcher.ReadByte(CmosPorts.Data);
+
+        // Check if this is a valid RTC interrupt (bit 6 = periodic, bit 5 = alarm)
+        if ((statusC & 0x60) == 0) {
+            // Not a valid RTC interrupt, just acknowledge and exit
+            AcknowledgeInterrupt();
+            return;
+        }
+
+        // Read Status Register B (0x0B) to check which interrupts are enabled
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
+        byte statusB = _ioPortDispatcher.ReadByte(CmosPorts.Data);
+
+        // Only process interrupts that are both flagged and enabled
+        byte activeInterrupts = (byte)(statusC & statusB);
+
+        // Handle periodic interrupt (bit 6)
+        if ((activeInterrupts & 0x40) != 0) {
+            HandlePeriodicInterrupt();
+        }
+
+        // Handle alarm interrupt (bit 5)
+        if ((activeInterrupts & 0x20) != 0) {
+            HandleAlarmInterrupt();
+        }
+
+        // Acknowledge the interrupt and exit
+        AcknowledgeInterrupt();
+    }
+
+    /// <summary>
+    /// Handles the periodic interrupt by decrementing the wait counter.
+    /// <para>
+    /// The periodic interrupt fires at the rate specified in Status Register A
+    /// (typically 1024 Hz, or ~976 microseconds per interrupt).
+    /// </para>
+    /// </summary>
+    private void HandlePeriodicInterrupt() {
+        // Check if a wait is active
+        if (_biosDataArea.RtcWaitFlag == 0) {
+            return;
+        }
+
+        // Decrement the wait counter by the interrupt interval (976 microseconds for 1024 Hz)
+        // The counter is stored as a 32-bit value in microseconds
+        const uint InterruptIntervalMicroseconds = 976; // 1000000 / 1024 ≈ 976
+
+        uint timeout = _biosDataArea.UserWaitTimeout;
+        
+        if (timeout <= InterruptIntervalMicroseconds) {
+            // Wait has expired
+            CompleteWait();
+        } else {
+            // Decrement and store the new timeout
+            _biosDataArea.UserWaitTimeout = timeout - InterruptIntervalMicroseconds;
+        }
+    }
+
+    /// <summary>
+    /// Completes the wait operation by disabling the periodic interrupt
+    /// and setting the user flag.
+    /// </summary>
+    private void CompleteWait() {
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("RTC wait completed");
+        }
+
+        // Disable periodic interrupt (clear bit 6 of Status Register B)
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
+        byte statusB = _ioPortDispatcher.ReadByte(CmosPorts.Data);
+        byte newStatusB = (byte)(statusB & ~0x40);
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
+        _ioPortDispatcher.WriteByte(CmosPorts.Data, newStatusB);
+
+        // Clear the wait flag
+        _biosDataArea.RtcWaitFlag = 0;
+        _biosDataArea.UserWaitTimeout = 0;
+
+        // Set the user flag to 0x80 to indicate completion
+        SegmentedAddress userFlagAddress = _biosDataArea.UserWaitCompleteFlag;
+        if (userFlagAddress.Segment != 0 || userFlagAddress.Offset != 0) {
+            // Only set the flag if a valid address was provided
+            _memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = 0x80;
+            
+            if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+                _loggerService.Verbose("Set user wait flag at {Segment:X4}:{Offset:X4} to 0x80",
+                    userFlagAddress.Segment, userFlagAddress.Offset);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handles the alarm interrupt by invoking INT 4Ah.
+    /// <para>
+    /// Programs can hook INT 4Ah to receive alarm callbacks.
+    /// Note: This is a stub implementation that just acknowledges the alarm.
+    /// The actual callback mechanism would require CPU instruction execution which
+    /// is handled outside this interrupt handler's scope.
+    /// </para>
+    /// </summary>
+    private void HandleAlarmInterrupt() {
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("RTC alarm interrupt detected");
+        }
+
+        // The BIOS code points CMOS to default register D before enabling interrupts
+        // and calling INT 4Ah
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterD);
+
+        // Note: The actual INT 4Ah callback would be invoked by the BIOS assembly code.
+        // Since we're implementing this in C#, we can't easily trigger the software interrupt
+        // from within an interrupt handler context. Programs that need alarm support should
+        // install their own INT 70h handler that calls INT 4Ah.
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("RTC alarm interrupt - INT 4Ah callback should be implemented by program if needed");
+        }
+    }
+
+    /// <summary>
+    /// Acknowledges the RTC interrupt by pointing to default register
+    /// and sending EOI to both PICs.
+    /// </summary>
+    private void AcknowledgeInterrupt() {
+        // Point to default read-only register D and enable NMI
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterD);
+
+        // Send EOI to both PICs (IRQ 8 is on secondary PIC)
+        _dualPic.AcknowledgeInterrupt(8);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("RTC interrupt acknowledged");
+        }
+    }
+}
