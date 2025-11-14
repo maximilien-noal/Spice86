@@ -194,6 +194,99 @@ public class DosProcessManager : DosFileLoader {
         return envMcb.DataBlockSegment;
     }
 
+    /// <summary>
+    /// Loads a child process for execution (used by INT 21h function 4Bh).
+    /// This creates a new PSP for the child process and loads the program into memory.
+    /// </summary>
+    /// <param name="programPath">The path to the program to load.</param>
+    /// <param name="commandLine">The command line arguments for the program.</param>
+    /// <param name="environmentSegment">The segment of the environment block (0 to inherit parent's).</param>
+    /// <returns>The PSP segment of the loaded child process, or 0 if loading failed.</returns>
+    public ushort LoadChildProcess(string programPath, string? commandLine, ushort environmentSegment) {
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("Loading child process: {ProgramPath} with args: {CommandLine}", 
+                programPath, commandLine ?? "(none)");
+        }
+
+        // Get the current PSP as the parent
+        ushort parentPspSegment = _pspTracker.GetCurrentPspSegment();
+
+        // Allocate a new PSP segment for the child
+        // For now, use a simple allocation strategy - we should improve this
+        // TODO: Properly allocate PSP memory block through memory manager
+        ushort newPspSegment = FindFreePspSegment();
+        if (newPspSegment == 0) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Failed to find free PSP segment for child process");
+            }
+            return 0;
+        }
+
+        // Push the new PSP onto the tracker
+        DosProgramSegmentPrefix childPsp = _pspTracker.PushPspSegment(newPspSegment);
+        
+        // Set up the child PSP
+        childPsp.Exit[0] = 0xCD;
+        childPsp.Exit[1] = 0x20;
+        childPsp.ParentProgramSegmentPrefix = parentPspSegment;
+        childPsp.NextSegment = DosMemoryManager.LastFreeSegment;
+
+        // Set up command line
+        byte[] commandLineBytes = ArgumentsToDosBytes(commandLine);
+        byte length = commandLineBytes[0];
+        string asciiCommandLine = Encoding.ASCII.GetString(commandLineBytes, 1, length);
+        childPsp.DosCommandTail.Length = (byte)(asciiCommandLine.Length + 1);
+        childPsp.DosCommandTail.Command = asciiCommandLine;
+
+        // Set up environment
+        if (environmentSegment == 0) {
+            // Inherit parent's environment
+            DosProgramSegmentPrefix parentPsp = new DosProgramSegmentPrefix(_memory, 
+                MemoryUtils.ToPhysicalAddress(parentPspSegment, 0));
+            childPsp.EnvironmentTableSegment = parentPsp.EnvironmentTableSegment;
+        } else {
+            childPsp.EnvironmentTableSegment = environmentSegment;
+        }
+
+        // Load the program
+        try {
+            LoadExeOrComFile(programPath, newPspSegment);
+        } catch (Exception ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error(ex, "Failed to load child process: {ProgramPath}", programPath);
+            }
+            // Clean up: pop the PSP we just pushed
+            _pspTracker.PopPspSegment(newPspSegment);
+            return 0;
+        }
+
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("Successfully loaded child process at PSP segment {PspSegment}", 
+                ConvertUtils.ToHex16(newPspSegment));
+        }
+
+        return newPspSegment;
+    }
+
+    /// <summary>
+    /// Finds a free segment for a new PSP.
+    /// This is a simple implementation that should be improved with proper memory management.
+    /// </summary>
+    private ushort FindFreePspSegment() {
+        // For now, just use a segment after the initial PSP
+        // This is a placeholder and should be replaced with proper allocation
+        ushort currentPsp = _pspTracker.GetCurrentPspSegment();
+        
+        // Try to find a free segment by checking the MCB chain
+        // This is a simplified approach
+        DosMemoryControlBlock? freeMcb = _memoryManager.AllocateMemoryBlock(0x10); // Allocate 16 paragraphs for PSP
+        if (freeMcb != null) {
+            return freeMcb.DataBlockSegment;
+        }
+
+        return 0;
+    }
+
     private void LoadComFile(byte[] com) {
         ushort programEntryPointSegment = _pspTracker.GetProgramEntryPointSegment();
         uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(programEntryPointSegment, ComOffset);

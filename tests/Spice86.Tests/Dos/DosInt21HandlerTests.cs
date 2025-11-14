@@ -46,6 +46,7 @@ public class DosInt21HandlerTests {
             dosFileManager,
             driveManager,
             null!,  // ioPortDispatcher
+            null,   // dosProcessManager
             logger);
 
         state.AL = (byte)SeekOrigin.Current;

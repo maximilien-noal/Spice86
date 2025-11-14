@@ -37,6 +37,8 @@ public class DosInt21Handler : InterruptHandler {
     private byte _lastDisplayOutputCharacter = 0x0;
     private bool _isCtrlCFlag;
 
+    private readonly DosProcessManager? _dosProcessManager;
+
     /// <summary>
     /// Initializes a new instance.
     /// </summary>
@@ -52,13 +54,15 @@ public class DosInt21Handler : InterruptHandler {
     /// <param name="dosFileManager">The DOS class responsible for DOS file access.</param>
     /// <param name="dosDriveManager">The DOS class responsible for DOS volumes.</param>
     /// <param name="ioPortDispatcher">The I/O port dispatcher for accessing hardware ports (e.g., CMOS).</param>
+    /// <param name="dosProcessManager">The DOS class responsible for process management (optional).</param>
     /// <param name="loggerService">The logger service implementation.</param>
     public DosInt21Handler(IMemory memory, DosProgramSegmentPrefixTracker dosPspTracker,
         IFunctionHandlerProvider functionHandlerProvider, Stack stack, State state,
         KeyboardInt16Handler keyboardInt16Handler, CountryInfo countryInfo,
         DosStringDecoder dosStringDecoder, DosMemoryManager dosMemoryManager,
         DosFileManager dosFileManager, DosDriveManager dosDriveManager,
-        IOPortDispatcher ioPortDispatcher, ILoggerService loggerService)
+        IOPortDispatcher ioPortDispatcher, DosProcessManager? dosProcessManager,
+        ILoggerService loggerService)
             : base(memory, functionHandlerProvider, stack, state, loggerService) {
         _countryInfo = countryInfo;
         _dosPspTracker = dosPspTracker;
@@ -68,6 +72,7 @@ public class DosInt21Handler : InterruptHandler {
         _dosFileManager = dosFileManager;
         _dosDriveManager = dosDriveManager;
         _ioPortDispatcher = ioPortDispatcher;
+        _dosProcessManager = dosProcessManager;
         _interruptVectorTable = new InterruptVectorTable(memory);
         FillDispatchTable();
     }
@@ -1095,20 +1100,68 @@ public class DosInt21Handler : InterruptHandler {
     /// Loads and executes a program (mode 0x00).
     /// </summary>
     private void LoadAndExecuteProgram(string programName, uint parameterBlockAddress, bool calledFromVm) {
-        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-            LoggerService.Warning("INT21H LOAD AND EXECUTE: Loading {ProgramName} as child process is not yet fully implemented. This is a stub.", 
-                programName);
+        if (_dosProcessManager is null) {
+            if (LoggerService.IsEnabled(LogEventLevel.Error)) {
+                LoggerService.Error("INT21H LOAD AND EXECUTE: ProcessManager not available");
+            }
+            SetCarryFlag(true, calledFromVm);
+            State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
+            return;
         }
+
+        // Parse the EXEC parameter block
+        DosExecParameterBlock execBlock = new(Memory, parameterBlockAddress);
         
-        // For now, return error indicating function not supported
-        // Full implementation would require:
-        // 1. Parse exec parameter block
-        // 2. Create new PSP for child process
-        // 3. Load program into memory
-        // 4. Set up child environment
-        // 5. Transfer control to child
-        SetCarryFlag(true, calledFromVm);
-        State.AX = (byte)DosErrorCode.FunctionNumberInvalid;
+        // Get the command line from the parameter block
+        string? commandLine = null;
+        if (execBlock.CommandLineAddress.Linear != 0) {
+            uint cmdLineAddr = execBlock.CommandLineAddress.Linear;
+            // Read the command line length byte
+            byte length = Memory.UInt8[cmdLineAddr];
+            if (length > 0) {
+                byte[] cmdBytes = new byte[length];
+                for (int i = 0; i < length; i++) {
+                    cmdBytes[i] = Memory.UInt8[cmdLineAddr + 1 + (uint)i];
+                }
+                commandLine = Encoding.ASCII.GetString(cmdBytes).TrimEnd('\r', '\n');
+            }
+        }
+
+        if (LoggerService.IsEnabled(LogEventLevel.Information)) {
+            LoggerService.Information("INT21H LOAD AND EXECUTE: {ProgramName} with command line: {CommandLine}", 
+                programName, commandLine ?? "(none)");
+        }
+
+        // Try to resolve the program path
+        string? fullPath = _dosFileManager.TryGetFullHostPathFromDos(programName);
+        if (fullPath is null || !File.Exists(fullPath)) {
+            if (LoggerService.IsEnabled(LogEventLevel.Error)) {
+                LoggerService.Error("INT21H LOAD AND EXECUTE: Program not found: {ProgramName}", programName);
+            }
+            SetCarryFlag(true, calledFromVm);
+            State.AX = (byte)DosErrorCode.FileNotFound;
+            return;
+        }
+
+        // Load the child process
+        ushort childPspSegment = _dosProcessManager.LoadChildProcess(fullPath, commandLine, execBlock.EnvironmentSegment);
+        
+        if (childPspSegment == 0) {
+            if (LoggerService.IsEnabled(LogEventLevel.Error)) {
+                LoggerService.Error("INT21H LOAD AND EXECUTE: Failed to load child process: {ProgramName}", programName);
+            }
+            SetCarryFlag(true, calledFromVm);
+            State.AX = (byte)DosErrorCode.InsufficientMemory;
+            return;
+        }
+
+        // Success
+        SetCarryFlag(false, calledFromVm);
+        
+        if (LoggerService.IsEnabled(LogEventLevel.Information)) {
+            LoggerService.Information("INT21H LOAD AND EXECUTE: Successfully loaded {ProgramName} at PSP {Psp}", 
+                programName, ConvertUtils.ToHex16(childPspSegment));
+        }
     }
 
     /// <summary>
