@@ -155,7 +155,10 @@ public class RtcIntegrationTests {
         finally {
             // Clean up the temp file
             if (File.Exists(tempFilePath)) {
-                try { File.Delete(tempFilePath); } catch { /* ignore */ }
+                try { File.Delete(tempFilePath); } 
+                catch (IOException) { /* ignore file in use, etc. */ }
+                catch (UnauthorizedAccessException) { /* ignore permission issues */ }
+                // optionally catch other expected exceptions or rethrow unexpected ones
             }
         }
     }
