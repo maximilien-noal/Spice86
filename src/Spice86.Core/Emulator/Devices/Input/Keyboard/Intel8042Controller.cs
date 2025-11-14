@@ -231,7 +231,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private readonly A20Gate _a20Gate;
     private readonly DualPic _dualPic;
     private readonly State _cpuState;
-    private readonly DeviceScheduler _scheduler;
+    private readonly PitPicEventQueue _eventQueue;
 
     public PS2Keyboard KeyboardDevice { get; }
 
@@ -241,14 +241,14 @@ public class Intel8042Controller : DefaultIOPortHandler {
     public Intel8042Controller(State state, IOPortDispatcher ioPortDispatcher,
         A20Gate a20Gate, DualPic dualPic, bool failOnUnhandledPort,
         IPauseHandler pauseHandler, ILoggerService loggerService,
-        DeviceScheduler scheduler, IGuiKeyboardEvents? gui = null)
+        PitPicEventQueue eventQueue, IGuiKeyboardEvents? gui = null)
         : base(state, failOnUnhandledPort, loggerService) {
         _a20Gate = a20Gate;
         _dualPic = dualPic;
         _cpuState = state;
-        _scheduler = scheduler;
+        _eventQueue = eventQueue;
 
-        KeyboardDevice = new PS2Keyboard(this, state, loggerService, scheduler, gui);
+        KeyboardDevice = new PS2Keyboard(this, state, loggerService, eventQueue, gui);
 
         InitPortHandlers(ioPortDispatcher);
         FlushBuffer();
@@ -422,7 +422,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private void RestartDelayTimer(double timeMs = PortDelayMs) {
         _delayActive = true;
         int token = ++_delayToken;
-        _scheduler.ScheduleEvent("i8042-delay-expire", timeMs, () => {
+        _eventQueue.AddEvent("i8042-delay-expire", timeMs, () => {
             if (token != _delayToken) {
                 return;
             }

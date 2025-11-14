@@ -20,7 +20,7 @@ public class EmulationLoop {
     private readonly FunctionHandler _functionHandler;
     private readonly State _cpuState;
     private readonly Timer _timer;
-    private readonly DeviceScheduler _scheduler;
+    private readonly PitPicEventQueue _eventQueue;
     private readonly EmulatorBreakpointsManager _emulatorBreakpointsManager;
     private readonly IPauseHandler _pauseHandler;
     private readonly PerformanceMeasurer _performanceMeasurer;
@@ -42,7 +42,7 @@ public class EmulationLoop {
     /// <param name="cpu">The emulated CPU, so the emulation loop can call ExecuteNextInstruction().</param>
     /// <param name="cpuState">The emulated CPU State, so that we know when to stop.</param>
     /// <param name="timer">The timer device, so the emulation loop can call Tick()</param>
-    /// <param name="scheduler">The device scheduler, to handle event queue and device ticks.</param>
+    /// <param name="eventQueue">The PitPic event queue, to handle timed callbacks.</param>
     /// <param name="emulatorBreakpointsManager">The class that stores emulation breakpoints.</param>
     /// <param name="dmaController">Used to perform DMA Channel data transfers regularly.</param>
     /// <param name="pauseHandler">The emulation pause handler.</param>
@@ -51,7 +51,7 @@ public class EmulationLoop {
     /// <param name="loggerService">The logger service implementation.</param>
     public EmulationLoop(PerformanceMeasurer perfMeasurer,
         FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
-        Timer timer, DeviceScheduler scheduler, EmulatorBreakpointsManager emulatorBreakpointsManager,
+        Timer timer, PitPicEventQueue eventQueue, EmulatorBreakpointsManager emulatorBreakpointsManager,
         DmaController dmaController, IPauseHandler pauseHandler,
         CycleLimiterBase cyclesLimiter, InputEventQueue inputEventQueue,
         ILoggerService loggerService) {
@@ -61,7 +61,7 @@ public class EmulationLoop {
         _functionHandler = functionHandler;
         _cpuState = cpuState;
         _timer = timer;
-        _scheduler = scheduler;
+        _eventQueue = eventQueue;
         _emulatorBreakpointsManager = emulatorBreakpointsManager;
         _pauseHandler = pauseHandler;
         _cyclesLimiter = cyclesLimiter;
@@ -119,14 +119,13 @@ public class EmulationLoop {
         _emulatorBreakpointsManager.CheckExecutionBreakPoints();
         _pauseHandler.WaitIfPaused();
 
-        // sub-ms queue before CPU executes
-        _scheduler.RunEventQueue();
+        // sub-ms event queue before CPU executes
+        _eventQueue.RunQueue();
 
         _cpu.ExecuteNext();
         _performanceMeasurer.UpdateValue(_cpuState.Cycles);
 
         _timer.Tick();        // PIT IRQ0 if due
-        _scheduler.DeviceTick(); // device periodic callbacks
         _dmaController.PerformDmaTransfers();
         _inputEventQueue.ProcessAllPendingInputEvents();
         _cyclesLimiter.RegulateCycles(_cpuState);

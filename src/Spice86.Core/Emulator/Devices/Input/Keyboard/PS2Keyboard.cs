@@ -15,7 +15,7 @@ public class PS2Keyboard {
     private readonly ILoggerService _loggerService;
     private readonly KeyboardScancodeConverter _scancodeConverter = new();
     private readonly State _cpuState;
-    private readonly DeviceScheduler _scheduler;
+    private readonly PitPicEventQueue _eventQueue;
 
     // Internal keyboard scancode buffer - mirrors DOSBox implementation
     private const int BufferSize = 8; // in scancodes
@@ -110,18 +110,18 @@ public class PS2Keyboard {
     /// <param name="controller">The keyboard controller.</param>
     /// <param name="cpuState">The CPU state for cycle-based timing.</param>
     /// <param name="loggerService">The logger service implementation.</param>
-    /// <param name="scheduler">The device scheduler to register periodic callbacks.</param>
+    /// <param name="eventQueue">The PitPic event queue for scheduling keyboard events.</param>
     /// <param name="guiKeyboardEvents">Optional GUI keyboard events interface.</param>
     public PS2Keyboard(Intel8042Controller controller, State cpuState,
-        ILoggerService loggerService, DeviceScheduler scheduler,
+        ILoggerService loggerService, PitPicEventQueue eventQueue,
         IGuiKeyboardEvents? guiKeyboardEvents = null) {
         _controller = controller;
         _cpuState = cpuState;
         _loggerService = loggerService;
-        _scheduler = scheduler;
+        _eventQueue = eventQueue;
 
-        // 1ms periodic service (typematic + LED timeout)
-        _scheduler.RegisterPeriodicCallback("kbd-typematic-led", 1000.0, Service1ms);
+        // Schedule first 1ms periodic service (typematic + LED timeout)
+        ScheduleService1ms();
 
         KeyboardReset(isStartup: true);
 
@@ -194,6 +194,10 @@ public class PS2Keyboard {
     // 1ms service loop (typematic + LED timeout)
     // ***************************************************************************
 
+    private void ScheduleService1ms() {
+        _eventQueue.AddEvent("kbd-service-1ms", 1.0, Service1ms);
+    }
+
     private void Service1ms() {
         // typematic logic mirrors DOSBox typematic_tick
         if (_repeat.WaitMs > 0) {
@@ -221,6 +225,9 @@ public class PS2Keyboard {
                 LedsAllOnExpire();
             }
         }
+
+        // Reschedule next service
+        ScheduleService1ms();
     }
 
     // ***************************************************************************

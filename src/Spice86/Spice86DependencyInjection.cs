@@ -363,16 +363,16 @@ public class Spice86DependencyInjection : IDisposable {
         InputEventQueue inputEventQueue = new InputEventQueue(
             _gui as IGuiKeyboardEvents, _gui as IGuiMouseEvents);
 
-        DeviceScheduler deviceScheduler = new(counterConfiguratorFactory, loggerService);
+        PitPicEventQueue pitPicEventQueue = new(loggerService);
 
         EmulationLoop emulationLoop = new(perfMeasurer, functionHandler,
             cpuForEmulationLoop, state, timer,
-            deviceScheduler, emulatorBreakpointsManager, dmaController,
+            pitPicEventQueue, emulatorBreakpointsManager, dmaController,
             pauseHandler, cyclesLimiter, inputEventQueue, loggerService);
 
         Intel8042Controller ps2Controller = new(
             state, ioPortDispatcher, a20Gate, dualPic,
-            configuration.FailOnUnhandledPort, pauseHandler, loggerService, deviceScheduler, inputEventQueue);
+            configuration.FailOnUnhandledPort, pauseHandler, loggerService, pitPicEventQueue, inputEventQueue);
 
         VgaCard vgaCard = new(_gui, vgaRenderer, loggerService);
 
@@ -496,7 +496,7 @@ public class Spice86DependencyInjection : IDisposable {
             vgaCard, videoState, vgaIoPortHandler,
             vgaRenderer, vgaBios, vgaRom,
             dmaController, soundBlaster.Opl3Fm, softwareMixer, mouse, mouseDriver,
-            vgaFunctionality, pauseHandler, deviceScheduler);
+            vgaFunctionality, pauseHandler, pitPicEventQueue);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("Machine created...");
