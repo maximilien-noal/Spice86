@@ -97,9 +97,9 @@ public class SystemClockInt1AHandler : InterruptHandler {
         }
 
         DateTime now = DateTime.Now;
-        State.CH = ToBcd((byte)now.Hour);
-        State.CL = ToBcd((byte)now.Minute);
-        State.DH = ToBcd((byte)now.Second);
+        State.CH = BcdConverter.ToBcd((byte)now.Hour);
+        State.CL = BcdConverter.ToBcd((byte)now.Minute);
+        State.DH = BcdConverter.ToBcd((byte)now.Second);
         State.DL = 0; // Standard time (not daylight savings)
         State.CarryFlag = false;
     }
@@ -126,10 +126,10 @@ public class SystemClockInt1AHandler : InterruptHandler {
         }
 
         DateTime now = DateTime.Now;
-        State.CH = ToBcd((byte)(now.Year / 100));
-        State.CL = ToBcd((byte)(now.Year % 100));
-        State.DH = ToBcd((byte)now.Month);
-        State.DL = ToBcd((byte)now.Day);
+        State.CH = BcdConverter.ToBcd((byte)(now.Year / 100));
+        State.CL = BcdConverter.ToBcd((byte)(now.Year % 100));
+        State.DH = BcdConverter.ToBcd((byte)now.Month);
+        State.DL = BcdConverter.ToBcd((byte)now.Day);
         State.CarryFlag = false;
     }
 
@@ -143,21 +143,5 @@ public class SystemClockInt1AHandler : InterruptHandler {
         }
         // Stub - we don't actually change the system date
         State.CarryFlag = false;
-    }
-
-    /// <summary>
-    /// Converts a binary value to BCD (Binary Coded Decimal) format.
-    /// Validates that the input is 0-99 (BCD can only represent two decimal digits).
-    /// </summary>
-    /// <param name="binary">The binary value to convert.</param>
-    /// <returns>The BCD representation.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is > 99</exception>
-    private static byte ToBcd(byte binary) {
-        if (binary > 99) {
-            throw new ArgumentOutOfRangeException(nameof(binary), binary, "Value must be 0-99 for BCD encoding");
-        }
-        int tens = binary / 10;
-        int ones = binary % 10;
-        return (byte)((tens << 4) | ones);
     }
 }

@@ -17,7 +17,9 @@ public static class BcdConverter {
             throw new ArgumentOutOfRangeException(nameof(binary), binary,
                 $"Value must be 0-99 for BCD encoding. Value was {binary}.");
         }
-        return (byte)((binary / 10 << 4) | (binary % 10));
+        int tens = binary / 10;
+        int ones = binary % 10;
+        return (byte)((tens << 4) | ones);
     }
 
     /// <summary>

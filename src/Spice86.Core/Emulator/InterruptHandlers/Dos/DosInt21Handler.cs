@@ -165,10 +165,10 @@ public class DosInt21Handler : InterruptHandler {
             int yearPart = year % 100;
             
             // Convert to BCD
-            byte yearBcd = ToBcd((byte)yearPart);
-            byte monthBcd = ToBcd(month);
-            byte dayBcd = ToBcd(day);
-            byte centuryBcd = ToBcd((byte)century);
+            byte yearBcd = BcdConverter.ToBcd((byte)yearPart);
+            byte monthBcd = BcdConverter.ToBcd(month);
+            byte dayBcd = BcdConverter.ToBcd(day);
+            byte centuryBcd = BcdConverter.ToBcd((byte)century);
             
             WriteCmosRegister(CmosRegisterAddresses.Year, yearBcd);
             WriteCmosRegister(CmosRegisterAddresses.Month, monthBcd);
@@ -222,9 +222,9 @@ public class DosInt21Handler : InterruptHandler {
         
         if (valid) {
             // Convert to BCD
-            byte hourBcd = ToBcd(hour);
-            byte minutesBcd = ToBcd(minutes);
-            byte secondsBcd = ToBcd(seconds);
+            byte hourBcd = BcdConverter.ToBcd(hour);
+            byte minutesBcd = BcdConverter.ToBcd(minutes);
+            byte secondsBcd = BcdConverter.ToBcd(seconds);
             
             WriteCmosRegister(CmosRegisterAddresses.Hours, hourBcd);
             WriteCmosRegister(CmosRegisterAddresses.Minutes, minutesBcd);
@@ -808,11 +808,11 @@ public class DosInt21Handler : InterruptHandler {
         byte centuryBcd = ReadCmosRegister(CmosRegisterAddresses.Century);
         
         // Convert from BCD to binary
-        int year = FromBcd(yearBcd);
-        int century = FromBcd(centuryBcd);
-        int month = FromBcd(monthBcd);
-        int day = FromBcd(dayBcd);
-        int dayOfWeek = FromBcd(dayOfWeekBcd);
+        int year = BcdConverter.FromBcd(yearBcd);
+        int century = BcdConverter.FromBcd(centuryBcd);
+        int month = BcdConverter.FromBcd(monthBcd);
+        int day = BcdConverter.FromBcd(dayBcd);
+        int dayOfWeek = BcdConverter.FromBcd(dayOfWeekBcd);
         
         // Calculate full year
         int fullYear = century * 100 + year;
@@ -995,9 +995,9 @@ public class DosInt21Handler : InterruptHandler {
         byte secondBcd = ReadCmosRegister(CmosRegisterAddresses.Seconds);
         
         // Convert from BCD to binary
-        byte hour = FromBcd(hourBcd);
-        byte minute = FromBcd(minuteBcd);
-        byte second = FromBcd(secondBcd);
+        byte hour = BcdConverter.FromBcd(hourBcd);
+        byte minute = BcdConverter.FromBcd(minuteBcd);
+        byte second = BcdConverter.FromBcd(secondBcd);
         
         // CMOS doesn't store hundredths of a second, so we approximate with 0
         // In a real system, this would use a higher resolution timer
@@ -1398,33 +1398,5 @@ public class DosInt21Handler : InterruptHandler {
     private void WriteCmosRegister(byte register, byte value) {
         _ioPortDispatcher.WriteByte(CmosPorts.Address, register);
         _ioPortDispatcher.WriteByte(CmosPorts.Data, value);
-    }
-
-    /// <summary>
-    /// Converts a BCD value to binary.
-    /// Validates that the input is proper BCD format (each nibble 0-9).
-    /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is not valid BCD</exception>
-    private static byte FromBcd(byte bcd) {
-        int highNibble = (bcd >> 4) & 0x0F;
-        int lowNibble = bcd & 0x0F;
-        if (highNibble > 9 || lowNibble > 9) {
-            throw new ArgumentOutOfRangeException(nameof(bcd), bcd, $"Invalid BCD value: 0x{bcd:X2}");
-        }
-        return (byte)(highNibble * 10 + lowNibble);
-    }
-
-    /// <summary>
-    /// Converts a binary value to BCD format.
-    /// Validates that the input is 0-99 (BCD can only represent two decimal digits).
-    /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if the value is > 99</exception>
-    private static byte ToBcd(byte binary) {
-        if (binary > 99) {
-            throw new ArgumentOutOfRangeException(nameof(binary), binary, "Value must be 0-99 for BCD encoding");
-        }
-        int tens = binary / 10;
-        int ones = binary % 10;
-        return (byte)((tens << 4) | ones);
     }
 }

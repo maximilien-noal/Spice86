@@ -441,24 +441,7 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     /// <param name="value">The binary value to encode</param>
     /// <returns>BCD-encoded value if BCD mode is active, otherwise binary value</returns>
     private byte EncodeTimeComponent(int value) =>
-        _cmosRegisters.IsBcdMode ? ToBcd((byte)value) : (byte)value;
-
-    /// <summary>
-    /// Converts a binary value to BCD (Binary Coded Decimal) format.
-    /// <para>
-    /// BCD encoding stores decimal digits in nibbles:
-    /// - High nibble = tens digit
-    /// - Low nibble = ones digit
-    /// </para>
-    /// <para>
-    /// Example: 23 (decimal) = 0x23 (BCD) = 0010 0011 (binary)
-    /// </para>
-    /// </summary>
-    private static byte ToBcd(byte binary) {
-        int tens = binary / 10;
-        int ones = binary % 10;
-        return (byte)((tens << 4) | ones);
-    }
+        _cmosRegisters.IsBcdMode ? BcdConverter.ToBcd((byte)value) : (byte)value;
 
     /// <summary>
     /// Gets elapsed time in milliseconds since RTC initialization, excluding paused time.
