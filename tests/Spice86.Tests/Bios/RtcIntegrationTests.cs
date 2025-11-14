@@ -93,7 +93,7 @@ public class RtcIntegrationTests {
         [CallerMemberName] string unitTestName = "test") {
         
         // Load the compiled .com file from Resources/RtcTests directory
-        string resourcePath = Path.Combine("Resources", "RtcTests", comFileName);
+        string resourcePath = Path.Join("Resources", "RtcTests", comFileName);
         string fullPath = Path.GetFullPath(resourcePath);
         
         if (!File.Exists(fullPath)) {
