@@ -1063,6 +1063,14 @@ public class DosInt21Handler : InterruptHandler {
     /// Implements DOS program loading with various modes (execute, load, overlay).
     /// </summary>
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
+    /// <remarks>
+    /// TODO: Future architectural improvements:
+    /// - Move process management logic to DosProcessManager to keep INT21H handler focused
+    /// - Implement COMMAND.COM-like program that inherits from PSP class as first DOS process
+    /// - Parse AUTOEXEC.BAT through COMMAND.COM simulator
+    /// - COMMAND.COM should call this INT21H with emulated memory structures for target program
+    /// - Requires inversion of control from ProgramExecutor (currently bypasses DOS boot process)
+    /// </remarks>
     public void LoadAndOrExecute(bool calledFromVm) {
         byte mode = State.AL;
         string programName = _dosStringDecoder.GetZeroTerminatedStringAtDsDx();
