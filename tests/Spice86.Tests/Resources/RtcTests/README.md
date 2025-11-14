@@ -16,7 +16,7 @@ Tests direct access to CMOS registers via I/O ports 0x70 (address) and 0x71 (dat
 - Reads month register (0x08)
 - Reads year register (0x09)
 
-Each test validates that the returned value is proper BCD format (both nibbles 0-9).
+Each test validates that the returned value is in proper BCD format (both nibbles 0-9).
 
 ### 2. bios_int1a.com
 Tests BIOS INT 1A time services (functions 00h-05h).
