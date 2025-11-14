@@ -19,6 +19,8 @@ using Spice86.Shared.Utils;
 public class SystemBiosInt15Handler : InterruptHandler {
     private readonly A20Gate _a20Gate;
     private readonly Configuration _configuration;
+    private readonly BiosDataArea _biosDataArea;
+    private readonly IOPorts.IOPortDispatcher _ioPortDispatcher;
 
     /// <summary>
     /// Initializes a new instance.
@@ -29,15 +31,20 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// <param name="stack">The CPU stack.</param>
     /// <param name="state">The CPU state.</param>
     /// <param name="a20Gate">The A20 line gate.</param>
+    /// <param name="biosDataArea">The BIOS data area for accessing system flags and variables.</param>
+    /// <param name="ioPortDispatcher">The I/O port dispatcher for accessing hardware ports (e.g., CMOS).</param>
     /// <param name="initializeResetVector">Whether to initialize the reset vector with a HLT instruction.</param>
     /// <param name="loggerService">The logger service implementation.</param>
     public SystemBiosInt15Handler(Configuration configuration, IMemory memory,
         IFunctionHandlerProvider functionHandlerProvider, Stack stack,
-        State state, A20Gate a20Gate, bool initializeResetVector,
+        State state, A20Gate a20Gate, BiosDataArea biosDataArea,
+        IOPorts.IOPortDispatcher ioPortDispatcher, bool initializeResetVector,
         ILoggerService loggerService)
         : base(memory, functionHandlerProvider, stack, state, loggerService) {
         _a20Gate = a20Gate;
         _configuration = configuration;
+        _biosDataArea = biosDataArea;
+        _ioPortDispatcher = ioPortDispatcher;
         if (initializeResetVector) {
             // Put HLT instruction at the reset address
             memory.UInt16[0xF000, 0xFFF0] = 0xF4;
@@ -69,6 +76,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// INT 15h, AH=83h - SYSTEM - WAIT (WAIT FUNCTION)
     /// <para>
     /// This function allows programs to request a timed delay with optional user callback.
+    /// The function uses the RTC periodic interrupt to implement the delay.
     /// </para><br/>
     /// <b>Inputs:</b><br/>
     /// AH = 83h<br/>
@@ -78,13 +86,68 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// <b>Outputs:</b><br/>
     /// CF clear if successful<br/>
     /// CF set on error<br/>
+    /// AH = status (80h if event already in progress)<br/>
     /// </summary>
     /// <param name="calledFromVm">Whether this function is called directly from the VM.</param>
     public void WaitFunction(bool calledFromVm) {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("INT 15h, AH=83h - WAIT FUNCTION");
+            LoggerService.Verbose("INT 15h, AH=83h - WAIT FUNCTION, AL={AL:X2}", State.AL);
         }
 
+        // AL = 01h: Cancel the wait
+        if (State.AL == 0x01) {
+            // Clear the wait flag
+            _biosDataArea.RtcWaitFlag = 0;
+            
+            // Disable RTC periodic interrupt (clear bit 6 of Status Register B)
+            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
+            byte statusB = _ioPortDispatcher.ReadByte(Devices.Cmos.CmosPorts.Data);
+            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
+            _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, (byte)(statusB & ~0x40));
+            
+            SetCarryFlag(false, calledFromVm);
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                LoggerService.Verbose("WAIT FUNCTION cancelled");
+            }
+            return;
+        }
+        
+        // Check if a wait is already in progress
+        if (_biosDataArea.RtcWaitFlag != 0) {
+            State.AH = 0x80;  // Event already in progress
+            SetCarryFlag(true, calledFromVm);
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                LoggerService.Warning("WAIT FUNCTION called while event already in progress");
+            }
+            return;
+        }
+        
+        // AL = 00h: Set up the wait
+        uint count = ((uint)State.CX << 16) | State.DX;
+        
+        // Store the callback pointer (ES:BX)
+        _biosDataArea.UserWaitCompleteFlag = new Spice86.Shared.Emulator.Memory.SegmentedAddress(State.ES, State.BX);
+        
+        // Store the wait count (microseconds)
+        _biosDataArea.UserWaitTimeout = count;
+        
+        // Mark the wait as active
+        _biosDataArea.RtcWaitFlag = 1;
+        
+        // Enable RTC periodic interrupt (set bit 6 of Status Register B)
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
+        byte statusBSet = _ioPortDispatcher.ReadByte(Devices.Cmos.CmosPorts.Data);
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, Devices.Cmos.CmosRegisterAddresses.StatusRegisterB);
+        _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, (byte)(statusBSet | 0x40));
+        
+        SetCarryFlag(false, calledFromVm);
+        
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("WAIT FUNCTION set: count={Count} microseconds, callback={Segment:X4}:{Offset:X4}",
+                count, State.ES, State.BX);
+        }
     }
 
     /// <summary>
