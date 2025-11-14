@@ -3,6 +3,7 @@
 using Serilog.Events;
 
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.InterruptHandlers;
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Enums;
@@ -21,6 +22,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     private readonly A20Gate _a20Gate;
     private readonly Configuration _configuration;
     private readonly BiosDataArea _biosDataArea;
+    private readonly DualPic _dualPic;
     private readonly IOPorts.IOPortDispatcher _ioPortDispatcher;
 
     /// <summary>
@@ -33,18 +35,20 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// <param name="state">The CPU state.</param>
     /// <param name="a20Gate">The A20 line gate.</param>
     /// <param name="biosDataArea">The BIOS data area for accessing system flags and variables.</param>
+    /// <param name="dualPic">The PIC for timing operations.</param>
     /// <param name="ioPortDispatcher">The I/O port dispatcher for accessing hardware ports (e.g., CMOS).</param>
     /// <param name="initializeResetVector">Whether to initialize the reset vector with a HLT instruction.</param>
     /// <param name="loggerService">The logger service implementation.</param>
     public SystemBiosInt15Handler(Configuration configuration, IMemory memory,
         IFunctionHandlerProvider functionHandlerProvider, Stack stack,
-        State state, A20Gate a20Gate, BiosDataArea biosDataArea,
+        State state, A20Gate a20Gate, BiosDataArea biosDataArea, DualPic dualPic,
         IOPorts.IOPortDispatcher ioPortDispatcher, bool initializeResetVector,
         ILoggerService loggerService)
         : base(memory, functionHandlerProvider, stack, state, loggerService) {
         _a20Gate = a20Gate;
         _configuration = configuration;
         _biosDataArea = biosDataArea;
+        _dualPic = dualPic;
         _ioPortDispatcher = ioPortDispatcher;
         if (initializeResetVector) {
             // Put HLT instruction at the reset address
@@ -56,6 +60,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     private void FillDispatchTable() {
         AddAction(0x24, () => ToggleA20GateOrGetStatus(true));
         AddAction(0x6, Unsupported);
+        AddAction(0x86, () => BiosWait(true));
         AddAction(0xC0, Unsupported);
         AddAction(0xC2, Unsupported);
         AddAction(0xC4, Unsupported);
@@ -333,5 +338,62 @@ public class SystemBiosInt15Handler : InterruptHandler {
         byte newValue = modifier(currentValue);
         _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Address, register);
         _ioPortDispatcher.WriteByte(Devices.Cmos.CmosPorts.Data, newValue);
+    }
+
+    /// <summary>
+    /// INT 15h, AH=86h - BIOS - WAIT (AT, PS)
+    /// <para>
+    /// Waits for CX:DX microseconds using the RTC timer.
+    /// This is implemented following the SeaBIOS handle_1586 function pattern,
+    /// which uses a user timer to wait without blocking the emulation loop.
+    /// </para><br/>
+    /// <b>Inputs:</b><br/>
+    /// AH = 86h<br/>
+    /// CX:DX = interval in microseconds<br/>
+    /// <b>Outputs:</b><br/>
+    /// CF set on error<br/>
+    /// CF clear if successful<br/>
+    /// AH = status (00h on success, 83h if timer already in use, 86h if function not supported)<br/>
+    /// </summary>
+    public void BiosWait(bool calledFromVm) {
+        // Check if wait is already active
+        if (_biosDataArea.RtcWaitFlag != 0) {
+            State.AH = 0x83; // Timer already in use
+            SetCarryFlag(true, calledFromVm);
+            return;
+        }
+
+        uint microseconds = ((uint)State.CX << 16) | State.DX;
+        
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("BIOS WAIT requested for {Microseconds} microseconds", microseconds);
+        }
+
+        // Convert microseconds to milliseconds for the PIC event system
+        // Add 1ms to ensure we wait at least the requested time
+        double delayMs = (microseconds / 1000.0) + 1.0;
+
+        // Set the wait flag to indicate a wait is in progress
+        _biosDataArea.RtcWaitFlag = 1;
+
+        // Store the target microsecond count
+        _biosDataArea.UserWaitTimeout = microseconds;
+
+        // Schedule a PIC event to clear the wait flag after the delay
+        _dualPic.AddEvent(OnWaitComplete, delayMs);
+
+        // Success
+        SetCarryFlag(false, calledFromVm);
+    }
+
+    /// <summary>
+    /// Callback invoked when the BIOS wait timer expires.
+    /// Clears the RtcWaitFlag to signal completion.
+    /// </summary>
+    private void OnWaitComplete(uint value) {
+        _biosDataArea.RtcWaitFlag = 0;
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("BIOS WAIT completed");
+        }
     }
 }
