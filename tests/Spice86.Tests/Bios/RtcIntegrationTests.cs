@@ -87,6 +87,28 @@ public class RtcIntegrationTests {
     }
 
     /// <summary>
+    /// Tests BIOS INT 15h, AH=83h - Event Wait Interval function.
+    /// Verifies setting, detecting active wait, and canceling wait operations.
+    /// </summary>
+    [Fact]
+    public void BiosInt15h_WaitFunction_ShouldWork() {
+        // This test runs bios_int15h_83h.asm which exercises INT 15h, AH=83h:
+        // - Set a wait event (AL=00h)
+        // - Detect already-active wait (should return error AH=80h)
+        // - Cancel a wait event (AL=01h)
+        // - Set a new wait after canceling (should succeed)
+        // - Cancel the second wait
+        RtcTestHandler testHandler = RunRtcTest("bios_int15h_83h.com");
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success,
+            "BIOS INT 15h, AH=83h WAIT function should execute successfully");
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+        
+        // All 5 tests should have passed (last test writes 0x05 to details port)
+        testHandler.Details.Should().Contain(0x05, "All 5 tests should have completed");
+    }
+
+    /// <summary>
     /// Runs an RTC test program and returns a test handler with results.
     /// </summary>
     private RtcTestHandler RunRtcTest(string comFileName,

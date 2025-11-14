@@ -315,8 +315,8 @@ public class Spice86DependencyInjection : IDisposable {
         }
 
         SystemBiosInt15Handler systemBiosInt15Handler = new(configuration, memory,
-            functionHandlerProvider, stack, state, a20Gate,
-            configuration.InitializeDOS is not false, loggerService);
+            functionHandlerProvider, stack, state, a20Gate, biosDataArea,
+            ioPortDispatcher, configuration.InitializeDOS is not false, loggerService);
         
         SystemClockInt1AHandler systemClockInt1AHandler = new(memory, biosDataArea,
             realTimeClock, functionHandlerProvider, stack, state, loggerService);
