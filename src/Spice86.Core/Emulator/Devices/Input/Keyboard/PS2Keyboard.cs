@@ -16,7 +16,7 @@ public class PS2Keyboard {
     private readonly ILoggerService _loggerService;
     private readonly KeyboardScancodeConverter _scancodeConverter = new();
     private readonly State _cpuState;
-    private readonly DualPic _dualPic;
+    private readonly PicEventQueue _eventQueue;
     
     // Handler references for PIC event management
     private readonly PicEventHandler _service1msHandler;
@@ -115,22 +115,22 @@ public class PS2Keyboard {
     /// <param name="controller">The keyboard controller.</param>
     /// <param name="cpuState">The CPU state for cycle-based timing.</param>
     /// <param name="loggerService">The logger service implementation.</param>
-    /// <param name="dualPic">The dual PIC for scheduling keyboard events.</param>
+    /// <param name="eventQueue">The PIC event queue for scheduling keyboard events.</param>
     /// <param name="gui">Optional GUI interface for keyboard events.</param>
     public PS2Keyboard(Intel8042Controller controller, State cpuState,
-        ILoggerService loggerService, DualPic dualPic,
-        IGui? gui = null) {
+        ILoggerService loggerService, PicEventQueue eventQueue,
+        IGuiKeyboardEvents? gui = null) {
         _controller = controller;
         _cpuState = cpuState;
         _loggerService = loggerService;
-        _dualPic = dualPic;
+        _eventQueue = eventQueue;
         
         // Initialize handler references
         _service1msHandler = Service1msHandler;
         _ledsAllOnExpireHandler = LedsAllOnExpireHandler;
 
         // Schedule first 1ms periodic service (typematic + LED timeout)
-        _dualPic.AddEvent(_service1msHandler, 0.001);
+        _eventQueue.AddEvent(_service1msHandler, 0.001);
 
         KeyboardReset(isStartup: true);
 
@@ -227,7 +227,7 @@ public class PS2Keyboard {
         // (moved to dedicated handler as per DOSBox Staging pattern)
 
         // Reschedule next service (1ms = 0.001 ticks)
-        _dualPic.AddEvent(_service1msHandler, 0.001);
+        _eventQueue.AddEvent(_service1msHandler, 0.001);
     }
     
     private void LedsAllOnExpireHandler(uint _) {
@@ -354,14 +354,14 @@ public class PS2Keyboard {
         _isScanning = true;
 
         // Flash all the LEDs - DOSBox Staging pattern
-        _dualPic.RemoveEvents(_ledsAllOnExpireHandler);
+        _eventQueue.RemoveEvents(_ledsAllOnExpireHandler);
         _ledState = 0;
         _ledsAllOn = !isStartup;
         if (_ledsAllOn) {
             // To commemorate how evil the whole keyboard subsystem is,
             // let's set blink expiration time to 666 milliseconds
             const double expireTimeMs = 666.0;
-            _dualPic.AddEvent(_ledsAllOnExpireHandler, expireTimeMs);
+            _eventQueue.AddEvent(_ledsAllOnExpireHandler, expireTimeMs);
         }
         MaybeNotifyLedState();
     }

@@ -233,10 +233,11 @@ public class Spice86DependencyInjection : IDisposable {
         CounterConfiguratorFactory counterConfiguratorFactory = new
             CounterConfiguratorFactory(configuration, state, pauseHandler, loggerService);
 
-        PitPicEventQueue pitPicEventQueue = new(loggerService);
+        PicPitCpuState picPitCpuState = new(state);
+        PicEventQueue picEventQueue = new(picPitCpuState, loggerService);
 
         Timer timer = new Timer(configuration, state, ioPortDispatcher,
-            counterConfiguratorFactory, loggerService, dualPic, pitPicEventQueue);
+            counterConfiguratorFactory, loggerService, dualPic, picEventQueue);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("Timer created...");
@@ -367,12 +368,12 @@ public class Spice86DependencyInjection : IDisposable {
 
         EmulationLoop emulationLoop = new(perfMeasurer, functionHandler,
             cpuForEmulationLoop, state, timer,
-            pitPicEventQueue, emulatorBreakpointsManager, dmaController,
+            picEventQueue, emulatorBreakpointsManager, dmaController,
             pauseHandler, cyclesLimiter, inputEventQueue, loggerService);
 
         Intel8042Controller ps2Controller = new(
             state, ioPortDispatcher, a20Gate, dualPic,
-            configuration.FailOnUnhandledPort, pauseHandler, loggerService, pitPicEventQueue, inputEventQueue);
+            configuration.FailOnUnhandledPort, pauseHandler, loggerService, picEventQueue, inputEventQueue);
 
         VgaCard vgaCard = new(_gui, vgaRenderer, loggerService);
 
@@ -496,7 +497,7 @@ public class Spice86DependencyInjection : IDisposable {
             vgaCard, videoState, vgaIoPortHandler,
             vgaRenderer, vgaBios, vgaRom,
             dmaController, soundBlaster.Opl3Fm, softwareMixer, mouse, mouseDriver,
-            vgaFunctionality, pauseHandler, pitPicEventQueue);
+            vgaFunctionality, pauseHandler, picEventQueue);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("Machine created...");

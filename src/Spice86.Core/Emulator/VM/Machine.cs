@@ -229,7 +229,7 @@ public sealed class Machine : IDisposable {
     /// The pause handler for the emulation thread
     /// </summary>
     public IPauseHandler PauseHandler { get; }
-    public PitPicEventQueue PitPicEventQueue { get; internal set; }
+    public PicEventQueue PicEventQueue { get; internal set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Machine"/> class.
@@ -271,7 +271,7 @@ public sealed class Machine : IDisposable {
         IMouseDriver mouseDriver,
         IVgaFunctionality vgaFunctions,
         IPauseHandler pauseHandler,
-        PitPicEventQueue pitPicEventQueue) {
+        PicEventQueue pitPicEventQueue) {
         BiosDataArea = biosDataArea;
         BiosEquipmentDeterminationInt11Handler = biosEquipmentDeterminationInt11Handler;
         BiosKeyboardInt9Handler = biosKeyboardInt9Handler;
@@ -310,7 +310,7 @@ public sealed class Machine : IDisposable {
         MouseDriver = mouseDriver;
         VgaFunctions = vgaFunctions;
         PauseHandler = pauseHandler;
-        PitPicEventQueue = pitPicEventQueue;
+        PicEventQueue = pitPicEventQueue;
     }
 
     /// <summary>

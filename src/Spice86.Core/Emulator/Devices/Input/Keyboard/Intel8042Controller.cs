@@ -230,6 +230,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private readonly A20Gate _a20Gate;
     private readonly DualPic _dualPic;
     private readonly State _cpuState;
+    private readonly PicEventQueue _eventQueue;
     
     // Handler reference for delay timer
     private readonly PicEventHandler _delayHandler;
@@ -242,16 +243,17 @@ public class Intel8042Controller : DefaultIOPortHandler {
     public Intel8042Controller(State state, IOPortDispatcher ioPortDispatcher,
         A20Gate a20Gate, DualPic dualPic, bool failOnUnhandledPort,
         IPauseHandler pauseHandler, ILoggerService loggerService,
-        IGui? gui = null)
+        PicEventQueue eventQueue, IGuiKeyboardEvents? gui = null)
         : base(state, failOnUnhandledPort, loggerService) {
         _a20Gate = a20Gate;
         _dualPic = dualPic;
         _cpuState = state;
+        _eventQueue = eventQueue;
         
         // Initialize handler reference
         _delayHandler = DelayExpireHandler;
 
-        KeyboardDevice = new PS2Keyboard(this, state, loggerService, dualPic, gui);
+        KeyboardDevice = new PS2Keyboard(this, state, loggerService, eventQueue, gui);
 
         InitPortHandlers(ioPortDispatcher);
         FlushBuffer();
@@ -425,9 +427,9 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private void RestartDelayTimer(double timeMs = PortDelayMs) {
         // DOSBox Staging pattern: remove existing event, then add new one
         if (_delayActive) {
-            _dualPic.RemoveEvents(_delayHandler);
+            _eventQueue.RemoveEvents(_delayHandler);
         }
-        _dualPic.AddEvent(_delayHandler, timeMs);
+        _eventQueue.AddEvent(_delayHandler, timeMs);
         _delayActive = true;
         _delayExpired = false;
     }

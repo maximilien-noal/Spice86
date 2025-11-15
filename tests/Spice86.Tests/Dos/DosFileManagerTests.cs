@@ -158,15 +158,16 @@ public class DosFileManagerTests {
 
         InputEventQueue inputEventQueue = new InputEventQueue();
 
-        PitPicEventQueue pitPicEventQueue = new(loggerService);
+        PicPitCpuState picPitCpuState = new(state);
+        PicEventQueue picEventQueue = new(picPitCpuState, loggerService);
 
         EmulationLoop emulationLoop = new EmulationLoop(new(),
             functionHandler, instructionExecutor, state, timer,
-            pitPicEventQueue, emulatorBreakpointsManager, dmaController, pauseHandler,
+            picEventQueue, emulatorBreakpointsManager, dmaController, pauseHandler,
             new NullCycleLimiter(), inputEventQueue, loggerService);
 
         Intel8042Controller keyboard = new(state, ioPortDispatcher, a20Gate,
-            dualPic, configuration.FailOnUnhandledPort, pauseHandler, loggerService, pitPicEventQueue);
+            dualPic, configuration.FailOnUnhandledPort, pauseHandler, loggerService, picEventQueue);
 
         BiosKeyboardBuffer biosKeyboardBuffer = new BiosKeyboardBuffer(memory, biosDataArea);
 

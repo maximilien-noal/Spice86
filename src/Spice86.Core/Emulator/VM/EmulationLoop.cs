@@ -3,6 +3,7 @@
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices;
 using Spice86.Core.Emulator.Devices.DirectMemoryAccess;
+using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Core.Emulator.Devices.Timer;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
@@ -20,7 +21,7 @@ public class EmulationLoop {
     private readonly FunctionHandler _functionHandler;
     private readonly State _cpuState;
     private readonly Timer _timer;
-    private readonly PitPicEventQueue _eventQueue;
+    private readonly PicEventQueue _eventQueue;
     private readonly EmulatorBreakpointsManager _emulatorBreakpointsManager;
     private readonly IPauseHandler _pauseHandler;
     private readonly PerformanceMeasurer _performanceMeasurer;
@@ -51,7 +52,7 @@ public class EmulationLoop {
     /// <param name="loggerService">The logger service implementation.</param>
     public EmulationLoop(PerformanceMeasurer perfMeasurer,
         FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
-        Timer timer, PitPicEventQueue eventQueue, EmulatorBreakpointsManager emulatorBreakpointsManager,
+        Timer timer, PicEventQueue eventQueue, EmulatorBreakpointsManager emulatorBreakpointsManager,
         DmaController dmaController, IPauseHandler pauseHandler,
         CycleLimiterBase cyclesLimiter, InputEventQueue inputEventQueue,
         ILoggerService loggerService) {
