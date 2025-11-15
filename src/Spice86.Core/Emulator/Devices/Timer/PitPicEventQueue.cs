@@ -51,7 +51,7 @@ public sealed class PitPicEventQueue : ITimeMultiplier {
     /// <param name="multiplier">Time multiplier (must be > 0).</param>
     public void SetTimeMultiplier(double multiplier) {
         if (multiplier <= 0) {
-            throw new DivideByZeroException(nameof(multiplier));
+            throw new ArgumentOutOfRangeException(nameof(multiplier), multiplier, "Time multiplier must be greater than 0");
         }
         _timeMultiplier = multiplier;
     }

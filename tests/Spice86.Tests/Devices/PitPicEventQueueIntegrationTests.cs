@@ -116,7 +116,7 @@ public class PitPicEventQueueIntegrationTests {
             _eventQueue.AddEvent("Second", 1.0, () => secondFiredMs = sw.Elapsed.TotalMilliseconds);
         });
 
-        while (secondFiredMs == 0) {
+        while (secondFiredMs <= 0) {
             _eventQueue.RunQueue();
         }
         sw.Stop();
@@ -238,7 +238,7 @@ public class PitPicEventQueueIntegrationTests {
             });
         });
 
-        while (t3 == 0) {
+        while (t3 <= 0) {
             _eventQueue.RunQueue();
         }
         sw.Stop();
