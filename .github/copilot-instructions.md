@@ -107,7 +107,57 @@ Variants: `MemoryBasedDataStructureWithCsBaseAddress`, `MemoryBasedDataStructure
 
 ## Project-Specific Conventions
 
+### Avalonia Telemetry
+- **Avalonia telemetry must be disabled** when working on the codebase.
+- The repository already has telemetry disabled in code, but it may still cause issues for AI agents.
+- Be aware of this configuration to avoid telemetry-related blocking issues.
+
+### MCP Server Usage
+- **A Model Context Protocol (MCP) server is present** in this repository.
+- **Always use the MCP server** and take advantage of it in every work you do.
+- The MCP server provides tools for:
+  - Reading CPU registers (`read_cpu_registers`)
+  - Reading memory (`read_memory`)
+  - Listing functions (`list_functions`)
+  - Inspecting CFG CPU graph (`read_cfg_cpu_graph` - requires `--CfgCpu` flag)
+- Enable with: `--McpServer true`
+- See `doc/mcpServerReadme.md` for detailed documentation
+
 ### Code Style (enforced by `.editorconfig`)
+- **ALWAYS run `dotnet format` at the end of your work** - or at least consult `.editorconfig` and `CONTRIBUTING.md` file first
+- **No `var` keyword**: Use explicit types instead (enforced by `.editorconfig`)
+  ```csharp
+  // Wrong
+  var count = 10;
+  
+  // Correct
+  int count = 10;
+  ```
+- **No generic catch clauses**: Catch specific exceptions
+  ```csharp
+  // Wrong
+  try {
+      // code
+  } catch (Exception ex) {
+      // handling
+  }
+  
+  // Correct
+  try {
+      // code
+  } catch (IOException ex) {
+      // handling
+  }
+  ```
+- **No bad practices with null, bangs (!), or ignored errors**:
+  - Avoid null-forgiving operator (!) unless absolutely necessary
+  - Don't ignore nullable warnings
+  - Properly handle null cases with null checks or null-coalescing operators
+- **Async usage restrictions**:
+  - **Do NOT let async "infect" the `Spice86.Core` assembly**
+  - Keep async code in the UI layer (`Spice86` project) only
+  - For the UI, use Dispatcher-based timer updates (mainly used on pause)
+  - This separation maintains clean architecture boundaries
 - **Brace style**: Java-style (opening brace on same line)
   ```csharp
   if (condition) {
