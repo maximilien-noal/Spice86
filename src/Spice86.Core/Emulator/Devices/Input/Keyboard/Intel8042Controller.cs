@@ -336,7 +336,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
     // ***************************************************************************
 
     private static byte GetTranslated(byte value) {
-        // A drain bamaged keyboard input translation
+        // A brain damaged keyboard input translation
 
         // Intended to make scancode set 2 compatible with software knowing
         // only scancode set 1. Translates every byte coming from the keyboard,
@@ -461,11 +461,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
 
         // Transfer one byte of data from buffer to output port
         _dataByte = _buffer[idx].Data;
-        if (_buffer[idx].IsFromAux) {
-            _status.IsDataFromAux = true;
-        } else {
-            _status.IsDataFromAux = false;
-        }
+        _status.IsDataFromAux = _buffer[idx].IsFromAux;
         _status.IsDataNew = true;
         RestartDelayTimer();
         ActivateIrqsIfNeeded();
@@ -486,11 +482,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
 
         int idx = (_bufferStartIdx + _bufferNumUsed++) % BufferSize;
 
-        if (isFromKbd && _config.TranslationEnabled) {
-            _buffer[idx].Data = GetTranslated(value);
-        } else {
-            _buffer[idx].Data = value;
-        }
+        _buffer[idx].Data = (isFromKbd && _config.TranslationEnabled) ? GetTranslated(value) : value;
         _buffer[idx].IsFromAux = isFromAux;
         _buffer[idx].IsFromKbd = isFromKbd;
         _buffer[idx].SkipDelay = skipDelay || (!isFromAux && !isFromKbd);
@@ -753,10 +745,8 @@ public class Intel8042Controller : DefaultIOPortHandler {
             case KeyboardCommand.WriteOutputPort: // 0xd1
                 // Writes the controller output port (P2)
                 _a20Gate.IsEnabled = (param & (byte)OutputPortBits.A20Enabled) != 0;
-                if ((param & (byte)OutputPortBits.ResetNotAsserted) == 0) {
-                    if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                        _loggerService.Warning("I8042: Clearing P2 bit 0 locks a real PC");
-                    }
+                if ((param & (byte)OutputPortBits.ResetNotAsserted) == 0 && _loggerService.IsEnabled(LogEventLevel.Warning)) {
+                    _loggerService.Warning("I8042: Clearing P2 bit 0 locks a real PC");
                     // System restart is not supported.
                 }
                 break;
@@ -785,15 +775,13 @@ public class Intel8042Controller : DefaultIOPortHandler {
                         (code != 0xf0 && param != (byte)LineParam.AllLines)) {
                         WarnLinePulse();
                     }
-                    if (code == 0xf0 && (lines & (byte)LineParam.Reset) == 0) {
-                        if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                            _loggerService.Warning("System Reset is not implemented");
-                        }
+                    if (code == 0xf0 && (lines & (byte)LineParam.Reset) == 0 && _loggerService.IsEnabled(LogEventLevel.Warning)) {
+                        _loggerService.Warning("System Reset is not implemented");
                     }
                 } else {
                     // If we are here, than either this function
                     // was wrongly called or it is incomplete
-                    throw new NotImplementedException("Keyhboard controller: unexpected command!");
+                    throw new NotImplementedException("Keyboard controller: unexpected command!");
                 }
                 break;
         }

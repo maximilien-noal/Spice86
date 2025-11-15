@@ -210,17 +210,15 @@ public class PS2Keyboard {
             _repeat.WaitMs--;
         }
 
-        if (_repeat.Key != KbdKey.None) {
-            if (_repeat.WaitMs == 0) {
-                // Check if buffers are free
-                if (_bufferNumUsed == 0 && _controller.IsReadyForKbdFrame()) {
-                    const bool isPressed = true;
-                    AddKey(_repeat.Key, isPressed);
-                    _repeat.WaitMs = _repeat.RateMs;
-                } else {
-                    // try again soon
-                    _repeat.WaitMs = 1;
-                }
+        if (_repeat.Key != KbdKey.None && _repeat.WaitMs == 0) {
+            // Check if buffers are free
+            if (_bufferNumUsed == 0 && _controller.IsReadyForKbdFrame()) {
+                const bool isPressed = true;
+                AddKey(_repeat.Key, isPressed);
+                _repeat.WaitMs = _repeat.RateMs;
+            } else {
+                // try again soon
+                _repeat.WaitMs = 1;
             }
         }
 
@@ -245,11 +243,7 @@ public class PS2Keyboard {
         if (keyType is KbdKey.Pause or KbdKey.PrintScreen) {
             // Key is excluded from being repeated
         } else if (isPressed) {
-            if (_repeat.Key == keyType) {
-                _repeat.WaitMs = _repeat.RateMs;
-            } else {
-                _repeat.WaitMs = _repeat.PauseMs;
-            }
+            _repeat.WaitMs = _repeat.Key == keyType ? _repeat.RateMs : _repeat.PauseMs;
             _repeat.Key = keyType;
         } else if (_repeat.Key == keyType) {
             // Currently repeated key being released

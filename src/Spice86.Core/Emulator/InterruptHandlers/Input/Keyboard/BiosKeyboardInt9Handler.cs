@@ -470,8 +470,7 @@ normal_key:
             if ((flags3 & 0x02) != 0) {
                 /* extended key (numblock), return and slash need special handling */
                 if (scanCode == 0x1c) {	/* return */
-                    if ((flags1 & 0x08) != 0) asciiscan = 0xa600;
-                    else asciiscan = (ushort)((asciiscan & 0xff) | 0xe000);
+                    asciiscan = (flags1 & 0x08) != 0 ? (ushort)0xa600 : (ushort)((asciiscan & 0xff) | 0xe000);
                 } else if (scanCode == 0x35) {	/* slash */
                     if ((flags1 & 0x08) != 0) asciiscan = 0xa400;
                     else if ((flags1 & 0x04) != 0) asciiscan = 0x9500;
