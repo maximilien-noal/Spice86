@@ -273,7 +273,7 @@ public sealed class McpServer : IMcpServer {
     private static EmptyInputSchema CreateEmptyInputSchema() {
         return new EmptyInputSchema {
             Type = "object",
-            Properties = new { },
+            Properties = new EmptySchemaProperties { },
             Required = Array.Empty<string>()
         };
     }
