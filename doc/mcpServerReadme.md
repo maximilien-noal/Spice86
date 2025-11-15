@@ -170,7 +170,17 @@ The MCP server is instantiated in `Spice86DependencyInjection.cs` and receives:
 - `IMemory` - for memory inspection
 - `State` - for CPU register inspection  
 - `FunctionCatalogue` - for function listing
+- `IPauseHandler` - for automatic pause/resume during inspection
 - `ILoggerService` - for diagnostic logging
+
+### Thread-Safe State Inspection
+
+The MCP server automatically pauses the emulator before inspecting state and resumes it afterward. This ensures:
+- **Consistent snapshots**: State doesn't change mid-inspection
+- **Thread safety**: No race conditions when reading registers/memory
+- **Automatic management**: Tools handle pause/resume transparently
+
+If the emulator is already paused when a tool is called, the server preserves that state and doesn't resume automatically.
 
 ## Protocol Compliance
 

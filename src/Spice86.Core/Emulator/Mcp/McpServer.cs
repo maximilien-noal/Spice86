@@ -5,6 +5,7 @@ using ModelContextProtocol.Protocol;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Interfaces;
 
 using System.Linq;
@@ -15,11 +16,13 @@ using System.Text.Json.Nodes;
 /// In-process Model Context Protocol (MCP) server for inspecting emulator state.
 /// This server exposes tools to query CPU registers, memory contents, and function definitions.
 /// Uses ModelContextProtocol.Core SDK for protocol types while avoiding Microsoft.Extensions.DependencyInjection.
+/// Automatically pauses the emulator before inspection to ensure thread-safe access to state.
 /// </summary>
 public sealed class McpServer : IMcpServer {
     private readonly IMemory _memory;
     private readonly State _state;
     private readonly FunctionCatalogue _functionCatalogue;
+    private readonly IPauseHandler _pauseHandler;
     private readonly ILoggerService _loggerService;
     private readonly Tool[] _tools;
 
@@ -29,11 +32,13 @@ public sealed class McpServer : IMcpServer {
     /// <param name="memory">The memory bus to inspect.</param>
     /// <param name="state">The CPU state to inspect.</param>
     /// <param name="functionCatalogue">The function catalogue to query.</param>
+    /// <param name="pauseHandler">The pause handler for safe state inspection.</param>
     /// <param name="loggerService">The logger service for diagnostics.</param>
-    public McpServer(IMemory memory, State state, FunctionCatalogue functionCatalogue, ILoggerService loggerService) {
+    public McpServer(IMemory memory, State state, FunctionCatalogue functionCatalogue, IPauseHandler pauseHandler, ILoggerService loggerService) {
         _memory = memory;
         _state = state;
         _functionCatalogue = functionCatalogue;
+        _pauseHandler = pauseHandler;
         _loggerService = loggerService;
         _tools = CreateTools();
     }
@@ -150,6 +155,12 @@ public sealed class McpServer : IMcpServer {
 
         JsonElement? argumentsElement = paramsElement.TryGetProperty("arguments", out JsonElement args) ? args : null;
 
+        // Pause emulator before inspecting state to ensure consistency
+        bool wasPaused = _pauseHandler.IsPaused;
+        if (!wasPaused) {
+            _pauseHandler.RequestPause($"MCP tool execution: {toolName}");
+        }
+
         try {
             object result;
             switch (toolName) {
@@ -173,6 +184,11 @@ public sealed class McpServer : IMcpServer {
         } catch (InvalidOperationException ex) {
             _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
             return CreateErrorResponse(id, -32603, $"Tool execution error: {ex.Message}");
+        } finally {
+            // Resume emulator if we paused it
+            if (!wasPaused && _pauseHandler.IsPaused) {
+                _pauseHandler.Resume();
+            }
         }
     }
 
