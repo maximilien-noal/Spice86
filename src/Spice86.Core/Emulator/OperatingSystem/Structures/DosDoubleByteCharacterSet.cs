@@ -29,14 +29,15 @@ public class DosDoubleByteCharacterSet : MemoryBasedDataStructure {
     public DosDoubleByteCharacterSet(IByteReaderWriter byteReaderWriter, uint baseAddress)
         : base(byteReaderWriter, baseAddress) {
         // Initialize with empty table (all zeros) - matches DOSBox: mem_writed(RealToPhysical(dos.tables.dbcs), 0)
-        UInt32[0x00] = 0;
+        DbcsLeadByteTable = 0;
     }
 
     /// <summary>
-    /// Gets the DBCS lead-byte table value.
+    /// Gets or sets the DBCS lead-byte table value.
     /// A value of 0 indicates an empty table (no DBCS ranges defined).
     /// </summary>
     public uint DbcsLeadByteTable {
         get => UInt32[0x00];
+        set => UInt32[0x00] = value;
     }
 }

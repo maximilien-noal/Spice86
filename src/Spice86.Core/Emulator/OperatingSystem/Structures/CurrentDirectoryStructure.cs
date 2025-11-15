@@ -27,14 +27,15 @@ public class CurrentDirectoryStructure : MemoryBasedDataStructure {
         : base(byteReaderWriter, baseAddress) {
         // Initialize with "C:\" - matches DOSBox behavior
         // 0x005c3a43 in little-endian = 0x43 ('C'), 0x3A (':'), 0x5C ('\'), 0x00 (null terminator)
-        UInt32[0x00] = 0x005c3a43;
+        CurrentPath = 0x005c3a43;
     }
 
     /// <summary>
-    /// Gets the current directory path as a 4-byte value.
+    /// Gets or sets the current directory path as a 4-byte value.
     /// This represents "C:\" in the default configuration.
     /// </summary>
     public uint CurrentPath {
         get => UInt32[0x00];
+        set => UInt32[0x00] = value;
     }
 }
