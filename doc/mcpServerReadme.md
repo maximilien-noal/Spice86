@@ -6,7 +6,7 @@ The Spice86 MCP (Model Context Protocol) Server is an in-process server that exp
 
 ## Features
 
-The MCP server provides three tools for inspecting the emulator state:
+The MCP server provides four tools for inspecting the emulator state:
 
 ### 1. Read CPU Registers (`read_cpu_registers`)
 
@@ -149,6 +149,78 @@ Lists known functions from the function catalogue, ordered by call count (most f
 }
 ```
 
+### 4. Read CFG CPU Graph (`read_cfg_cpu_graph`)
+
+Inspects the Control Flow Graph CPU state, providing insights into the dynamic CFG construction during emulation. This tool is **only available when CFG CPU is enabled** (use `--CfgCpu` command-line flag).
+
+**About CFG CPU:**
+The CFG CPU builds a dynamic Control Flow Graph during execution, tracking:
+- Instruction execution flow and relationships
+- Self-modifying code as graph branches
+- Execution contexts for hardware interrupts
+- Entry points for different execution contexts
+
+See [`doc/cfgcpuReadme.md`](cfgcpuReadme.md) for detailed CFG CPU architecture documentation.
+
+**Parameters:** None
+
+**Usage:**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "read_cfg_cpu_graph",
+    "arguments": {}
+  },
+  "id": 4
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "content": [{
+      "type": "text",
+      "text": "{
+        \"currentContextDepth\": 0,
+        \"currentContextEntryPoint\": \"F000:FFF0\",
+        \"totalEntryPoints\": 42,
+        \"entryPointAddresses\": [
+          \"F000:FFF0\",
+          \"F000:E05B\",
+          \"0000:7C00\",
+          ...
+        ],
+        \"lastExecutedAddress\": \"1000:0234\"
+      }"
+    }]
+  }
+}
+```
+
+**Response Fields:**
+- `currentContextDepth`: Execution context nesting level (0 = initial, higher = interrupt contexts)
+- `currentContextEntryPoint`: Entry point address of current execution context
+- `totalEntryPoints`: Total number of CFG graph entry points across all contexts
+- `entryPointAddresses`: Array of all entry point addresses in the CFG
+- `lastExecutedAddress`: Address of the most recently executed instruction
+
+**Error Response (when CFG CPU not enabled):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "error": {
+    "code": -32603,
+    "message": "Tool execution error: CFG CPU is not enabled. Use --CfgCpu to enable Control Flow Graph CPU."
+  }
+}
+```
+
 ## Architecture
 
 The MCP server implementation follows these key principles:
@@ -170,6 +242,7 @@ The MCP server is instantiated in `Spice86DependencyInjection.cs` and receives:
 - `IMemory` - for memory inspection
 - `State` - for CPU register inspection  
 - `FunctionCatalogue` - for function listing
+- `CfgCpu` (nullable) - for CFG graph inspection (only when `--CfgCpu` is enabled)
 - `IPauseHandler` - for automatic pause/resume during inspection
 - `ILoggerService` - for diagnostic logging
 

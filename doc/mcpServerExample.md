@@ -219,6 +219,54 @@ Console.WriteLine("Press Enter to stop monitoring...");
 Console.ReadLine();
 ```
 
+## CFG CPU Graph Inspection
+
+When the Control Flow Graph CPU is enabled, you can inspect its state:
+
+```csharp
+using Spice86;
+using Spice86.Core.CLI;
+
+// Enable CFG CPU in configuration
+Configuration configuration = new Configuration {
+    Exe = "path/to/program.exe",
+    CfgCpu = true,  // Enable Control Flow Graph CPU
+    HeadlessMode = HeadlessType.Minimal
+};
+
+using Spice86DependencyInjection spice86 = new Spice86DependencyInjection(configuration);
+IMcpServer mcpServer = spice86.McpServer;
+
+// Run some emulation steps first to build the CFG
+spice86.ProgramExecutor.Run();
+
+// Now inspect the CFG CPU state
+string cfgCpuRequest = """
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "read_cfg_cpu_graph",
+    "arguments": {}
+  },
+  "id": 1
+}
+""";
+
+string response = mcpServer.HandleRequest(cfgCpuRequest);
+Console.WriteLine("CFG CPU Graph State:");
+Console.WriteLine(response);
+
+// The response includes:
+// - currentContextDepth: Execution context nesting level
+// - currentContextEntryPoint: Entry point of current context
+// - totalEntryPoints: Number of CFG entry points
+// - entryPointAddresses: All entry point addresses
+// - lastExecutedAddress: Most recently executed instruction
+```
+
+**Note**: The `read_cfg_cpu_graph` tool is only available when CFG CPU is enabled with `--CfgCpu` or `CfgCpu = true` in the configuration. Calling it when CFG CPU is disabled will return a JSON-RPC error with code `-32603`.
+
 ## Notes
 
 - The MCP server **automatically pauses** the emulator before inspecting state and resumes it afterward for thread-safe access
@@ -227,6 +275,7 @@ Console.ReadLine();
 - The server does **not** modify emulator state - it's read-only by design
 - All responses follow **JSON-RPC 2.0** format with proper error handling
 - Memory reads are **limited to 4096 bytes** per request for safety
+- The **CFG CPU graph tool** is only available when CFG CPU is enabled (`--CfgCpu` flag)
 
 ## Error Handling
 
