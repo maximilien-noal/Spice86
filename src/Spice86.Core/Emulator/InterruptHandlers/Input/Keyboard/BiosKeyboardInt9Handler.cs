@@ -113,26 +113,27 @@ public class BiosKeyboardInt9Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Direct port of DOSBox's KeyCodes structure for keyboard scan code mappings
+    /// Direct port of DOSBox's KeyCodes structure for keyboard scan code mappings.
+    /// Each mapping is a ushort where the high byte contains the scan code and the low byte contains the ASCII code.
     /// </summary>
     public record KeyCodes {
         /// <summary>
-        /// Normal key mapping
+        /// Normal key mapping (high byte = scan code, low byte = ASCII code)
         /// </summary>
         public ushort Normal { get; init; }
         
         /// <summary>
-        /// Shifted key mapping
+        /// Shifted key mapping (high byte = scan code, low byte = ASCII code)
         /// </summary>
         public ushort Shift { get; init; }
         
         /// <summary>
-        /// Control+key mapping
+        /// Control+key mapping (high byte = scan code, low byte = ASCII code)
         /// </summary>
         public ushort Control { get; init; }
 
         /// <summary>
-        /// Alt+key mapping
+        /// Alt+key mapping (high byte = scan code, low byte = ASCII code)
         /// </summary>
         public ushort Alt { get; init; }
 
@@ -148,7 +149,9 @@ public class BiosKeyboardInt9Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Provides keyboard scan code to key code mappings, direct port of DOSBox's get_key_codes_for function
+    /// Provides keyboard scan code to key code mappings, direct port of DOSBox's get_key_codes_for function.
+    /// Maps hardware scan codes (from PS/2 keyboard) to BIOS key codes where each ushort value has
+    /// the scan code in the high byte and ASCII character code in the low byte.
     /// </summary>
     public static class KeyboardMap {
         private const ushort None = 0;
