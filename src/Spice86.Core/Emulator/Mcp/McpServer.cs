@@ -291,7 +291,7 @@ public sealed class McpServer : IMcpServer {
     private FunctionListResponse ListFunctions(JsonElement? arguments) {
         int limit = 100;
         
-        if (arguments != null && arguments.HasValue) {
+        if (arguments != null) {
             JsonElement argsValue = arguments.Value;
             if (argsValue.TryGetProperty("limit", out JsonElement limitElement)) {
                 limit = limitElement.GetInt32();
