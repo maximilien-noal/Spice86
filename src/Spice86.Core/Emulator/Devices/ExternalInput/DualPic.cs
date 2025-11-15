@@ -76,6 +76,11 @@ public sealed class DualPic : IDisposable {
     private readonly IoSystem _ioSystem;
     private readonly ILoggerService _logger;
 
+    /// <summary>
+    /// Gets the PIC event queue for scheduling timed events.
+    /// </summary>
+    public PicEventQueue EventQueue => _eventQueue;
+
     private readonly Intel8259Pic _primaryPic;
     private readonly Intel8259Pic _secondaryPic;
     private readonly IoReadHandler[] _readHandlers = new IoReadHandler[HandlerCount];

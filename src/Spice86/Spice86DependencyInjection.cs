@@ -407,18 +407,24 @@ public class Spice86DependencyInjection : IDisposable {
             _gui = new HeadlessGui();
         }
 
+        InputEventQueue inputEventQueue = new InputEventQueue(
+            _gui as IGuiKeyboardEvents, _gui as IGuiMouseEvents);
+
+        Intel8042Controller keyboardController = new(
+            state, ioPortDispatcher, a20Gate, dualPic,
+            configuration.FailOnUnhandledPort, pauseHandler, loggerService, dualPic.EventQueue, inputEventQueue);
+
         VgaCard vgaCard = new(_gui, vgaRenderer, loggerService);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("VGA card created...");
         }
 
-        Keyboard keyboard = new(state, ioPortDispatcher, a20Gate, dualPic, loggerService,
-            _gui, configuration.FailOnUnhandledPort);
         BiosKeyboardBuffer biosKeyboardBuffer = new BiosKeyboardBuffer(memory, biosDataArea);
-        BiosKeyboardInt9Handler biosKeyboardInt9Handler = new(memory,
-            functionHandlerProvider, stack, state, dualPic, keyboard,
-            biosKeyboardBuffer, loggerService);
+        BiosKeyboardInt9Handler biosKeyboardInt9Handler = new(memory, stack,
+            state, functionHandlerProvider, dualPic, systemBiosInt15Handler,
+            keyboardController, biosKeyboardBuffer, loggerService);
+
         Mouse mouse = new(state, sharedMouseData, dualPic, _gui,
                     configuration.Mouse, loggerService, configuration.FailOnUnhandledPort);
         MouseDriver mouseDriver = new(state, sharedMouseData, memory, mouse, _gui,
@@ -426,7 +432,7 @@ public class Spice86DependencyInjection : IDisposable {
 
         KeyboardInt16Handler keyboardInt16Handler = new(
             memory, biosDataArea, functionHandlerProvider, stack, state, loggerService,
-            biosKeyboardInt9Handler.BiosKeyboardBuffer);
+            biosKeyboardBuffer);
         Joystick joystick = new(state, ioPortDispatcher,
             configuration.FailOnUnhandledPort, loggerService);
 
@@ -499,7 +505,7 @@ public class Spice86DependencyInjection : IDisposable {
             biosKeyboardInt9Handler,
             callbackHandler, cpu,
             cfgCpu, state, dos, gravisUltraSound, ioPortDispatcher,
-            joystick, keyboard, keyboardInt16Handler,
+            joystick, keyboardController, keyboardInt16Handler,
             emulatorBreakpointsManager, memory, midiDevice, pcSpeaker,
             dualPic, soundBlaster, systemBiosInt12Handler,
             systemBiosInt15Handler, systemClockInt1AHandler,
