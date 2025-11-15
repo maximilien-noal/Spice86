@@ -17,8 +17,8 @@ using System.Collections.Concurrent;
 /// </summary>
 public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable {
     private readonly ConcurrentQueue<Action> _eventQueue = new();
-    private readonly IGuiMouseEvents? _mouseEvents;
-    private readonly IGuiKeyboardEvents? _keyboardEvents;
+    private readonly IGuiMouseEvents _mouseEvents;
+    private readonly IGuiKeyboardEvents _keyboardEvents;
 
     public event EventHandler<KeyboardEventArgs>? KeyUp;
     public event EventHandler<KeyboardEventArgs>? KeyDown;
@@ -27,19 +27,16 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
 
     public InputEventQueue(
-        IGuiKeyboardEvents? keyboardEvents = null,
-        IGuiMouseEvents? mouseEvents = null) {
-        if (keyboardEvents is not null) {
-            _keyboardEvents = keyboardEvents;
-            _keyboardEvents.KeyDown += OnKeyDown;
-            _keyboardEvents.KeyUp += OnKeyUp;
-        }
-        if (mouseEvents is not null) {
-            _mouseEvents = mouseEvents;
-            _mouseEvents.MouseMoved += OnMouseMoved;
-            _mouseEvents.MouseButtonDown += OnMouseButtonDown;
-            _mouseEvents.MouseButtonUp += OnMouseButtonUp;
-        }
+        IGuiKeyboardEvents keyboardEvents,
+        IGuiMouseEvents mouseEvents) {
+        _keyboardEvents = keyboardEvents;
+        _mouseEvents = mouseEvents;
+        
+        _keyboardEvents.KeyDown += OnKeyDown;
+        _keyboardEvents.KeyUp += OnKeyUp;
+        _mouseEvents.MouseMoved += OnMouseMoved;
+        _mouseEvents.MouseButtonDown += OnMouseButtonDown;
+        _mouseEvents.MouseButtonUp += OnMouseButtonUp;
     }
 
     private void OnMouseMoved(object? sender, MouseMoveEventArgs e) =>
@@ -71,68 +68,30 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
         }
     }
 
-    /// <summary>
-    /// Subscribes to GUI events after construction (for cases where GUI is created after InputEventQueue).
-    /// </summary>
-    public void SubscribeToGuiEvents(IGuiKeyboardEvents? keyboardEvents, IGuiMouseEvents? mouseEvents) {
-        if (keyboardEvents is not null && _keyboardEvents != keyboardEvents) {
-            // Unsubscribe from old events if any
-            if (_keyboardEvents is not null) {
-                _keyboardEvents.KeyDown -= OnKeyDown;
-                _keyboardEvents.KeyUp -= OnKeyUp;
-            }
-            // Subscribe to new events
-            keyboardEvents.KeyDown += OnKeyDown;
-            keyboardEvents.KeyUp += OnKeyUp;
-        }
-        if (mouseEvents is not null && _mouseEvents != mouseEvents) {
-            // Unsubscribe from old events if any
-            if (_mouseEvents is not null) {
-                _mouseEvents.MouseMoved -= OnMouseMoved;
-                _mouseEvents.MouseButtonDown -= OnMouseButtonDown;
-                _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
-            }
-            // Subscribe to new events
-            mouseEvents.MouseMoved += OnMouseMoved;
-            mouseEvents.MouseButtonDown += OnMouseButtonDown;
-            mouseEvents.MouseButtonUp += OnMouseButtonUp;
-        }
-    }
+
 
     /// <summary>
     /// Unsubscribes from event sources to prevent memory leaks.
     /// </summary>
     public void Dispose() {
-        if (_keyboardEvents is not null) {
-            _keyboardEvents.KeyDown -= OnKeyDown;
-            _keyboardEvents.KeyUp -= OnKeyUp;
-        }
-        if (_mouseEvents is not null) {
-            _mouseEvents.MouseMoved -= OnMouseMoved;
-            _mouseEvents.MouseButtonDown -= OnMouseButtonDown;
-            _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
-        }
+        _keyboardEvents.KeyDown -= OnKeyDown;
+        _keyboardEvents.KeyUp -= OnKeyUp;
+        _mouseEvents.MouseMoved -= OnMouseMoved;
+        _mouseEvents.MouseButtonDown -= OnMouseButtonDown;
+        _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
     }
 
     public double MouseX {
-        get => _mouseEvents?.MouseX ?? 0;
-        set {
-            if (_mouseEvents is not null) {
-                _mouseEvents.MouseX = value;
-            }
-        }
+        get => _mouseEvents.MouseX;
+        set => _mouseEvents.MouseX = value;
     }
 
     public double MouseY {
-        get => _mouseEvents?.MouseY ?? 0;
-        set {
-            if (_mouseEvents is not null) {
-                _mouseEvents.MouseY = value;
-            }
-        }
+        get => _mouseEvents.MouseY;
+        set => _mouseEvents.MouseY = value;
     }
 
-    public void HideMouseCursor() => _mouseEvents?.HideMouseCursor();
+    public void HideMouseCursor() => _mouseEvents.HideMouseCursor();
 
-    public void ShowMouseCursor() => _mouseEvents?.ShowMouseCursor();
+    public void ShowMouseCursor() => _mouseEvents.ShowMouseCursor();
 }

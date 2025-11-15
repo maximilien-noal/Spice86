@@ -26,7 +26,9 @@ using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
+using Spice86.Logging;
 using Spice86.Shared.Interfaces;
+using Spice86.ViewModels;
 
 using Xunit;
 
@@ -158,7 +160,8 @@ public class DosFileManagerTests {
             functionHandlerProvider, stack, state, a20Gate, biosDataArea, dualPic, ioPortDispatcher,
             initializeResetVector: false, loggerService);
         
-        InputEventQueue inputEventQueue = new InputEventQueue(null, null);
+        HeadlessGui headlessGui = new HeadlessGui();
+        InputEventQueue inputEventQueue = new InputEventQueue(headlessGui, headlessGui);
         Intel8042Controller keyboardController = new Intel8042Controller(
             state, ioPortDispatcher, a20Gate, dualPic,
             configuration.FailOnUnhandledPort, pauseHandler, loggerService, dualPic.EventQueue, inputEventQueue);

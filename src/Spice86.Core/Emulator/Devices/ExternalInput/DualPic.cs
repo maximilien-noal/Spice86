@@ -78,8 +78,11 @@ public sealed class DualPic : IDisposable {
 
     /// <summary>
     /// Gets the PIC event queue for scheduling timed events.
+    /// Components that need to schedule events should depend on this via their constructor.
     /// </summary>
     public PicEventQueue EventQueue => _eventQueue;
+
+
 
     private readonly Intel8259Pic _primaryPic;
     private readonly Intel8259Pic _secondaryPic;

@@ -385,14 +385,28 @@ public class Spice86DependencyInjection : IDisposable {
             textClipboard = new TextClipboard(mainWindow.Clipboard);
         }
 
-        // Create InputEventQueue early (will be wired to GUI after EmulationLoop is created)
-        InputEventQueue inputEventQueue = new InputEventQueue();
+        // Create GUI first (needed for InputEventQueue construction)
+        if (mainWindow != null) {
+            // Create a temporary MainWindowViewModel - will be replaced after actual EmulationLoop creation
+            MainWindowViewModel tempViewModel = new MainWindowViewModel(sharedMouseData,
+                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
+                loggerService, pauseHandler, null!, null!, null!);
+            mainWindowViewModel = tempViewModel;
+            _gui = mainWindowViewModel;
+        } else {
+            _gui = new HeadlessGui();
+        }
+
+        // Create InputEventQueue with GUI event sources
+        InputEventQueue inputEventQueue = new InputEventQueue(
+            _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
+            _gui as IGuiMouseEvents ?? new HeadlessGui());
 
         EmulationLoop emulationLoop = new(functionHandler,
             cpuForEmulationLoop, state, picPitCpuState, dualPic,
             emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
 
-        // Now create the complete GUI with all dependencies ready
+        // Now complete the GUI with all dependencies ready
         if (mainWindow != null) {
             performanceViewModel = new PerformanceViewModel(
                 state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
@@ -403,15 +417,11 @@ public class Spice86DependencyInjection : IDisposable {
                 _ => new HeadlessModeExceptionHandler(uiDispatcher!)
             };
             
+            // Recreate MainWindowViewModel with all dependencies now available
             mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
                 loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
             _gui = mainWindowViewModel;
-            
-            // Wire the GUI events to InputEventQueue by subscribing InputEventQueue's handlers to GUI events
-            inputEventQueue.SubscribeToGuiEvents(_gui as IGuiKeyboardEvents, _gui as IGuiMouseEvents);
-        } else {
-            _gui = new HeadlessGui();
         }
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
