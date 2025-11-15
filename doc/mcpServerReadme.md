@@ -248,10 +248,19 @@ The MCP server is instantiated in `Spice86DependencyInjection.cs` and receives:
 
 ### Thread-Safe State Inspection
 
-The MCP server automatically pauses the emulator before inspecting state and resumes it afterward. This ensures:
+The MCP server is fully thread-safe and can be called from multiple threads concurrently. It uses an internal lock to serialize all requests. For each request, the server:
+
+1. **Acquires the lock** - ensures only one request is processed at a time
+2. **Pauses the emulator** - stops execution to get consistent state snapshot
+3. **Reads the state** - accesses registers, memory, or other data
+4. **Resumes the emulator** - restarts execution (if it wasn't already paused)
+5. **Releases the lock** - allows the next request to proceed
+
+This ensures:
+- **Concurrent access safety**: Multiple threads can call the server without coordination
 - **Consistent snapshots**: State doesn't change mid-inspection
-- **Thread safety**: No race conditions when reading registers/memory
-- **Automatic management**: Tools handle pause/resume transparently
+- **No race conditions**: Lock serializes all requests and pause protects state reads
+- **Automatic management**: Tools handle locking and pause/resume transparently
 
 If the emulator is already paused when a tool is called, the server preserves that state and doesn't resume automatically.
 

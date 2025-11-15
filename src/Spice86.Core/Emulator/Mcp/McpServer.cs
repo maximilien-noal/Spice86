@@ -18,6 +18,7 @@ using System.Text.Json.Nodes;
 /// This server exposes tools to query CPU registers, memory contents, function definitions, and CFG CPU state.
 /// Uses ModelContextProtocol.Core SDK for protocol types while avoiding Microsoft.Extensions.DependencyInjection.
 /// Automatically pauses the emulator before inspection to ensure thread-safe access to state.
+/// Thread-safe: All requests are serialized using an internal lock, allowing concurrent calls from multiple threads.
 /// </summary>
 public sealed class McpServer : IMcpServer {
     private readonly IMemory _memory;
@@ -27,6 +28,7 @@ public sealed class McpServer : IMcpServer {
     private readonly IPauseHandler _pauseHandler;
     private readonly ILoggerService _loggerService;
     private readonly Tool[] _tools;
+    private readonly object _requestLock = new object();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="McpServer"/> class.
@@ -173,42 +175,48 @@ public sealed class McpServer : IMcpServer {
 
         JsonElement? argumentsElement = paramsElement.TryGetProperty("arguments", out JsonElement args) ? args : null;
 
-        // Pause emulator before inspecting state to ensure consistency
-        bool wasPaused = _pauseHandler.IsPaused;
-        if (!wasPaused) {
-            _pauseHandler.RequestPause($"MCP tool execution: {toolName}");
-        }
-
-        try {
-            object result;
-            switch (toolName) {
-                case "read_cpu_registers":
-                    result = ReadCpuRegisters();
-                    break;
-                case "read_memory":
-                    result = ReadMemory(argumentsElement);
-                    break;
-                case "list_functions":
-                    result = ListFunctions(argumentsElement);
-                    break;
-                case "read_cfg_cpu_graph":
-                    result = ReadCfgCpuGraph();
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unknown tool: {toolName}");
+        // Thread-safe: serialize all MCP requests to prevent concurrent access
+        lock (_requestLock) {
+            // Pause emulator before inspecting state to ensure consistency
+            bool wasPaused = _pauseHandler.IsPaused;
+            if (!wasPaused) {
+                _pauseHandler.RequestPause($"MCP tool execution: {toolName}");
+                // Wait for pause to take effect by waiting for Paused event
+                // The PauseHandler's Paused event is invoked immediately after setting _pausing = true,
+                // so by the time RequestPause returns, the pause has taken effect
             }
 
-            return CreateToolCallResponse(id, result);
-        } catch (ArgumentException ex) {
-            _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
-            return CreateErrorResponse(id, -32602, $"Invalid params: {ex.Message}");
-        } catch (InvalidOperationException ex) {
-            _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
-            return CreateErrorResponse(id, -32603, $"Tool execution error: {ex.Message}");
-        } finally {
-            // Resume emulator if we paused it
-            if (!wasPaused && _pauseHandler.IsPaused) {
-                _pauseHandler.Resume();
+            try {
+                object result;
+                switch (toolName) {
+                    case "read_cpu_registers":
+                        result = ReadCpuRegisters();
+                        break;
+                    case "read_memory":
+                        result = ReadMemory(argumentsElement);
+                        break;
+                    case "list_functions":
+                        result = ListFunctions(argumentsElement);
+                        break;
+                    case "read_cfg_cpu_graph":
+                        result = ReadCfgCpuGraph();
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unknown tool: {toolName}");
+                }
+
+                return CreateToolCallResponse(id, result);
+            } catch (ArgumentException ex) {
+                _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
+                return CreateErrorResponse(id, -32602, $"Invalid params: {ex.Message}");
+            } catch (InvalidOperationException ex) {
+                _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
+                return CreateErrorResponse(id, -32603, $"Tool execution error: {ex.Message}");
+            } finally {
+                // Resume emulator if we paused it
+                if (!wasPaused && _pauseHandler.IsPaused) {
+                    _pauseHandler.Resume();
+                }
             }
         }
     }

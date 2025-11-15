@@ -269,9 +269,11 @@ Console.WriteLine(response);
 
 ## Notes
 
+- The MCP server is **thread-safe** and can be called from multiple threads concurrently
+- The server uses an internal lock to serialize all requests, ensuring consistent state inspection
 - The MCP server **automatically pauses** the emulator before inspecting state and resumes it afterward for thread-safe access
 - If the emulator is already paused, the server preserves that state and doesn't auto-resume
-- Requests are **synchronous** - the server processes one request at a time
+- Requests are **synchronous** - each request is processed atomically while holding the lock
 - The server does **not** modify emulator state - it's read-only by design
 - All responses follow **JSON-RPC 2.0** format with proper error handling
 - Memory reads are **limited to 4096 bytes** per request for safety
