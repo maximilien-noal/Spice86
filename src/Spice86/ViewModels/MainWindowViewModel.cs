@@ -76,6 +76,7 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     private readonly Timer _drawTimer = new(1000.0 / ScreenRefreshHz);
     private readonly SemaphoreSlim? _drawingSemaphoreSlim = new(1, 1);
+    private readonly InputEventQueue _inputEventQueue;
 
     public event EventHandler<KeyboardEventArgs>? KeyUp;
     public event EventHandler<KeyboardEventArgs>? KeyDown;
@@ -84,6 +85,11 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
     public event EventHandler<UIRenderEventArgs>? RenderScreen;
     internal event EventHandler? CloseMainWindow;
+    
+    /// <summary>
+    /// Gets the InputEventQueue that processes keyboard and mouse events for the emulator.
+    /// </summary>
+    public InputEventQueue InputEventQueue => _inputEventQueue;
 
     public MainWindowViewModel(SharedMouseData sharedMouseData,
         ITimeMultiplier pit, IUIDispatcher uiDispatcher,
@@ -98,6 +104,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         _exceptionHandler = exceptionHandler;
         Configuration = configuration;
         _loggerService = loggerService;
+        
+        // Create InputEventQueue with this MainWindowViewModel as the event source
+        _inputEventQueue = new InputEventQueue(this, this);
         _hostStorageProvider = hostStorageProvider;
         _cyclesLimiter = cyclesLimiter;
         TargetCyclesPerMs = _cyclesLimiter.TargetCpuCyclesPerMs;
@@ -386,6 +395,8 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
                 _drawTimer.Stop();
                 _drawTimer.Dispose();
+                
+                _inputEventQueue.Dispose();
 
                 // Dispose of UI-related resources in the UI thread
                 _uiDispatcher.Post(() => {

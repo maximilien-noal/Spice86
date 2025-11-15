@@ -385,20 +385,27 @@ public class Spice86DependencyInjection : IDisposable {
             textClipboard = new TextClipboard(mainWindow.Clipboard);
         }
 
-        // Create GUI and InputEventQueue with proper dependency order
-        InputEventQueue inputEventQueue;
+        // Create GUI components
         EmulationLoop emulationLoop;
+        InputEventQueue? inputEventQueue = null;
         
         if (mainWindow != null) {
-            // Create temporary InputEventQueue placeholder (will be replaced after MainWindowViewModel is created)
-            inputEventQueue = new InputEventQueue(new HeadlessGui(), new HeadlessGui());
+            // Create MainWindowViewModel first (it creates InputEventQueue internally)
+            // We need to create a temporary MainWindowViewModel to get InputEventQueue,
+            // then recreate it with EmulationLoop after we create EmulationLoop
+            MainWindowViewModel tempViewModel = new MainWindowViewModel(sharedMouseData,
+                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
+                loggerService, pauseHandler, null!, null!, null!);
             
-            // Create EmulationLoop with placeholder InputEventQueue
+            // Get InputEventQueue from temporary MainWindowViewModel
+            inputEventQueue = tempViewModel.InputEventQueue;
+            
+            // Create EmulationLoop with InputEventQueue
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
                 emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
             
-            // Create remaining dependencies needed for MainWindowViewModel
+            // Create final dependencies
             performanceViewModel = new PerformanceViewModel(
                 state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
             
@@ -407,23 +414,18 @@ public class Spice86DependencyInjection : IDisposable {
                 _ => new HeadlessModeExceptionHandler(uiDispatcher!)
             };
             
-            // Create MainWindowViewModel with all required dependencies
+            // Create final MainWindowViewModel with all dependencies
             mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
                 loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
             mainWindow.PerformanceViewModel = performanceViewModel;
             _gui = mainWindowViewModel;
             
-            // Create proper InputEventQueue with GUI event sources and dispose the temporary one
-            inputEventQueue.Dispose();
-            inputEventQueue = new InputEventQueue(
-                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
-                _gui as IGuiMouseEvents ?? new HeadlessGui());
+            // Dispose temporary ViewModel (it has its own InputEventQueue that we're not using)
+            tempViewModel.Dispose();
         } else {
             _gui = new HeadlessGui();
-            inputEventQueue = new InputEventQueue(
-                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
-                _gui as IGuiMouseEvents ?? new HeadlessGui());
+            inputEventQueue = new InputEventQueue(_gui, _gui);
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
                 emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);

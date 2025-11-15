@@ -356,7 +356,7 @@ public class BiosKeyboardInt9Handler : InterruptHandler {
                 }
             }
             break;
-        case 0x3a: flags2 |= 0x40; break; // CAPSLOCK (falls through to 0xba intentionally in original code, but we handle it here)
+        case 0x3a: flags2 |= 0x40; goto case 0xba; // CAPSLOCK (falls through to 0xba intentionally)
         case 0xba: flags1 ^= 0x40; flags2 = (byte)(flags2 & ~0x40); leds ^= 0x04; break;
         case 0x45:
             if ((flags3 & 0x01) != 0) {
