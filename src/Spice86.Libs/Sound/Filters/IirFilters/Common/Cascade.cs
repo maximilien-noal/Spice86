@@ -5,28 +5,54 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.State;
 
 using System.Numerics;
 
+/// <summary>
+/// Represents cascade storage.
+/// </summary>
 internal readonly struct CascadeStorage {
+    /// <summary>
+    /// Performs the cascade storage operation.
+    /// </summary>
+    /// <param name="maxStages">The max stages.</param>
+    /// <param name="stageArray">The stage array.</param>
     internal CascadeStorage(int maxStages, Biquad[] stageArray) {
         MaxStages = maxStages;
         StageArray = stageArray;
     }
 
+    /// <summary>
+    /// Gets max stages.
+    /// </summary>
     internal int MaxStages { get; }
 
+    /// <summary>
+    /// Gets stage array.
+    /// </summary>
     internal Biquad[] StageArray { get; }
 }
 
+/// <summary>
+/// Represents cascade.
+/// </summary>
 public class Cascade {
     private int _maxStages;
     private int _numStages;
     private Biquad[] _stageArray = [];
 
+    /// <summary>
+    /// Sets cascade storage.
+    /// </summary>
+    /// <param name="storage">The storage.</param>
     internal void SetCascadeStorage(CascadeStorage storage) {
         _numStages = 0;
         _maxStages = storage.MaxStages;
         _stageArray = storage.StageArray;
     }
 
+    /// <summary>
+    /// Performs the response operation.
+    /// </summary>
+    /// <param name="normalizedFrequency">The normalized frequency.</param>
+    /// <returns>The result of the operation.</returns>
     internal Complex Response(double normalizedFrequency) {
         switch (normalizedFrequency) {
             case > 0.5:
@@ -56,6 +82,10 @@ public class Cascade {
         return numerator / denominator;
     }
 
+    /// <summary>
+    /// Gets pole zero pairs.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal IReadOnlyList<PoleZeroPair> GetPoleZeroPairs() {
         var result = new List<PoleZeroPair>(_numStages);
         for (int i = 0; i < _numStages; i++) {
@@ -66,6 +96,10 @@ public class Cascade {
         return result;
     }
 
+    /// <summary>
+    /// Performs the apply scale operation.
+    /// </summary>
+    /// <param name="scale">The scale.</param>
     internal void ApplyScale(double scale) {
         if (_numStages < 1) {
             return;
@@ -74,6 +108,10 @@ public class Cascade {
         _stageArray[0].ApplyScale(scale);
     }
 
+    /// <summary>
+    /// Sets layout.
+    /// </summary>
+    /// <param name="prototype">The prototype.</param>
     internal void SetLayout(LayoutBase prototype) {
         int numPoles = prototype.GetNumPoles();
         _numStages = (numPoles + 1) / 2;
@@ -96,11 +134,18 @@ public class Cascade {
     }
 }
 
+/// <summary>
+/// Represents cascade stages.
+/// </summary>
 internal sealed class CascadeStages<TState>
     where TState : struct, ISectionState {
     private readonly Biquad[] _stages;
     private TState[] _states;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="maxStages">The max stages.</param>
     internal CascadeStages(int maxStages) {
         _stages = new Biquad[maxStages];
         _states = new TState[maxStages];
@@ -109,10 +154,17 @@ internal sealed class CascadeStages<TState>
         }
     }
 
+    /// <summary>
+    /// Gets cascade storage.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal CascadeStorage GetCascadeStorage() {
         return new CascadeStorage(_stages.Length, _stages);
     }
 
+    /// <summary>
+    /// Performs the snapshot stages operation.
+    /// </summary>
     internal Biquad[] SnapshotStages() {
         var copy = new Biquad[_stages.Length];
         for (int i = 0; i < _stages.Length; i++) {
@@ -138,6 +190,10 @@ internal sealed class CascadeStages<TState>
         }
     }
 
+    /// <summary>
+    /// Sets up.
+    /// </summary>
+    /// <param name="sosCoefficients">The sos coefficients.</param>
     internal void Setup(ReadOnlySpan<double> sosCoefficients) {
         if (sosCoefficients.Length != _stages.Length * 6) {
             throw new ArgumentException("SOS array must match the number of stages.");
@@ -155,6 +211,11 @@ internal sealed class CascadeStages<TState>
         }
     }
 
+    /// <summary>
+    /// Sets up.
+    /// </summary>
+    /// <param name="double">The double.</param>
+    /// <param name="sosCoefficients">The sos coefficients.</param>
     internal void Setup(double[,] sosCoefficients) {
         if (sosCoefficients.GetLength(0) != _stages.Length || sosCoefficients.GetLength(1) != 6) {
             throw new ArgumentException("SOS matrix must be [stageCount,6].");
@@ -171,6 +232,11 @@ internal sealed class CascadeStages<TState>
         }
     }
 
+    /// <summary>
+    /// Performs the filter operation.
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <returns>The result of the operation.</returns>
     internal double Filter(double input) {
         double output = input;
         for (int i = 0; i < _stages.Length; i++) {
@@ -181,6 +247,11 @@ internal sealed class CascadeStages<TState>
         return output;
     }
 
+    /// <summary>
+    /// Performs the filter single operation.
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <returns>The result of the operation.</returns>
     internal float FilterSingle(float input) {
         double sample = input;
         double filtered = Filter(sample);

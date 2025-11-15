@@ -1,5 +1,8 @@
 ﻿namespace Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
+/// <summary>
+/// Defines mod rm offset type values.
+/// </summary>
 public enum ModRmOffsetType {
     // 16bits
     BX_PLUS_SI,

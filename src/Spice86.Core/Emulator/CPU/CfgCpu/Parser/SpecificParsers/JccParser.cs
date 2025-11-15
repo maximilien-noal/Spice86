@@ -3,17 +3,29 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents jcc parser.
+/// </summary>
 public class JccParser : BaseInstructionParser {
     private readonly Jcc8SpecificParser _jcc8SpecificParser;
     private readonly Jcc16SpecificParser _jcc16SpecificParser;
     private readonly Jcc32SpecificParser _jcc32SpecificParser;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public JccParser(BaseInstructionParser other) : base(other) {
         _jcc8SpecificParser = new Jcc8SpecificParser(this);
         _jcc16SpecificParser = new Jcc16SpecificParser(this);
         _jcc32SpecificParser = new Jcc32SpecificParser(this);
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context) {
         bool is8 = context.OpcodeField.Value <= 0xFF;
         // For near Jcc (0F 80..0F 8F), the displacement width is selected by operand-size (66h),
@@ -30,11 +42,20 @@ public class JccParser : BaseInstructionParser {
     }
 }
 
+/// <summary>
+/// Represents jcc 8 specific parser.
+/// </summary>
 [JccSpecificParser(8, "sbyte")]
 public partial class Jcc8SpecificParser;
 
+/// <summary>
+/// Represents jcc 16 specific parser.
+/// </summary>
 [JccSpecificParser(16, "short")]
 public partial class Jcc16SpecificParser;
 
+/// <summary>
+/// Represents jcc 32 specific parser.
+/// </summary>
 [JccSpecificParser(32, "int")]
 public partial class Jcc32SpecificParser;

@@ -2,7 +2,16 @@ namespace Spice86.Core.Emulator.Devices.Video.Registers;
 
 using Spice86.Core.Emulator.Devices.Video.Registers.Enums;
 
+/// <summary>
+/// Represents register extensions.
+/// </summary>
 public static class RegisterExtensions {
+    /// <summary>
+    /// Performs the explain operation.
+    /// </summary>
+    /// <param name="controllerRegister">The controller register.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public static string Explain(this GraphicsControllerRegister controllerRegister, byte value) {
         switch (controllerRegister) {
             case GraphicsControllerRegister.SetReset:
@@ -62,6 +71,12 @@ public static class RegisterExtensions {
         return "(explanation not yet implemented)";
     }
 
+    /// <summary>
+    /// Performs the explain operation.
+    /// </summary>
+    /// <param name="register">The register.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public static string Explain(this SequencerRegister register, byte value) {
         switch (register) {
             case SequencerRegister.Reset:
@@ -84,6 +99,12 @@ public static class RegisterExtensions {
         return "(explanation not yet implemented)";
     }
 
+    /// <summary>
+    /// Performs the explain operation.
+    /// </summary>
+    /// <param name="register">The register.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public static string Explain(this CrtControllerRegister register, byte value) {
         switch (register) {
             case CrtControllerRegister.HorizontalTotal:
@@ -177,7 +198,15 @@ public static class RegisterExtensions {
     }
 }
 
+/// <summary>
+/// Represents misc output register.
+/// </summary>
 public static class MiscOutputRegister {
+    /// <summary>
+    /// Performs the explain operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public static string Explain(byte value) {
         return string.Format(" [0]I/OAS: {0}, [1]Ram en: {1}, [2-3]Clock Select: {2}, [4]Reserved, [5]O/E Page: {3}, [6]Hsync polarity: {4}, [7]Vsync Polarity: {5}",
             value & 0x01,

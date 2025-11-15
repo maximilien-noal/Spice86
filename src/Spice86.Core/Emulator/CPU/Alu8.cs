@@ -17,6 +17,13 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
     public Alu8(State state) : base(state) {
     }
 
+    /// <summary>
+    /// Adds .
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Add(byte value1, byte value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         byte res = (byte)(value1 + value2 + carry);
@@ -29,6 +36,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the and operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte And(byte value1, byte value2) {
         byte res = (byte)(value1 & value2);
         UpdateFlags(res);
@@ -37,6 +50,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the div operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Div(ushort value1, byte value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -50,6 +69,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (byte)res;
     }
 
+    /// <summary>
+    /// Performs the idiv operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override sbyte Idiv(short value1, sbyte value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -65,6 +90,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (sbyte)res;
     }
 
+    /// <summary>
+    /// Performs the imul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override short Imul(sbyte value1, sbyte value2) {
         int res = value1 * value2;
         bool doesNotFitInByte = res != (sbyte)res;
@@ -74,6 +105,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
     }
 
 
+    /// <summary>
+    /// Performs the mul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Mul(byte value1, byte value2) {
         ushort res = (ushort)(value1 * value2);
         bool upperHalfNonZero = (res & 0xFF00) != 0;
@@ -83,6 +120,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the or operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Or(byte value1, byte value2) {
         byte res = (byte)(value1 | value2);
         UpdateFlags(res);
@@ -93,6 +136,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Rcl(byte value, byte count) {
         count = (byte)((count & ShiftCountMask) % 9);
         if (count == 0) {
@@ -114,6 +163,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Rcr(byte value, int count) {
         count = (count & ShiftCountMask) % 9;
         if (count == 0) {
@@ -134,6 +189,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rol operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Rol(byte value, byte count) {
         count = (byte)((count & ShiftCountMask) % 8);
         if (count == 0) {
@@ -150,6 +211,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the ror operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Ror(byte value, int count) {
         count = (count & ShiftCountMask) % 8;
         if (count == 0) {
@@ -165,6 +232,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sar operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Sar(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -179,6 +252,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (byte)res;
     }
 
+    /// <summary>
+    /// Performs the shl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Shl(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -193,14 +272,34 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shld operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Shld(byte destination, byte source, byte count) {
         throw new NotImplementedException("Shld is not available for 8bits operations");
     }
 
+    /// <summary>
+    /// Performs the shrd operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Shrd(byte destination, byte source, byte count) {
         throw new NotImplementedException("Shrd is not available for 8bits operations");
     }
 
+    /// <summary>
+    /// Performs the shr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Shr(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -215,6 +314,13 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Sub(byte value1, byte value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         byte res = (byte)(value1 - value2 - carry);
@@ -227,6 +333,12 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// Performs the xor operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override byte Xor(byte value1, byte value2) {
         byte res = (byte)(value1 ^ value2);
         UpdateFlags(res);
@@ -241,6 +353,10 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         _state.OverflowFlag = msb ^ beforeMsb;
     }
 
+    /// <summary>
+    /// Sets sign flag.
+    /// </summary>
+    /// <param name="value">The value.</param>
     protected override void SetSignFlag(byte value) {
         _state.SignFlag = (value & MsbMask) != 0;
     }

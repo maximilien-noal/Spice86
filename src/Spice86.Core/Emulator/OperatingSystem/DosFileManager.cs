@@ -40,16 +40,31 @@ public class DosFileManager {
     private readonly DosPathResolver _dosPathResolver;
 
     private class FileSearchPrivateData {
+        /// <summary>
+        /// Performs the file search private data operation.
+        /// </summary>
+        /// <param name="fileSpec">The file spec.</param>
+        /// <param name="index">The index.</param>
+        /// <param name="searchAttributes">The search attributes.</param>
         public FileSearchPrivateData(string fileSpec, int index, ushort searchAttributes) {
-            FileSpec =  fileSpec;
+            FileSpec = fileSpec;
             Index = index;
             SearchAttributes = searchAttributes;
         }
 
+        /// <summary>
+        /// Gets or sets file spec.
+        /// </summary>
         public string FileSpec { get; set; }
 
+        /// <summary>
+        /// Gets or sets index.
+        /// </summary>
         public int Index { get; set; }
 
+        /// <summary>
+        /// Gets search attributes.
+        /// </summary>
         public ushort SearchAttributes { get; init; }
     }
 
@@ -160,7 +175,7 @@ public class DosFileManager {
             }
             return OpenDevice(device);
         }
-        
+
         string newHostFilePath = _dosPathResolver.PrefixWithHostDirectory(fileName);
 
         FileStream? testFileStream = null;
@@ -175,7 +190,7 @@ public class DosFileManager {
             // in order to avoid an exception
             for (ushort i = 0; i < OpenFiles.Length; i++) {
                 VirtualFileBase? virtualFile = OpenFiles[i];
-                if(virtualFile is DosFile dosFile) {
+                if (virtualFile is DosFile dosFile) {
                     string? openHostFilePath = _dosPathResolver.GetFullHostPathFromDosOrDefault(dosFile.Name);
                     if (string.Equals(openHostFilePath, newHostFilePath, StringComparison.OrdinalIgnoreCase)) {
                         CloseFileOrDevice(i);
@@ -930,6 +945,11 @@ public class DosFileManager {
     public DosFileOperationResult GetCurrentDir(byte driveNumber, out string currentDir) =>
         _dosPathResolver.GetCurrentDosDirectory(driveNumber, out currentDir);
 
+    /// <summary>
+    /// Performs the io control operation.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <returns>The result of the operation.</returns>
     public DosFileOperationResult IoControl(State state) {
         byte handle = 0;
         byte drive = 0;
@@ -1153,10 +1173,9 @@ public class DosFileManager {
                         }
                         break;
 
-                    case GenericBlockDeviceCommand.GetVolumeSerialNumber:
-                        {
+                    case GenericBlockDeviceCommand.GetVolumeSerialNumber: {
                             VirtualDrive vDrive = _dosDriveManager.ElementAtOrDefault(drive).Value;
-                            DosVolumeInfo dosVolumeInfo = new (_memory, parameterBlock.Linear);
+                            DosVolumeInfo dosVolumeInfo = new(_memory, parameterBlock.Linear);
                             dosVolumeInfo.SerialNumber = 0x1234;
                             dosVolumeInfo.VolumeLabel = vDrive.Label.ToUpperInvariant();
                             dosVolumeInfo.FileSystemType = drive < 2 ? "FAT12" : "FAT16";

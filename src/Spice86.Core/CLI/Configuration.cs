@@ -16,7 +16,7 @@ public sealed class Configuration {
     /// </summary>
     [Option(nameof(Cycles), Default = null, Required = false, HelpText = "Precise control of the number of emulated CPU cycles per ms. For the rare speed-sensitive game. Default is undefined. Overrides instructions per second option if used.")]
     public int? Cycles { get; init; }
-    
+
     /// <summary>
     /// Cpu Model to emulate
     /// </summary>
@@ -28,7 +28,7 @@ public sealed class Configuration {
     /// </summary>
     [Option(nameof(A20Gate), Default = false, Required = false, HelpText = "Whether the 20th address line is silenced. Used for legacy 8086 programs.")]
     public bool A20Gate { get; init; }
-    
+
     /// <summary>
     /// Gets if the program will be paused on start and stop. If <see cref="GdbPort"/> is set, the program will be paused anyway.
     /// </summary>
@@ -73,6 +73,9 @@ public sealed class Configuration {
     /// </summary>
     [Option('h', nameof(HeadlessMode), Default = null, Required = false,
         HelpText =
+    /// <summary>
+    /// Gets headless mode.
+    /// </summary>
             "Headless mode. 'Minimal' does not use any UI components, 'Avalonia' uses the full UI and consumes a bit more memory.")]
     public HeadlessType? HeadlessMode { get; init; }
 
@@ -170,7 +173,7 @@ public sealed class Configuration {
     /// </summary>
     [Option(nameof(StructureFile), Default = null, Required = false, HelpText = "Specify a C header file to be used for structure information")]
     public string? StructureFile { get; init; }
-    
+
     /// <summary>
     /// Determines whether to use experimental CFG CPU or regular interpreter.
     /// </summary>
@@ -183,6 +186,9 @@ public sealed class Configuration {
     [Option(nameof(AudioEngine), Default = AudioEngine.PortAudio, Required = false, HelpText = "Audio engine to use. Values are PortAudio or Dummy")]
     public AudioEngine AudioEngine { get; init; }
 
+    /// <summary>
+    /// Gets xms.
+    /// </summary>
     [Option(nameof(Xms), Default = null, Required = false, HelpText = "Enable XMS. Default is true.")]
     public bool? Xms { get; init; }
 
@@ -193,5 +199,8 @@ public sealed class Configuration {
     public bool McpServer { get; init; }
 
     //TODO: Temporary fix, replace with real dependency injection
+    /// <summary>
+    /// Gets cycles budgeter.
+    /// </summary>
     public ICyclesBudgeter? CyclesBudgeter { get; init; }
 }

@@ -5,8 +5,7 @@ using System;
 /// <summary>
 /// The base class for all implementations of Audio Players
 /// </summary>
-public abstract class AudioPlayer : IDisposable
-{
+public abstract class AudioPlayer : IDisposable {
     /// <summary>
     /// Whether the native resources were disposed.
     /// </summary>
@@ -46,6 +45,9 @@ public abstract class AudioPlayer : IDisposable
     /// <returns>The length of data written. Equal to the input data length.</returns>
     internal abstract int WriteData(Span<float> data);
 
+    /// <summary>
+    /// Writes silence.
+    /// </summary>
     internal void WriteSilence() {
         WriteData(new Span<float>([0]));
     }

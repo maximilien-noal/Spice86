@@ -2,6 +2,9 @@ namespace Spice86.ViewModels.Services;
 
 using Avalonia.Threading;
 
+/// <summary>
+/// Represents dispatcher timer starter.
+/// </summary>
 internal static class DispatcherTimerStarter {
     /// <summary>
     /// Starts a new <see cref="DispatcherTimer"/> with the specified <paramref name="interval"/>, <paramref name="priority"/> and <paramref name="callback"/>.

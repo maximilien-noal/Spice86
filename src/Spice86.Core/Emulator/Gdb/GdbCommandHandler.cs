@@ -59,6 +59,9 @@ public class GdbCommandHandler {
     /// </summary>
     public bool IsConnected { get; private set; } = true;
 
+    /// <summary>
+    /// Performs the pause emulator operation.
+    /// </summary>
     internal void PauseEmulator() {
         _gdbCommandBreakpointHandler.ResumeEmulatorOnCommandEnd = false;
         _pauseHandler.RequestPause("To wait for a client to connect");

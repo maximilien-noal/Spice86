@@ -9,6 +9,10 @@ using Spice86.Shared.Utils;
 public class UInt8HighRegistersIndexer : RegistersIndexer<byte> {
     private readonly IUIntReaderWriter _uIntArrayReaderWriter;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="uIntArrayReaderWriter">The u int array reader writer.</param>
     public UInt8HighRegistersIndexer(IUIntReaderWriter uIntArrayReaderWriter) {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }
@@ -16,7 +20,7 @@ public class UInt8HighRegistersIndexer : RegistersIndexer<byte> {
     public override byte this[uint index] {
         get => ConvertUtils.ReadMsb16(_uIntArrayReaderWriter[index]);
         set {
-            uint currentValue =_uIntArrayReaderWriter[index];
+            uint currentValue = _uIntArrayReaderWriter[index];
             uint newValue = ConvertUtils.WriteMsb16(currentValue, value);
             _uIntArrayReaderWriter[index] = newValue;
         }

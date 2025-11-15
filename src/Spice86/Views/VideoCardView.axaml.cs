@@ -7,8 +7,14 @@ using Spice86.ViewModels.Services;
 
 namespace Spice86.Views;
 
+/// <summary>
+/// Represents video card view.
+/// </summary>
 public partial class VideoCardView : UserControl {
     private DispatcherTimer? _timer;
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public VideoCardView() {
         InitializeComponent();
         DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -22,6 +28,10 @@ public partial class VideoCardView : UserControl {
         }
     }
 
+    /// <summary>
+    /// Called when data context changed.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnDataContextChanged(EventArgs e) {
         base.OnDataContextChanged(e);
         if (DataContext is IEmulatorObjectViewModel vm) {

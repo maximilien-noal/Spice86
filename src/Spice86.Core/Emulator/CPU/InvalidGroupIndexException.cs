@@ -14,6 +14,11 @@ public class InvalidGroupIndexException : InvalidVMOperationException {
     /// <param name="groupIndex">The invalid group index to put in the message, converted to hexadecimal</param>
     public InvalidGroupIndexException(State state, int groupIndex) : base(state, $"Invalid group index {ConvertUtils.ToHex((uint)groupIndex)}") {
     }
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="groupIndex">The group index.</param>
     public InvalidGroupIndexException(State state, uint groupIndex) : this(state, (int)groupIndex) {
     }
 }

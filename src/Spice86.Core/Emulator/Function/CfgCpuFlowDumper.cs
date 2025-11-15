@@ -9,16 +9,28 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Linq;
 
+/// <summary>
+/// Represents cfg cpu flow dumper.
+/// </summary>
 public class CfgCpuFlowDumper : IExecutionDumpFactory {
     private readonly CfgCpu _cfgCpu;
     private readonly ExecutionDump _previousDump;
 
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="cfgCpu">The cfg cpu.</param>
+    /// <param name="previousDump">The previous dump.</param>
     public CfgCpuFlowDumper(CfgCpu cfgCpu, ExecutionDump previousDump) {
         _cfgCpu = cfgCpu;
         _previousDump = previousDump;
     }
 
+    /// <summary>
+    /// Performs the dump operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public ExecutionDump Dump() {
         // List all instructions currently in memory. Those info are meant to go along with the memory dump.
         IEnumerable<CfgInstruction> all = _cfgCpu.CfgNodeFeeder.InstructionsFeeder.CurrentInstructions.GetAll();

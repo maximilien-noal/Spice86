@@ -3,13 +3,27 @@ namespace Spice86.Core.Emulator.CPU.InstructionsImpl;
 using Spice86.Core.Emulator.CPU.Exceptions;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents instructions 8.
+/// </summary>
 public class Instructions8 : Instructions {
     private readonly Alu8 _alu8;
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="cpu">The cpu.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="modRm">The mod rm.</param>
     public Instructions8(State state, Cpu cpu, Memory.IMemory memory, ModRM modRm) :
         base(cpu, memory, modRm) {
         _alu8 = new Alu8(state);
     }
-    
+
+    /// <summary>
+    /// Performs the aam operation.
+    /// </summary>
+    /// <param name="v2">The v 2.</param>
     public void Aam(byte v2) {
         byte v1 = State.AL;
         if (v2 == 0) {
@@ -22,6 +36,10 @@ public class Instructions8 : Instructions {
         _alu8.UpdateFlags(result);
     }
 
+    /// <summary>
+    /// Performs the aad operation.
+    /// </summary>
+    /// <param name="v2">The v 2.</param>
     public void Aad(byte v2) {
         State.AL = (byte)(State.AL + (State.AH * v2));
         State.AH = 0;
@@ -32,6 +50,9 @@ public class Instructions8 : Instructions {
         _alu8.UpdateFlags(State.AL);
     }
 
+    /// <summary>
+    /// Performs the aas operation.
+    /// </summary>
     public void Aas() {
         bool finalAuxillaryFlag = false;
         bool finalCarryFlag = false;
@@ -49,6 +70,9 @@ public class Instructions8 : Instructions {
         State.CarryFlag = finalCarryFlag;
     }
 
+    /// <summary>
+    /// Performs the daa operation.
+    /// </summary>
     public void Daa() {
         byte initialAL = State.AL;
         bool initialCF = State.CarryFlag;
@@ -72,6 +96,9 @@ public class Instructions8 : Instructions {
         State.CarryFlag = finalCarryFlag;
     }
 
+    /// <summary>
+    /// Performs the das operation.
+    /// </summary>
     public void Das() {
         byte initialAL = State.AL;
         bool initialCF = State.CarryFlag;
@@ -95,6 +122,9 @@ public class Instructions8 : Instructions {
         State.CarryFlag = finalCarryFlag;
     }
 
+    /// <summary>
+    /// Performs the aaa operation.
+    /// </summary>
     public void Aaa() {
         bool finalAuxillaryFlag = false;
         bool finalCarryFlag = false;
@@ -112,189 +142,291 @@ public class Instructions8 : Instructions {
     }
 
 
+    /// <summary>
+    /// Adds rm reg.
+    /// </summary>
     public override void AddRmReg() {
         // ADD rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Add(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Adds reg rm.
+    /// </summary>
     public override void AddRegRm() {
         // ADD rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Add(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Adds acc imm.
+    /// </summary>
     public override void AddAccImm() {
         // ADD AL ib
         State.AL = _alu8.Add(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the or rm reg operation.
+    /// </summary>
     public override void OrRmReg() {
         // OR rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Or(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the or reg rm operation.
+    /// </summary>
     public override void OrRegRm() {
         // OR rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Or(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the or acc imm operation.
+    /// </summary>
     public override void OrAccImm() {
         // OR AL ib
         State.AL = _alu8.Or(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the adc rm reg operation.
+    /// </summary>
     public override void AdcRmReg() {
         // ADC rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Adc(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the adc reg rm operation.
+    /// </summary>
     public override void AdcRegRm() {
         // ADC rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Adc(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the adc acc imm operation.
+    /// </summary>
     public override void AdcAccImm() {
         // ADC AL ib
         State.AL = _alu8.Adc(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the sbb rm reg operation.
+    /// </summary>
     public override void SbbRmReg() {
         // SBB rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Sbb(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the sbb reg rm operation.
+    /// </summary>
     public override void SbbRegRm() {
         // SBB rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Sbb(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the sbb acc imm operation.
+    /// </summary>
     public override void SbbAccImm() {
         // SBB AL ib
         State.AL = _alu8.Sbb(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the and rm reg operation.
+    /// </summary>
     public override void AndRmReg() {
         // AND rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.And(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the and reg rm operation.
+    /// </summary>
     public override void AndRegRm() {
         // AND rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.And(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the and acc imm operation.
+    /// </summary>
     public override void AndAccImm() {
         // AND AL ib
         State.AL = _alu8.And(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the sub rm reg operation.
+    /// </summary>
     public override void SubRmReg() {
         // SUB rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Sub(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the sub reg rm operation.
+    /// </summary>
     public override void SubRegRm() {
         // SUB rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Sub(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the sub acc imm operation.
+    /// </summary>
     public override void SubAccImm() {
         // SUB AL ib
         State.AL = _alu8.Sub(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the xor rm reg operation.
+    /// </summary>
     public override void XorRmReg() {
         // XOR rmb rb
         ModRM.Read();
         ModRM.SetRm8(_alu8.Xor(ModRM.GetRm8(), ModRM.R8));
     }
 
+    /// <summary>
+    /// Performs the xor reg rm operation.
+    /// </summary>
     public override void XorRegRm() {
         // XOR rb rmb
         ModRM.Read();
         ModRM.R8 = _alu8.Xor(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the xor acc imm operation.
+    /// </summary>
     public override void XorAccImm() {
         // XOR AL ib
         State.AL = _alu8.Xor(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the cmp rm reg operation.
+    /// </summary>
     public override void CmpRmReg() {
         // CMP rmb rb
         ModRM.Read();
         _alu8.Sub(ModRM.GetRm8(), ModRM.R8);
     }
 
+    /// <summary>
+    /// Performs the cmp reg rm operation.
+    /// </summary>
     public override void CmpRegRm() {
         // CMP rb rmb
         ModRM.Read();
         _alu8.Sub(ModRM.R8, ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the cmp acc imm operation.
+    /// </summary>
     public override void CmpAccImm() {
         // CMP AL ib
         _alu8.Sub(State.AL, Cpu.NextUint8());
     }
 
 
+    /// <summary>
+    /// Performs the advancesi operation.
+    /// </summary>
     protected override void AdvanceSI() {
         AdvanceSI(State.Direction8);
     }
 
+    /// <summary>
+    /// Performs the advancedi operation.
+    /// </summary>
     protected override void AdvanceDI() {
         AdvanceDI(State.Direction8);
     }
 
+    /// <summary>
+    /// Performs the movs operation.
+    /// </summary>
     public override void Movs() {
         byte value = Memory.UInt8[MemoryAddressOverridableDsSi];
         Memory.UInt8[MemoryAddressEsDi] = value;
         AdvanceSIDI();
     }
 
+    /// <summary>
+    /// Performs the cmps operation.
+    /// </summary>
     public override void Cmps() {
         byte value = Memory.UInt8[MemoryAddressOverridableDsSi];
         _alu8.Sub(value, Memory.UInt8[MemoryAddressEsDi]);
         AdvanceSIDI();
     }
 
+    /// <summary>
+    /// Performs the test rm reg operation.
+    /// </summary>
     public override void TestRmReg() {
         // TEST rmb rb
         ModRM.Read();
         _alu8.And(ModRM.GetRm8(), ModRM.R8);
     }
 
+    /// <summary>
+    /// Performs the test acc imm operation.
+    /// </summary>
     public override void TestAccImm() {
         // TEST AL ib
         _alu8.And(State.AL, Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the stos operation.
+    /// </summary>
     public override void Stos() {
         Memory.UInt8[MemoryAddressEsDi] = State.AL;
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the lods operation.
+    /// </summary>
     public override void Lods() {
         State.AL = Memory.UInt8[MemoryAddressOverridableDsSi];
         AdvanceSI();
     }
 
+    /// <summary>
+    /// Performs the scas operation.
+    /// </summary>
     public override void Scas() {
         _alu8.Sub(State.AL, Memory.UInt8[MemoryAddressEsDi]);
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the ins operation.
+    /// </summary>
     public override void Ins() {
         ushort port = State.DX;
         byte value = Cpu.In8(port);
@@ -302,6 +434,9 @@ public class Instructions8 : Instructions {
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the outs operation.
+    /// </summary>
     public override void Outs() {
         ushort port = State.DX;
         byte value = Memory.UInt8[MemoryAddressOverridableDsSi];
@@ -309,6 +444,9 @@ public class Instructions8 : Instructions {
         AdvanceSI();
     }
 
+    /// <summary>
+    /// Performs the grp 1 operation.
+    /// </summary>
     public void Grp1() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -331,6 +469,10 @@ public class Instructions8 : Instructions {
         }
     }
 
+    /// <summary>
+    /// Performs the grp 2 operation.
+    /// </summary>
+    /// <param name="countSource">The count source.</param>
     public override void Grp2(Grp2CountSource countSource) {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -350,14 +492,23 @@ public class Instructions8 : Instructions {
         ModRM.SetRm8(res);
     }
 
+    /// <summary>
+    /// Performs the grp 3 test rm operation.
+    /// </summary>
     protected override void Grp3TestRm() {
         _alu8.And(ModRM.GetRm8(), Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the grp 3 not rm operation.
+    /// </summary>
     protected override void Grp3NotRm() {
         ModRM.SetRm8((byte)~ModRM.GetRm8());
     }
 
+    /// <summary>
+    /// Performs the grp 3 neg rm operation.
+    /// </summary>
     protected override void Grp3NegRm() {
         byte value = ModRM.GetRm8();
         value = _alu8.Sub(0, value);
@@ -365,6 +516,9 @@ public class Instructions8 : Instructions {
         State.CarryFlag = value != 0;
     }
 
+    /// <summary>
+    /// Performs the grp 3 mul rm acc operation.
+    /// </summary>
     protected override void Grp3MulRmAcc() {
         ushort result = _alu8.Mul(State.AL, ModRM.GetRm8());
         // Upper part of the result goes in AH
@@ -372,6 +526,9 @@ public class Instructions8 : Instructions {
         State.AL = (byte)result;
     }
 
+    /// <summary>
+    /// Performs the grp 3 i mul rm acc operation.
+    /// </summary>
     protected override void Grp3IMulRmAcc() {
         sbyte v2 = (sbyte)ModRM.GetRm8();
         short result = _alu8.Imul((sbyte)State.AL, v2);
@@ -380,6 +537,9 @@ public class Instructions8 : Instructions {
         State.AL = (byte)result;
     }
 
+    /// <summary>
+    /// Performs the grp 3 div rm acc operation.
+    /// </summary>
     protected override void Grp3DivRmAcc() {
         ushort v1 = State.AX;
         byte v2 = ModRM.GetRm8();
@@ -388,6 +548,9 @@ public class Instructions8 : Instructions {
         State.AH = (byte)(v1 % v2);
     }
 
+    /// <summary>
+    /// Performs the grp 3 idiv rm acc operation.
+    /// </summary>
     protected override void Grp3IdivRmAcc() {
         short v1 = (short)State.AX;
         sbyte v2 = (sbyte)ModRM.GetRm8();
@@ -396,6 +559,9 @@ public class Instructions8 : Instructions {
         State.AH = (byte)(v1 % v2);
     }
 
+    /// <summary>
+    /// Performs the grp 4 operation.
+    /// </summary>
     public void Grp4() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -416,16 +582,25 @@ public class Instructions8 : Instructions {
         }
     }
 
+    /// <summary>
+    /// Performs the grp 45 rm inc operation.
+    /// </summary>
     protected override void Grp45RmInc() {
         // INC
         ModRM.SetRm8(_alu8.Inc(ModRM.GetRm8()));
     }
 
+    /// <summary>
+    /// Performs the grp 45 rm dec operation.
+    /// </summary>
     protected override void Grp45RmDec() {
         // DEC
         ModRM.SetRm8(_alu8.Dec(ModRM.GetRm8()));
     }
 
+    /// <summary>
+    /// Performs the xchg rm operation.
+    /// </summary>
     public override void XchgRm() {
         // XCHG rmb rb
         ModRM.Read();
@@ -435,6 +610,9 @@ public class Instructions8 : Instructions {
         ModRM.SetRm8(value2);
     }
 
+    /// <summary>
+    /// Performs the xadd rm operation.
+    /// </summary>
     public override void XaddRm() {
         // XADD rmb rb
         ModRM.Read();
@@ -444,39 +622,61 @@ public class Instructions8 : Instructions {
         ModRM.SetRm8(_alu8.Add(src, dest));
     }
 
+    /// <summary>
+    /// Performs the mov rm reg operation.
+    /// </summary>
     public override void MovRmReg() {
         // MOV rmb rb
         ModRM.Read();
         ModRM.SetRm8(ModRM.R8);
     }
 
+    /// <summary>
+    /// Performs the mov reg rm operation.
+    /// </summary>
     public override void MovRegRm() {
         // MOV rb, rmb
         ModRM.Read();
         ModRM.R8 = ModRM.GetRm8();
     }
 
+    /// <summary>
+    /// Performs the mov reg imm operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void MovRegImm(int regIndex) {
         // MOV reg8(regIndex) ib
         State.GeneralRegisters.UInt8HighLow[regIndex] = Cpu.NextUint8();
     }
 
+    /// <summary>
+    /// Performs the mov acc moffs operation.
+    /// </summary>
     public override void MovAccMoffs() {
         // MOV AL moffs8
         State.AL = Memory.UInt8[DsNextUint16Address];
     }
 
+    /// <summary>
+    /// Performs the mov moffs acc operation.
+    /// </summary>
     public override void MovMoffsAcc() {
         // MOV moffs8 AL
         Memory.UInt8[DsNextUint16Address] = State.AL;
     }
 
+    /// <summary>
+    /// Performs the mov rm imm operation.
+    /// </summary>
     public override void MovRmImm() {
         // MOV rmb ib
         ModRM.Read();
         ModRM.SetRm8(Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the sahf operation.
+    /// </summary>
     public void Sahf() {
         // SAHF
         // EFLAGS(SF:ZF:0:AF:0:PF:1:CF) := AH;
@@ -487,11 +687,17 @@ public class Instructions8 : Instructions {
         State.CarryFlag = (State.AH & Flags.Carry) == Flags.Carry;
     }
 
+    /// <summary>
+    /// Performs the lahf operation.
+    /// </summary>
     public void Lahf() {
         // LAHF
         State.AH = (byte)State.Flags.FlagRegister;
     }
 
+    /// <summary>
+    /// Performs the salc operation.
+    /// </summary>
     public void Salc() {
         // Undocumented instruction SALC
         if (State.CarryFlag) {
@@ -502,6 +708,9 @@ public class Instructions8 : Instructions {
     }
 
 
+    /// <summary>
+    /// Performs the xlat operation.
+    /// </summary>
     public void Xlat() {
         // XLAT
         uint address = ModRM.GetAddress((uint)SegmentRegisterIndex.DsIndex, State.BX) + State.AL;
@@ -509,12 +718,18 @@ public class Instructions8 : Instructions {
     }
 
 
+    /// <summary>
+    /// Performs the in imm 8 operation.
+    /// </summary>
     public override void InImm8() {
         // IN AL Imm8
         byte port = Cpu.NextUint8();
         State.AL = Cpu.In8(port);
     }
 
+    /// <summary>
+    /// Performs the out imm 8 operation.
+    /// </summary>
     public override void OutImm8() {
         // OUT AL Imm8
         byte port = Cpu.NextUint8();
@@ -522,16 +737,26 @@ public class Instructions8 : Instructions {
         Cpu.Out8(port, value);
     }
 
+    /// <summary>
+    /// Performs the in dx operation.
+    /// </summary>
     public override void InDx() {
         // IN AL DX
         State.AL = Cpu.In8(State.DX);
     }
 
+    /// <summary>
+    /// Performs the out dx operation.
+    /// </summary>
     public override void OutDx() {
         // OUT DX AL
         Cpu.Out8(State.DX, State.AL);
     }
 
+    /// <summary>
+    /// Sets cc.
+    /// </summary>
+    /// <param name="condition">The condition.</param>
     public void Setcc(bool condition) {
         byte value = (byte)(condition ? 1 : 0);
         ModRM.Read();

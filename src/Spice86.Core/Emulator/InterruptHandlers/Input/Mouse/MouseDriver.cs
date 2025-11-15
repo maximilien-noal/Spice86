@@ -18,8 +18,17 @@ using Spice86.Shared.Interfaces;
 /// </summary>
 public class MouseDriver : IMouseDriver {
     private class MouseButtonPressCount {
+        /// <summary>
+        /// Gets or sets press count.
+        /// </summary>
         public int PressCount { get; set; }
+        /// <summary>
+        /// Gets or sets last pressedx.
+        /// </summary>
         public double LastPressedX { get; set; }
+        /// <summary>
+        /// Gets or sets last pressedy.
+        /// </summary>
         public double LastPressedY { get; set; }
     }
 
@@ -194,10 +203,10 @@ public class MouseDriver : IMouseDriver {
     public void SetCursorPosition(int x, int y) {
         int mouseAreaWidth = CurrentMaxX - CurrentMinX;
         int mouseAreaHeight = CurrentMaxY - CurrentMinY;
-        
+
         int clampedX = Math.Clamp(x, CurrentMinX, CurrentMaxX);
         int clampedY = Math.Clamp(y, CurrentMinY, CurrentMaxY);
-        
+
         if (mouseAreaWidth <= 0) {
             _mouseDevice.MouseXRelative = 0.0;
         } else {

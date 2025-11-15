@@ -23,9 +23,18 @@ public abstract class AluOperationParser : BaseInstructionParser {
     private const byte ModRmMask = 0b100;
     private const byte RmRegDirectionMask = 0b10;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public AluOperationParser(BaseInstructionParser other) : base(other) {
     }
-    
+
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context) {
         ushort opcode = context.OpcodeField.Value;
         bool hasModRm = (opcode & ModRmMask) == 0;
@@ -49,19 +58,43 @@ public abstract class AluOperationParser : BaseInstructionParser {
     protected abstract CfgInstruction ParseRmReg(ParsingContext context, BitWidth bitWidth, ModRmContext modRmContext);
 }
 
+/// <summary>
+/// Represents add alu operation parser.
+/// </summary>
 [AluOperationParser("Add")]
 public partial class AddAluOperationParser;
+/// <summary>
+/// Represents or alu operation parser.
+/// </summary>
 [AluOperationParser("Or")]
 public partial class OrAluOperationParser;
+/// <summary>
+/// Represents adc alu operation parser.
+/// </summary>
 [AluOperationParser("Adc")]
 public partial class AdcAluOperationParser;
+/// <summary>
+/// Represents sbb alu operation parser.
+/// </summary>
 [AluOperationParser("Sbb")]
 public partial class SbbAluOperationParser;
+/// <summary>
+/// Represents and alu operation parser.
+/// </summary>
 [AluOperationParser("And")]
 public partial class AndAluOperationParser;
+/// <summary>
+/// Represents sub alu operation parser.
+/// </summary>
 [AluOperationParser("Sub")]
 public partial class SubAluOperationParser;
+/// <summary>
+/// Represents xor alu operation parser.
+/// </summary>
 [AluOperationParser("Xor")]
 public partial class XorAluOperationParser;
+/// <summary>
+/// Represents cmp alu operation parser.
+/// </summary>
 [AluOperationParser("Cmp")]
 public partial class CmpAluOperationParser;

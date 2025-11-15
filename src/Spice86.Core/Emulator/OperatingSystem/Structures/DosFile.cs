@@ -61,20 +61,53 @@ public class DosFile : VirtualFileBase {
     /// </summary>
     public IList<MemoryRange> LoadedMemoryRanges => _loadedMemoryRanges;
 
+    /// <summary>
+    /// Gets is on read only medium.
+    /// </summary>
     public virtual bool IsOnReadOnlyMedium { get; }
 
+    /// <summary>
+    /// Gets or sets time.
+    /// </summary>
     public ushort Time { get; set; }
 
+    /// <summary>
+    /// Gets or sets date.
+    /// </summary>
     public ushort Date { get; set; }
 
+    /// <summary>
+    /// Gets or sets flags.
+    /// </summary>
     public byte Flags { get; set; }
 
+    /// <summary>
+    /// Gets or sets drive.
+    /// </summary>
     public byte Drive { get; set; } = 0xff; //unset
+    /// <summary>
+    /// Gets or sets device information.
+    /// </summary>
     public ushort DeviceInformation { get; set; }
+    /// <summary>
+    /// Gets or sets name.
+    /// </summary>
     public override string Name { get; set; }
+    /// <summary>
+    /// The can read.
+    /// </summary>
     public override bool CanRead => _randomAccessStream.CanRead;
+    /// <summary>
+    /// The can seek.
+    /// </summary>
     public override bool CanSeek => _randomAccessStream.CanSeek;
+    /// <summary>
+    /// The can write.
+    /// </summary>
     public override bool CanWrite => _randomAccessStream.CanWrite;
+    /// <summary>
+    /// The length.
+    /// </summary>
     public override long Length => _randomAccessStream.Length;
 
     public override long Position {
@@ -88,6 +121,9 @@ public class DosFile : VirtualFileBase {
         _randomAccessStream.Close();
     }
 
+    /// <summary>
+    /// Performs the flush operation.
+    /// </summary>
     public override void Flush() {
         _randomAccessStream.Flush();
     }
@@ -96,6 +132,10 @@ public class DosFile : VirtualFileBase {
         return _randomAccessStream.Read(buffer, offset, count);
     }
 
+    /// <summary>
+    /// Sets length.
+    /// </summary>
+    /// <param name="value">The value.</param>
     public override void SetLength(long value) {
         _randomAccessStream.SetLength(value);
     }

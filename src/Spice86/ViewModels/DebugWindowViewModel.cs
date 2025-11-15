@@ -10,6 +10,9 @@ using Spice86.Core.Emulator.VM;
 using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// Represents debug window view model.
+/// </summary>
 public partial class DebugWindowViewModel : ViewModelBase,
     IRecipient<AddViewModelMessage<DisassemblyViewModel>>, IRecipient<AddViewModelMessage<MemoryViewModel>>,
     IRecipient<RemoveViewModelMessage<DisassemblyViewModel>>, IRecipient<RemoveViewModelMessage<MemoryViewModel>> {
@@ -53,6 +56,21 @@ public partial class DebugWindowViewModel : ViewModelBase,
 
     private readonly IPauseHandler _pauseHandler;
 
+    /// <summary>
+    /// Performs the debug window view model operation.
+    /// </summary>
+    /// <param name="messenger">The messenger.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
+    /// <param name="disassemblyViewModel">The disassembly view model.</param>
+    /// <param name="paletteViewModel">The palette view model.</param>
+    /// <param name="softwareMixerViewModel">The software mixer view model.</param>
+    /// <param name="videoCardViewModel">The video card view model.</param>
+    /// <param name="cpuViewModel">The cpu view model.</param>
+    /// <param name="midiViewModel">The midi view model.</param>
+    /// <param name="cfgCpuViewModel">The cfg cpu view model.</param>
+    /// <param name="memoryViewModels">The memory view models.</param>
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
         IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
         DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,

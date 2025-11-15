@@ -12,15 +12,18 @@ using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Memory;
-using Spice86.ViewModels.Messages;
+using Spice86.Shared.Emulator.VM.Breakpoint;
 using Spice86.Shared.Utils;
 using Spice86.ViewModels.DataModels;
+using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.Services;
 using Spice86.Views;
 
 using System.Text;
-using Spice86.Shared.Emulator.VM.Breakpoint;
 
+/// <summary>
+/// Represents memory view model.
+/// </summary>
 public partial class MemoryViewModel : ViewModelWithErrorDialog {
     private readonly IMemory _memory;
     private readonly IStructureViewModelFactory _structureViewModelFactory;
@@ -30,6 +33,22 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     private readonly MemoryDataExporter _memoryDataExporter;
     private readonly State _state;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="memoryDataExporter">The memory data exporter.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="messenger">The messenger.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="textClipboard">The text clipboard.</param>
+    /// <param name="storageProvider">The storage provider.</param>
+    /// <param name="structureViewModelFactory">The structure view model factory.</param>
+    /// <param name="canCloseTab">The can close tab.</param>
+    /// <param name="startAddress">The start address.</param>
+    /// <param name="endAddress">The end address.</param>
     public MemoryViewModel(IMemory memory, MemoryDataExporter memoryDataExporter,
         State state, BreakpointsViewModel breakpointsViewModel,
         IPauseHandler pauseHandler, IMessenger messenger, IUIDispatcher uiDispatcher,
@@ -61,11 +80,17 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
         CanCloseTab = canCloseTab;
         TryUpdateHeaderAndMemoryDocument();
     }
+    /// <summary>
+    /// The state.
+    /// </summary>
     public State State => _state;
 
     [ObservableProperty]
     private string? _title;
 
+    /// <summary>
+    /// Defines memory search data type values.
+    /// </summary>
     public enum MemorySearchDataType {
         Binary,
         Ascii,
@@ -74,8 +99,14 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private MemorySearchDataType _searchDataType;
 
+    /// <summary>
+    /// The search data type is binary.
+    /// </summary>
     public bool SearchDataTypeIsBinary => SearchDataType == MemorySearchDataType.Binary;
 
+    /// <summary>
+    /// The search data type is ascii.
+    /// </summary>
     public bool SearchDataTypeIsAscii => SearchDataType == MemorySearchDataType.Ascii;
 
     [RelayCommand]
@@ -194,8 +225,8 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     }
 
     private void ValidateBreakPointForm(
-        string? memoryBreakpointStartAddress, 
-        string? memoryBreakpointEndAddress, 
+        string? memoryBreakpointStartAddress,
+        string? memoryBreakpointEndAddress,
         string? memoryBreakpointValueCondition
         ) {
         // Validate start
@@ -224,6 +255,9 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private BreakPointType _selectedBreakpointType = BreakPointType.MEMORY_WRITE;
 
+    /// <summary>
+    /// The breakpoint types.
+    /// </summary>
     public BreakPointType[] BreakpointTypes => [
         BreakPointType.MEMORY_WRITE, BreakPointType.MEMORY_READ, BreakPointType.MEMORY_ACCESS
     ];
@@ -286,13 +320,17 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [RelayCommand]
     private void CancelCreateMemoryBreakpoint() => CreatingMemoryBreakpoint = false;
 
+    /// <summary>
+    /// Performs the copy selection operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     [RelayCommand(CanExecute = nameof(IsSelectionRangeValid))]
     public async Task CopySelection() {
         if (SelectionRange is not null &&
             AddressAndValueParser.TryParseAddressString(StartAddress, _state, out uint? address)) {
             ulong startAddress = address.Value + SelectionRange.Value.Start.ByteIndex;
             ulong length = SelectionRange.Value.ByteLength;
-            byte[] memoryBytes = _memory.ReadRam((uint)length,(uint)startAddress);
+            byte[] memoryBytes = _memory.ReadRam((uint)length, (uint)startAddress);
             string hexRepresentation = ConvertUtils.ByteArrayToHexString(memoryBytes);
             await _textClipboard.SetTextAsync($"{hexRepresentation}");
         }
@@ -385,7 +423,7 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
 
     private async Task<uint?> PerformMemorySearchAsync(uint searchStartAddress,
         int searchLength, byte[] searchBytes, CancellationToken token) {
-        if(token.IsCancellationRequested) {
+        if (token.IsCancellationRequested) {
             return null;
         }
         return await Task.Run(
@@ -416,6 +454,9 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private BitRange? _selectionRange;
 
+    /// <summary>
+    /// The is structure info present.
+    /// </summary>
     public bool IsStructureInfoPresent => _structureViewModelFactory.IsInitialized;
 
     private readonly IHostStorageProvider _storageProvider;
@@ -444,6 +485,9 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private string? _selectionRangeEndAddress;
 
+    /// <summary>
+    /// Performs the show structure view operation.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(IsStructureInfoPresent))]
     public void ShowStructureView() {
         if (DataMemoryDocument == null) {

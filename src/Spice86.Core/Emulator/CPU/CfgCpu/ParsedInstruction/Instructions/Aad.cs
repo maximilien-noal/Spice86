@@ -7,11 +7,24 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.CommonGram
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents aad.
+/// </summary>
 public class Aad : InstructionWithValueField<byte> {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
+    /// <param name="valueField">The value field.</param>
     public Aad(SegmentedAddress address, InstructionField<ushort> opcodeField, InstructionField<byte> valueField) :
         base(address, opcodeField, new List<InstructionPrefix>(), valueField, 1) {
     }
 
+    /// <summary>
+    /// Executes .
+    /// </summary>
+    /// <param name="helper">The helper.</param>
     public override void Execute(InstructionExecutionHelper helper) {
         byte v2 = helper.InstructionFieldValueRetriever.GetFieldValue(ValueField);
         helper.State.AL = (byte)(helper.State.AL + (helper.State.AH * v2));
@@ -23,7 +36,12 @@ public class Aad : InstructionWithValueField<byte> {
         helper.State.OverflowFlag = false;
         helper.MoveIpAndSetNextNode(this);
     }
-    
+
+    /// <summary>
+    /// Converts to instruction ast.
+    /// </summary>
+    /// <param name="builder">The builder.</param>
+    /// <returns>The result of the operation.</returns>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.AAD);
     }

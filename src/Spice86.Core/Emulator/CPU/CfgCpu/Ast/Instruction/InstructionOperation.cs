@@ -1,5 +1,8 @@
 namespace Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 
+/// <summary>
+/// Defines instruction operation values.
+/// </summary>
 public enum InstructionOperation {
     AAA,
     AAD,

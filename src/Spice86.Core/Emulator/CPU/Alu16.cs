@@ -5,7 +5,7 @@ using Spice86.Core.Emulator.CPU.Exceptions;
 /// <summary>
 /// Arithmetic Logic Unit code for 16bits operations.
 /// </summary>
-public class Alu16 : Alu<ushort, short, uint, int>  {
+public class Alu16 : Alu<ushort, short, uint, int> {
     private const ushort BeforeMsbMask = 0x4000;
 
     private const ushort MsbMask = 0x8000;
@@ -17,6 +17,13 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
     public Alu16(State state) : base(state) {
     }
 
+    /// <summary>
+    /// Adds .
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Add(ushort value1, ushort value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         ushort res = (ushort)(value1 + value2 + carry);
@@ -29,6 +36,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the and operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort And(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 & value2);
         UpdateFlags(res);
@@ -36,7 +49,7 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         _state.OverflowFlag = false;
         return res;
     }
-    
+
     /// <inheritdoc/>
     public override ushort Div(uint value1, ushort value2) {
         if (value2 == 0) {
@@ -51,6 +64,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return (ushort)res;
     }
 
+    /// <summary>
+    /// Performs the idiv operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override short Idiv(int value1, short value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -66,6 +85,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return (short)res;
     }
 
+    /// <summary>
+    /// Performs the imul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override int Imul(short value1, short value2) {
         int res = value1 * value2;
         bool doesNotFitInWord = res != (short)res;
@@ -74,8 +99,14 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the mul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Mul(ushort value1, ushort value2) {
-        uint res = (uint) (value1 * value2);
+        uint res = (uint)(value1 * value2);
         bool upperHalfNonZero = (res & 0xFFFF0000) != 0;
         _state.OverflowFlag = upperHalfNonZero;
         _state.CarryFlag = upperHalfNonZero;
@@ -83,6 +114,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the or operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Or(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 | value2);
         UpdateFlags(res);
@@ -93,8 +130,14 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Rcl(ushort value, byte count) {
-        count = (byte) ((count & ShiftCountMask) % 17);
+        count = (byte)((count & ShiftCountMask) % 17);
         if (count == 0) {
             return value;
         }
@@ -114,6 +157,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Rcr(ushort value, int count) {
         count = (count & ShiftCountMask) % 17;
         if (count == 0) {
@@ -134,8 +183,14 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rol operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Rol(ushort value, byte count) {
-        count = (byte) ((count & ShiftCountMask) % 16);
+        count = (byte)((count & ShiftCountMask) % 16);
         if (count == 0) {
             return value;
         }
@@ -149,6 +204,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         _state.OverflowFlag = msb ^ lsb;
         return res;
     }
+    /// <summary>
+    /// Performs the ror operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Ror(ushort value, int count) {
         count = (count & ShiftCountMask) % 16;
         if (count == 0) {
@@ -164,6 +225,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sar operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Sar(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -178,6 +245,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return (ushort)res;
     }
 
+    /// <summary>
+    /// Performs the shl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Shl(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -192,6 +265,13 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shld operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Shld(ushort destination, ushort source, byte count) {
         count &= ShiftCountMask;
         switch (count) {
@@ -211,6 +291,13 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shrd operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Shrd(ushort destination, ushort source, byte count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -239,6 +326,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Shr(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -253,6 +346,13 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Sub(ushort value1, ushort value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         ushort res = (ushort)(value1 - value2 - carry);
@@ -265,6 +365,12 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         return res;
     }
 
+    /// <summary>
+    /// Performs the xor operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override ushort Xor(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 ^ value2);
         UpdateFlags(res);
@@ -279,6 +385,10 @@ public class Alu16 : Alu<ushort, short, uint, int>  {
         _state.OverflowFlag = msb ^ beforeMsb;
     }
 
+    /// <summary>
+    /// Sets sign flag.
+    /// </summary>
+    /// <param name="value">The value.</param>
     protected override void SetSignFlag(ushort value) {
         _state.SignFlag = (value & MsbMask) != 0;
     }

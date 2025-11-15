@@ -4,6 +4,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using System.ComponentModel;
 
+/// <summary>
+/// Represents cpu flags info.
+/// </summary>
 public partial class CpuFlagsInfo : ObservableObject {
     [ObservableProperty, Category("Flags")] private bool _overflowFlag;
     [ObservableProperty, Category("Flags")] private bool _parityFlag;

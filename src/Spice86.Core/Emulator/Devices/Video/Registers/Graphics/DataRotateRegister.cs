@@ -24,6 +24,9 @@ public class DataRotateRegister : Register8 {
     }
 }
 
+/// <summary>
+/// Defines function select values.
+/// </summary>
 public enum FunctionSelect {
     None,
     And,

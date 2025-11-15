@@ -7,7 +7,13 @@ using AvaloniaHex;
 
 using Spice86.ViewModels;
 
+/// <summary>
+/// Represents memory view.
+/// </summary>
 public partial class MemoryView : UserControl {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public MemoryView() {
         InitializeComponent();
         // Subscribe to the DataContextChanged event to ensure that the ViewModel's event handler
@@ -18,7 +24,7 @@ public partial class MemoryView : UserControl {
     }
 
     private void OnHexViewerDoubleTapped(object? sender, TappedEventArgs e) {
-        if(DataContext is MemoryViewModel viewModel &&
+        if (DataContext is MemoryViewModel viewModel &&
             viewModel.EditMemoryCommand.CanExecute(null)) {
             viewModel.EditMemoryCommand.Execute(null);
         }

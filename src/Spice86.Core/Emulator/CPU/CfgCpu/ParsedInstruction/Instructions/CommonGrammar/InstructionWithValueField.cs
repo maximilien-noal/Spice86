@@ -6,7 +6,18 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Numerics;
 
+/// <summary>
+/// Represents instruction with value field.
+/// </summary>
 public abstract class InstructionWithValueField<T> : CfgInstruction, IInstructionWithValueField<T> where T : INumberBase<T> {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
+    /// <param name="prefixes">The prefixes.</param>
+    /// <param name="valueField">The value field.</param>
+    /// <param name="maxSuccessorsCount">The max successors count.</param>
     protected InstructionWithValueField(SegmentedAddress address,
         InstructionField<ushort> opcodeField,
         List<InstructionPrefix> prefixes,
@@ -16,7 +27,14 @@ public abstract class InstructionWithValueField<T> : CfgInstruction, IInstructio
         ValueField = valueField;
         AddField(ValueField);
     }
-    
+
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
+    /// <param name="valueField">The value field.</param>
+    /// <param name="maxSuccessorsCount">The max successors count.</param>
     protected InstructionWithValueField(
         SegmentedAddress address,
         InstructionField<ushort> opcodeField,
@@ -25,5 +43,8 @@ public abstract class InstructionWithValueField<T> : CfgInstruction, IInstructio
         opcodeField, new List<InstructionPrefix>(), valueField, maxSuccessorsCount) {
     }
 
+    /// <summary>
+    /// Gets value field.
+    /// </summary>
     public InstructionField<T> ValueField { get; }
 }

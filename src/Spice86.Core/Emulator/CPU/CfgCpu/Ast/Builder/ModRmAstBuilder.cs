@@ -7,9 +7,21 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents mod rm ast builder.
+/// </summary>
 public class ModRmAstBuilder(RegisterAstBuilder register, InstructionFieldAstBuilder instructionField, PointerAstBuilder pointer) {
+    /// <summary>
+    /// Gets register.
+    /// </summary>
     public RegisterAstBuilder Register { get; } = register;
+    /// <summary>
+    /// Gets instruction field.
+    /// </summary>
     public InstructionFieldAstBuilder InstructionField { get; } = instructionField;
+    /// <summary>
+    /// Gets pointer.
+    /// </summary>
     public PointerAstBuilder Pointer { get; } = pointer;
 
     public ValueNode RmToNode(DataType targetDataType, ModRmContext modRmContext) {
@@ -21,6 +33,12 @@ public class ModRmAstBuilder(RegisterAstBuilder register, InstructionFieldAstBui
         return ToMemoryAddressNode(targetDataType, modRmContext);
     }
 
+    /// <summary>
+    /// Performs the r to node operation.
+    /// </summary>
+    /// <param name="dataType">The data type.</param>
+    /// <param name="modRmContext">The mod rm context.</param>
+    /// <returns>The result of the operation.</returns>
     public ValueNode RToNode(DataType dataType, ModRmContext modRmContext) {
         return new RegisterNode(dataType, modRmContext.RegisterIndex);
     }

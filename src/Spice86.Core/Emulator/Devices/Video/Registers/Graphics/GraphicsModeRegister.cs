@@ -1,5 +1,8 @@
 namespace Spice86.Core.Emulator.Devices.Video.Registers.Graphics;
 
+/// <summary>
+/// Represents graphics mode register.
+/// </summary>
 public class GraphicsModeRegister : Register8 {
     /// <summary>
     ///     Write Mode 0:
@@ -70,11 +73,17 @@ public class GraphicsModeRegister : Register8 {
     }
 }
 
+/// <summary>
+/// Defines shift register mode values.
+/// </summary>
 public enum ShiftRegisterMode {
     Cga,
     Ega
 }
 
+/// <summary>
+/// Defines write mode values.
+/// </summary>
 public enum WriteMode {
     WriteMode0,
     WriteMode1,
@@ -82,6 +91,9 @@ public enum WriteMode {
     WriteMode3
 }
 
+/// <summary>
+/// Defines read mode values.
+/// </summary>
 public enum ReadMode {
     ReadMode0,
     ReadMode1

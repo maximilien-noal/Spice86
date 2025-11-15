@@ -46,6 +46,12 @@ public class DosProgramSegmentPrefixTracker {
     /// </summary>
     private readonly List<DosProgramSegmentPrefix> _loadedPsps;
 
+    /// <summary>
+    /// Performs the dos program segment prefix tracker operation.
+    /// </summary>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="loggerService">The logger service.</param>
     public DosProgramSegmentPrefixTracker(Configuration configuration, IMemory memory,
         ILoggerService loggerService) {
         _initialProgramEntryPointSegment = configuration.ProgramEntryPointSegment;
@@ -53,7 +59,7 @@ public class DosProgramSegmentPrefixTracker {
         _loggerService = loggerService;
         _loadedPsps = new();
 
-        if(_loggerService.IsEnabled(LogEventLevel.Information)) {
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("Initial program entry point at segment: {}",
                 ConvertUtils.ToHex16(_initialProgramEntryPointSegment));
         }

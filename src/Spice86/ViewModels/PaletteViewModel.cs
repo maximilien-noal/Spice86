@@ -11,18 +11,34 @@ using Spice86.Core.Emulator.Devices.Video;
 using Spice86.Shared.Emulator.Video;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// Represents palette view model.
+/// </summary>
 public partial class PaletteViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly ArgbPalette _argbPalette;
 
     private readonly Dictionary<uint, Color> ColorsCache = new();
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="argbPalette">The argb palette.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
     public PaletteViewModel(ArgbPalette argbPalette, IUIDispatcher uiDispatcher) {
         _argbPalette = argbPalette;
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromMilliseconds(1000), DispatcherPriority.Background, UpdateValues);
     }
 
+    /// <summary>
+    /// Gets or sets is visible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
 
+    /// <summary>
+    /// Updates values.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;
@@ -34,7 +50,7 @@ public partial class PaletteViewModel : ViewModelBase, IEmulatorObjectViewModel 
     private AvaloniaList<Rectangle> _palette = new();
 
     private void UpdateColors(ArgbPalette palette) {
-        if(Palette.Count == 0) {
+        if (Palette.Count == 0) {
             for (int i = 0; i < 256; i++) {
                 Palette.Add(new() { Fill = new SolidColorBrush() });
             }
@@ -53,7 +69,7 @@ public partial class PaletteViewModel : ViewModelBase, IEmulatorObjectViewModel 
                     Rgb rgb = Rgb.FromUint(source);
                     Color color = Color.FromRgb(rgb.R, rgb.G, rgb.B);
                     ColorsCache.Add(source, color);
-                    if(brush?.Color != color) {
+                    if (brush?.Color != color) {
                         brush!.Color = color;
                     }
                 }

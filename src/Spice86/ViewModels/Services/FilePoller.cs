@@ -6,6 +6,9 @@ using System;
 using System.IO;
 using System.Timers;
 
+/// <summary>
+/// Represents file poller.
+/// </summary>
 public class FilePoller {
     private readonly string _filePath;
     private ulong _lastHash;
@@ -13,6 +16,12 @@ public class FilePoller {
     private readonly Timer _timer;
     private readonly Action _actionToPerform;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="filePath">The file path.</param>
+    /// <param name="actionToPerformOnChange">The action to perform on change.</param>
+    /// <param name="interval">The interval.</param>
     public FilePoller(string filePath, Action actionToPerformOnChange, double interval = 1000) {
         _filePath = filePath;
         _actionToPerform = actionToPerformOnChange;
@@ -21,10 +30,16 @@ public class FilePoller {
         _timer.AutoReset = true;
     }
 
+    /// <summary>
+    /// Performs the start operation.
+    /// </summary>
     public void Start() {
         _timer.Start();
     }
 
+    /// <summary>
+    /// Performs the stop operation.
+    /// </summary>
     public void Stop() {
         _timer.Stop();
     }

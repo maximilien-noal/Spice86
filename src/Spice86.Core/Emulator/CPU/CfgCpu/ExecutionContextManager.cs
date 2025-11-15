@@ -10,6 +10,9 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
+/// <summary>
+/// Represents execution context manager.
+/// </summary>
 public class ExecutionContextManager : InstructionReplacer {
     private readonly ILoggerService _loggerService;
     private readonly CfgNodeFeeder _cfgNodeFeeder;
@@ -20,6 +23,16 @@ public class ExecutionContextManager : InstructionReplacer {
     private readonly bool _useCodeOverride;
     private readonly ExecutionContextReturns _executionContextReturns = new();
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="cfgNodeFeeder">The cfg node feeder.</param>
+    /// <param name="replacerRegistry">The replacer registry.</param>
+    /// <param name="functionCatalogue">The function catalogue.</param>
+    /// <param name="useCodeOverride">The use code override.</param>
+    /// <param name="loggerService">The logger service.</param>
     public ExecutionContextManager(IMemory memory,
         State state,
         CfgNodeFeeder cfgNodeFeeder,
@@ -52,6 +65,9 @@ public class ExecutionContextManager : InstructionReplacer {
 
     public ExecutionContext CurrentExecutionContext { get; private set; }
 
+    /// <summary>
+    /// Performs the signal entry operation.
+    /// </summary>
     public void SignalEntry() {
         CurrentExecutionContext = NewExecutionContext(_state.IpSegmentedAddress);
     }
@@ -60,6 +76,11 @@ public class ExecutionContextManager : InstructionReplacer {
         return new(entryPoint, CurrentDepth, new(_memory, _state, null, _functionCatalogue, _useCodeOverride, _loggerService));
     }
 
+    /// <summary>
+    /// Performs the signal new execution context operation.
+    /// </summary>
+    /// <param name="entryAddress">The entry address.</param>
+    /// <param name="expectedReturnAddress">The expected return address.</param>
     public void SignalNewExecutionContext(SegmentedAddress entryAddress, SegmentedAddress expectedReturnAddress) {
         // Save current execution context to be restored when expectedReturnAddress is reached
         _executionContextReturns.PushContextToRestore(expectedReturnAddress, CurrentExecutionContext);
@@ -75,6 +96,10 @@ public class ExecutionContextManager : InstructionReplacer {
         }
     }
 
+    /// <summary>
+    /// Performs the restore execution context if needed operation.
+    /// </summary>
+    /// <param name="returnAddress">The return address.</param>
     public void RestoreExecutionContextIfNeeded(SegmentedAddress returnAddress) {
         ExecutionContext? previousExecutionContext = _executionContextReturns.TryRestoreContext(returnAddress);
         if (previousExecutionContext != null) {
@@ -107,6 +132,11 @@ public class ExecutionContextManager : InstructionReplacer {
         nodes.Add(toExecute);
     }
 
+    /// <summary>
+    /// Performs the replace instruction operation.
+    /// </summary>
+    /// <param name="oldInstruction">The old instruction.</param>
+    /// <param name="newInstruction">The new instruction.</param>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         if (ExecutionContextEntryPoints.TryGetValue(newInstruction.Address, out ISet<CfgInstruction>? entriesAtAddress)
             && entriesAtAddress.Remove(oldInstruction)) {

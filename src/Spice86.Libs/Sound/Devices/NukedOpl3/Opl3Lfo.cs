@@ -19,6 +19,10 @@ internal static class Opl3Lfo {
     }
 
     /* Original C: tremolo/vibrato update inside OPL3_Generate */
+    /// <summary>
+    /// Performs the advance operation.
+    /// </summary>
+    /// <param name="chip">The chip.</param>
     internal static void Advance(Opl3Chip chip) {
         if ((chip.Timer & 0x3f) == 0x3f) {
             chip.TremoloPosition = (byte)((chip.TremoloPosition + 1) % 210);
@@ -38,6 +42,11 @@ internal static class Opl3Lfo {
     /* Original C: chip->tremoloshift = (((v >> 7) ^ 1) << 1) + 2;
      *             chip->vibshift = ((v >> 6) & 1) ^ 1;
      */
+    /// <summary>
+    /// Performs the configure depth operation.
+    /// </summary>
+    /// <param name="chip">The chip.</param>
+    /// <param name="value">The value.</param>
     internal static void ConfigureDepth(Opl3Chip chip, byte value) {
         chip.TremoloShift = (byte)((((value >> 7) ^ 1) << 1) + 2);
         chip.VibratoShift = (byte)(((value >> 6) & 0x01) ^ 1);

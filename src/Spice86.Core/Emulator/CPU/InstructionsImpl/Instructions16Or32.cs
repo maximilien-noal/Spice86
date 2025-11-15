@@ -3,7 +3,16 @@ using Spice86.Core.Emulator.VM;
 
 namespace Spice86.Core.Emulator.CPU.InstructionsImpl;
 
+/// <summary>
+/// Represents instructions 16 or 32.
+/// </summary>
 public abstract class Instructions16Or32 : Instructions {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="cpu">The cpu.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="modRm">The mod rm.</param>
     protected Instructions16Or32(Cpu cpu, Memory.IMemory memory, ModRM modRm)
         : base(cpu, memory, modRm) {
     }
@@ -67,6 +76,9 @@ public abstract class Instructions16Or32 : Instructions {
 
     public abstract void Grp1(bool signExtendOp2);
 
+    /// <summary>
+    /// Performs the grp 5 operation.
+    /// </summary>
     public void Grp5() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -132,6 +144,10 @@ public abstract class Instructions16Or32 : Instructions {
 
     protected abstract ushort DoLxsAndReturnSegmentValue();
 
+    /// <summary>
+    /// Reads lxs memory address.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     protected uint ReadLxsMemoryAddress() {
         // Copy segmented address that is in memory (32bits) into DS/ES and the
         // specified register
@@ -145,18 +161,30 @@ public abstract class Instructions16Or32 : Instructions {
         return (uint)memoryAddress;
     }
 
+    /// <summary>
+    /// Performs the lds operation.
+    /// </summary>
     public void Lds() {
         State.DS = DoLxsAndReturnSegmentValue();
     }
 
+    /// <summary>
+    /// Performs the les operation.
+    /// </summary>
     public void Les() {
         State.ES = DoLxsAndReturnSegmentValue();
     }
 
+    /// <summary>
+    /// Performs the lfs operation.
+    /// </summary>
     public void Lfs() {
         State.FS = DoLxsAndReturnSegmentValue();
     }
 
+    /// <summary>
+    /// Performs the lgs operation.
+    /// </summary>
     public void Lgs() {
         State.GS = DoLxsAndReturnSegmentValue();
     }

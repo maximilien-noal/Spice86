@@ -33,10 +33,19 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         _pauseHandler = pauseHandler;
     }
 
+    /// <summary>
+    /// Gets memory read write breakpoints.
+    /// </summary>
     public AddressReadWriteBreakpoints MemoryReadWriteBreakpoints { get; }
 
+    /// <summary>
+    /// Gets io read write breakpoints.
+    /// </summary>
     public AddressReadWriteBreakpoints IoReadWriteBreakpoints { get; }
 
+    /// <summary>
+    /// Gets interrupt break points.
+    /// </summary>
     public BreakPointHolder InterruptBreakPoints { get; }
 
     /// <summary>
@@ -104,6 +113,9 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         }
     }
 
+    /// <summary>
+    /// The has active breakpoints.
+    /// </summary>
     public bool HasActiveBreakpoints =>
         _executionBreakPoints.HasActiveBreakpoints || _cycleBreakPoints.HasActiveBreakpoints;
 
@@ -127,6 +139,10 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         }
     }
 
+    /// <summary>
+    /// Creates serializable breakpoints.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public SerializableUserBreakpointCollection CreateSerializableBreakpoints() {
         var serializableBreakpoints = new SerializableUserBreakpointCollection();
         AddBreakpointsToCollection(serializableBreakpoints, _executionBreakPoints.SerializableBreakpoints);
@@ -164,8 +180,8 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
             long end = start;
             BreakPointType type = sorted[i].BreakPointType;
 
-            while (i + 1 < sorted.Count && 
-                   sorted[i + 1].Address == end + 1 && 
+            while (i + 1 < sorted.Count &&
+                   sorted[i + 1].Address == end + 1 &&
                    sorted[i + 1].BreakPointType == type) {
                 end = sorted[++i].Address;
             }
@@ -199,6 +215,10 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
             IsEnabled = breakpoint.IsEnabled
         };
     }
+    /// <summary>
+    /// Performs the restore breakpoints operation.
+    /// </summary>
+    /// <param name="serializableUserBreakpointCollection">The serializable user breakpoint collection.</param>
     public void RestoreBreakpoints(SerializableUserBreakpointCollection serializableUserBreakpointCollection) {
         foreach (SerializableUserBreakpoint serializableBreakpoint in serializableUserBreakpointCollection.Breakpoints) {
             IEnumerable<AddressBreakPoint> breakpoints = FromSerializedBreakpoints(serializableBreakpoint);
@@ -240,6 +260,10 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         };
     }
 
+    /// <summary>
+    /// Removes user breakpoint.
+    /// </summary>
+    /// <param name="breakPoint">The break point.</param>
     public void RemoveUserBreakpoint(BreakPoint breakPoint) {
         ToggleBreakPoint(breakPoint, false);
     }

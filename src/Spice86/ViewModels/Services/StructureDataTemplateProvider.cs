@@ -12,22 +12,28 @@ using Structurizer.Types;
 
 using System.Text;
 
+/// <summary>
+/// Represents structure data template provider.
+/// </summary>
 public static class StructureDataTemplateProvider {
+    /// <summary>
+    /// Gets structure member value template.
+    /// </summary>
     public static FuncDataTemplate<StructureMember> StructureMemberValueTemplate { get; } = new(BuildStructureMemberValuePresenter);
 
     private static Control? BuildStructureMemberValuePresenter(StructureMember? structureMember, INameScope scope) {
         if (structureMember is null) {
             return null;
         }
-        if (structureMember.Type is {IsPointer: true, IsArray: false}) {
+        if (structureMember.Type is { IsPointer: true, IsArray: false }) {
             return new Button {
                 Content = FormatPointer(structureMember),
                 Command = new RelayCommand(() => throw new NotImplementedException("This should open a new memory view at the address the pointer points to")),
-                Classes = {"hyperlink"},
+                Classes = { "hyperlink" },
                 HorizontalAlignment = HorizontalAlignment.Right,
                 HorizontalContentAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0,0,5,0)
+                Margin = new Thickness(0, 0, 5, 0)
             };
         }
 
@@ -35,7 +41,7 @@ public static class StructureDataTemplateProvider {
             Text = FormatValue(structureMember),
             TextAlignment = TextAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0,0,5,0)
+            Margin = new Thickness(0, 0, 5, 0)
         };
     }
 
@@ -46,7 +52,7 @@ public static class StructureDataTemplateProvider {
         if (structureMember.Type.EnumType != null) {
             return FormatEnum(structureMember.Type.EnumType, structureMember.Data);
         }
-        if (structureMember.Type is {IsPointer: true, Count: 1}) {
+        if (structureMember.Type is { IsPointer: true, Count: 1 }) {
             return FormatPointer(structureMember);
         }
 

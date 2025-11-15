@@ -5,11 +5,23 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents aaa.
+/// </summary>
 public class Aaa : CfgInstruction {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
     public Aaa(SegmentedAddress address, InstructionField<ushort> opcodeField) :
         base(address, opcodeField, 1) {
     }
 
+    /// <summary>
+    /// Executes .
+    /// </summary>
+    /// <param name="helper">The helper.</param>
     public override void Execute(InstructionExecutionHelper helper) {
         bool finalAuxillaryFlag = false;
         bool finalCarryFlag = false;
@@ -26,7 +38,12 @@ public class Aaa : CfgInstruction {
         helper.State.CarryFlag = finalCarryFlag;
         helper.MoveIpAndSetNextNode(this);
     }
-    
+
+    /// <summary>
+    /// Converts to instruction ast.
+    /// </summary>
+    /// <param name="builder">The builder.</param>
+    /// <returns>The result of the operation.</returns>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.AAA);
     }

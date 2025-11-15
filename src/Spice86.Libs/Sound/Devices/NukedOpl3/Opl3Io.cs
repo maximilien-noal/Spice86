@@ -5,6 +5,9 @@ namespace Spice86.Libs.Sound.Devices.NukedOpl3;
 
 using Spice86.Libs.Sound.Devices.AdlibGold;
 
+/// <summary>
+/// Defines opl 3 write result values.
+/// </summary>
 [Flags]
 public enum Opl3WriteResult {
     None = 0,
@@ -29,6 +32,12 @@ public sealed class Opl3Io {
     private double _tickOrigin;
     private bool _timingInitialized;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="chip">The chip.</param>
+    /// <param name="null">The null.</param>
+    /// <param name="null">The null.</param>
     public Opl3Io(Opl3Chip chip, Func<double>? timeProvider = null, AdLibGoldIo? adLibGold = null) {
         _chip = chip ?? throw new ArgumentNullException(nameof(chip));
         _timeProvider = timeProvider ?? (() => 0.0);
@@ -36,8 +45,15 @@ public sealed class Opl3Io {
         _adLibGold = adLibGold;
     }
 
+    /// <summary>
+    /// Gets or sets on irq changed.
+    /// </summary>
     public Action<bool>? OnIrqChanged { get; set; }
 
+    /// <summary>
+    /// Performs the attach ad lib gold operation.
+    /// </summary>
+    /// <param name="adLibGold">The ad lib gold.</param>
     internal void AttachAdLibGold(AdLibGoldIo? adLibGold) {
         _adLibGold = adLibGold;
     }
@@ -55,6 +71,12 @@ public sealed class Opl3Io {
         UpdateIrqState(false);
     }
 
+    /// <summary>
+    /// Writes port.
+    /// </summary>
+    /// <param name="port">The port.</param>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public Opl3WriteResult WritePort(ushort port, byte value) {
         bool isDataPort = (port & 0x01) != 0;
 
@@ -94,6 +116,11 @@ public sealed class Opl3Io {
         return Opl3WriteResult.None;
     }
 
+    /// <summary>
+    /// Reads port.
+    /// </summary>
+    /// <param name="port">The port.</param>
+    /// <returns>The result of the operation.</returns>
     public byte ReadPort(ushort port) {
         switch (_adLibGold) {
             case { Active: true } when port == IOplPort.AdLibGoldAddressPortNumber:
@@ -109,10 +136,19 @@ public sealed class Opl3Io {
         return (port & 0x03) == 0x00 ? UpdateTimerStatus() : (byte)0xFF;
     }
 
+    /// <summary>
+    /// Performs the peek cached register operation.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte PeekCachedRegister(int index) {
         return _registerCache[index & 0x1FF];
     }
 
+    /// <summary>
+    /// Performs the flush due writes up to operation.
+    /// </summary>
+    /// <param name="currentTick">The current tick.</param>
     public void FlushDueWritesUpTo(double currentTick) {
         if (_timingInitialized) {
             ulong inclusiveSample = ConvertTicksToSample(currentTick);
@@ -122,10 +158,18 @@ public sealed class Opl3Io {
         UpdateTimerStatus(currentTick);
     }
 
+    /// <summary>
+    /// Performs the advance timers only operation.
+    /// </summary>
+    /// <param name="currentTick">The current tick.</param>
     public void AdvanceTimersOnly(double currentTick) {
         UpdateTimerStatus(currentTick);
     }
 
+    /// <summary>
+    /// Gets ticks until next write.
+    /// </summary>
+    /// <param name="currentTick">The current tick.</param>
     public double? GetTicksUntilNextWrite(double currentTick) {
         if (!_timingInitialized) {
             return null;
@@ -141,6 +185,10 @@ public sealed class Opl3Io {
         return delay < 0 ? 0.0 : delay;
     }
 
+    /// <summary>
+    /// Gets ticks until timer overflow.
+    /// </summary>
+    /// <param name="currentTick">The current tick.</param>
     public double? GetTicksUntilTimerOverflow(double currentTick) {
         return _timers.GetTicksUntilNextOverflow(currentTick);
     }
@@ -200,6 +248,10 @@ public sealed class Opl3Io {
         private readonly OplTimer _timer0 = new(80);
         private readonly OplTimer _timer1 = new(320);
 
+        /// <summary>
+        /// Initializes a new instance of the class.
+        /// </summary>
+        /// <param name="timeProvider">The time provider.</param>
         internal OplTimers(Func<double> timeProvider) {
             _timeProvider = timeProvider;
         }
@@ -209,6 +261,12 @@ public sealed class Opl3Io {
             _timer1.Reset();
         }
 
+        /// <summary>
+        /// Writes .
+        /// </summary>
+        /// <param name="register">The register.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>A boolean value indicating the result.</returns>
         internal bool Write(byte register, byte value) {
             switch (register) {
                 case 0x02:
@@ -227,6 +285,11 @@ public sealed class Opl3Io {
             }
         }
 
+        /// <summary>
+        /// Reads status.
+        /// </summary>
+        /// <param name="null">The null.</param>
+        /// <returns>The result of the operation.</returns>
         internal byte ReadStatus(double? absoluteTime = null) {
             double time = absoluteTime ?? _timeProvider();
             byte status = 0;
@@ -242,6 +305,10 @@ public sealed class Opl3Io {
             return status;
         }
 
+        /// <summary>
+        /// Gets ticks until next overflow.
+        /// </summary>
+        /// <param name="currentTime">The current time.</param>
         internal double? GetTicksUntilNextOverflow(double currentTime) {
             double? timer0 = _timer0.GetTicksUntilOverflow(currentTime);
             double? timer1 = _timer1.GetTicksUntilOverflow(currentTime);
@@ -289,11 +356,20 @@ public sealed class Opl3Io {
         private double _start;
         private double _trigger;
 
+        /// <summary>
+        /// Initializes a new instance of the class.
+        /// </summary>
+        /// <param name="micros">The micros.</param>
         internal OplTimer(int micros) {
             _clockInterval = micros * 0.001;
             SetCounter(0);
         }
 
+        /// <summary>
+        /// Updates .
+        /// </summary>
+        /// <param name="time">The time.</param>
+        /// <returns>A boolean value indicating the result.</returns>
         internal bool Update(double time) {
             if (_enabled && time >= _trigger) {
                 double deltaTime = time - _trigger;
@@ -312,6 +388,10 @@ public sealed class Opl3Io {
             _overflow = false;
         }
 
+        /// <summary>
+        /// Sets counter.
+        /// </summary>
+        /// <param name="value">The value.</param>
         internal void SetCounter(byte value) {
             _counter = value;
             _counterInterval = (256 - _counter) * _clockInterval;
@@ -324,6 +404,10 @@ public sealed class Opl3Io {
             }
         }
 
+        /// <summary>
+        /// Performs the start operation.
+        /// </summary>
+        /// <param name="time">The time.</param>
         internal void Start(double time) {
             if (_enabled) {
                 return;
@@ -337,10 +421,17 @@ public sealed class Opl3Io {
             _trigger = _start + _counterInterval;
         }
 
+        /// <summary>
+        /// Performs the stop operation.
+        /// </summary>
         internal void Stop() {
             _enabled = false;
         }
 
+        /// <summary>
+        /// Gets ticks until overflow.
+        /// </summary>
+        /// <param name="time">The time.</param>
         internal double? GetTicksUntilOverflow(double time) {
             if (_overflow || !_enabled || _masked) {
                 return null;

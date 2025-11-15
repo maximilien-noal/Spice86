@@ -6,6 +6,9 @@ using Spice86.Core.Emulator.Devices.Video.Registers.CrtController;
 using Spice86.Core.Emulator.Devices.Video.Registers.General;
 using Spice86.Core.Emulator.Devices.Video.Registers.Graphics;
 
+/// <summary>
+/// Represents video card info.
+/// </summary>
 public partial class VideoCardInfo : ObservableObject {
     [ObservableProperty]
     private byte _generalMiscellaneousOutputRegister;

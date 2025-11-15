@@ -8,9 +8,14 @@ using Spice86.Shared.Emulator.Memory;
 /// Truncated version of BiosParameterBlock returned as part of DosDeviceParameterBlock 
 /// </summary>
 public class TruncatedBiosParameterBlock : MemoryBasedDataStructure {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="byteReaderWriter">The byte reader writer.</param>
+    /// <param name="baseAddress">The base address.</param>
     public TruncatedBiosParameterBlock(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
     }
-    
+
     /// <summary>
     /// Gets or sets the number of bytes per sector.
     /// </summary>

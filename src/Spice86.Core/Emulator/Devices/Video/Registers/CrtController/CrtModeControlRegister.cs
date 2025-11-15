@@ -68,6 +68,9 @@ public class CrtModeControlRegister : Register8 {
     }
 }
 
+/// <summary>
+/// Defines byte word mode values.
+/// </summary>
 public enum ByteWordMode {
     Word,
     Byte

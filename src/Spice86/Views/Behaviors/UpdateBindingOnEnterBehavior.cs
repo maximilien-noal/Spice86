@@ -5,7 +5,13 @@ using Avalonia.Xaml.Interactivity;
 
 namespace Spice86.Views.Behaviors;
 
+/// <summary>
+/// Represents update binding on enter behavior.
+/// </summary>
 public class UpdateBindingOnEnterBehavior : Behavior<TextBox> {
+    /// <summary>
+    /// Called when attached.
+    /// </summary>
     protected override void OnAttached() {
         base.OnAttached();
         if (AssociatedObject != null) {
@@ -13,6 +19,9 @@ public class UpdateBindingOnEnterBehavior : Behavior<TextBox> {
         }
     }
 
+    /// <summary>
+    /// Called when detaching.
+    /// </summary>
     protected override void OnDetaching() {
         base.OnDetaching();
         if (AssociatedObject != null) {

@@ -3,15 +3,30 @@
 
 namespace Spice86.Libs.Sound.Devices.YM7128B;
 
+/// <summary>
+/// Represents ym 7128 b chip.
+/// </summary>
 internal sealed partial class Ym7128BChip {
+    /// <summary>
+    /// Gets fixed.
+    /// </summary>
     internal Ym7128BChipFixed Fixed { get; } = new();
 
+    /// <summary>
+    /// Gets fixed process data.
+    /// </summary>
     internal Ym7128BChipFixedProcessData FixedProcessData { get; } = new();
 
+    /// <summary>
+    /// Performs the fixed ctor operation.
+    /// </summary>
     internal void FixedCtor() {
         // No heap allocations in C ctor; managed struct already zeroed.
     }
 
+    /// <summary>
+    /// Performs the fixed dtor operation.
+    /// </summary>
     internal void FixedDtor() {
         // No heap allocations; nothing to release.
     }
@@ -22,6 +37,9 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the fixed start operation.
+    /// </summary>
     internal void FixedStart() {
         Fixed.T0D = 0;
         Fixed.Tail = 0;
@@ -31,10 +49,17 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the fixed stop operation.
+    /// </summary>
     internal void FixedStop() {
         // No-op (MAYBE_UNUSED in C)
     }
 
+    /// <summary>
+    /// Performs the fixed process operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void FixedProcess(Ym7128BChipFixedProcessData data) {
         ArgumentNullException.ThrowIfNull(data);
 
@@ -82,6 +107,11 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the fixed read operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte FixedRead(byte address) {
         return address switch {
             < (byte)Ym7128BRegister.C0 => (byte)(Fixed.Registers[address] & Ym7128BDatasheetSpecs.GainDataMask),
@@ -91,6 +121,11 @@ internal sealed partial class Ym7128BChip {
         };
     }
 
+    /// <summary>
+    /// Performs the fixed write operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void FixedWrite(byte address, byte value) {
         switch (address) {
             case < (byte)Ym7128BRegister.C0:

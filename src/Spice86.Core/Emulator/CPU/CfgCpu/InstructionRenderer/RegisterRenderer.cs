@@ -5,6 +5,9 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Collections.Frozen;
 
+/// <summary>
+/// Represents register renderer.
+/// </summary>
 public class RegisterRenderer {
     private static readonly FrozenDictionary<int, string> _registersNames = new Dictionary<int, string>() {
         { (int)RegisterIndex.AxIndex, "AX" },
@@ -17,7 +20,7 @@ public class RegisterRenderer {
         { (int)RegisterIndex.DiIndex, "DI" }
     }.ToFrozenDictionary();
 
-    
+
     private static readonly FrozenDictionary<int, string> _segmentRegistersNames = new Dictionary<int, string>() {
         { (int)SegmentRegisterIndex.EsIndex, "ES" },
         { (int)SegmentRegisterIndex.CsIndex, "CS" },
@@ -36,13 +39,19 @@ public class RegisterRenderer {
     private string Reg16Name(int regIndex) {
         return _registersNames[regIndex];
     }
-    
+
     private string Reg32Name(int regIndex) {
         return "E" + Reg16Name(regIndex);
     }
+    /// <summary>
+    /// Converts to string register.
+    /// </summary>
+    /// <param name="bitWidth">The bit width.</param>
+    /// <param name="registerIndex">The register index.</param>
+    /// <returns>The result of the operation.</returns>
     public string ToStringRegister(BitWidth bitWidth, int registerIndex) {
         return bitWidth switch {
-            BitWidth.BYTE_8=> Reg8Name(registerIndex),
+            BitWidth.BYTE_8 => Reg8Name(registerIndex),
             BitWidth.WORD_16 => Reg16Name(registerIndex),
             BitWidth.DWORD_32 => Reg32Name(registerIndex),
             _ => throw new ArgumentOutOfRangeException(nameof(bitWidth), bitWidth, null)
@@ -50,6 +59,11 @@ public class RegisterRenderer {
     }
 
 
+    /// <summary>
+    /// Converts to string segment register.
+    /// </summary>
+    /// <param name="registerIndex">The register index.</param>
+    /// <returns>The result of the operation.</returns>
     public string ToStringSegmentRegister(int registerIndex) {
         return _segmentRegistersNames[registerIndex];
     }

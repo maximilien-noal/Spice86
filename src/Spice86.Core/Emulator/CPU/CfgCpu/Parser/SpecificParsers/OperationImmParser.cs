@@ -3,9 +3,21 @@ namespace Spice86.Core.Emulator.CPU.CfgCpu.Parser.SpecificParsers;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents operation imm parser.
+/// </summary>
 public abstract class OperationImmParser : BaseInstructionParser {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public OperationImmParser(BaseInstructionParser other) : base(other) {
     }
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context) {
         BitWidth bitWidth = GetBitWidth(context.OpcodeField, context.HasOperandSize32);
         return Parse(context, bitWidth);

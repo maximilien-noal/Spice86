@@ -34,6 +34,9 @@ namespace Spice86.Libs.Sound.Devices.NukedOpl3;
 
 using System.Runtime.CompilerServices;
 
+/// <summary>
+/// Represents opl 3 tables.
+/// </summary>
 internal static class Opl3Tables {
     private static readonly ushort[] LogSinRomData = [
         0x859, 0x6c3, 0x607, 0x58b, 0x52e, 0x4e4, 0x4a6, 0x471,
@@ -130,6 +133,9 @@ internal static class Opl3Tables {
     /*
         stereo extension panpot lookup table
     */
+    /// <summary>
+    /// The stereo pan pot lut.
+    /// </summary>
     internal static ReadOnlySpan<int> StereoPanPotLut => StereoPanPotLutData;
 
     private static readonly int[] StereoPanPotLutData = BuildStereoPanPotLut();
@@ -148,6 +154,9 @@ internal static class Opl3Tables {
     /*
         envelope generator constants
     */
+    /// <summary>
+    /// Gets eg increment steps.
+    /// </summary>
     internal static byte[,] EgIncrementSteps { get; } = new byte[,] {
         { 0, 0, 0, 0 },
         { 1, 0, 0, 0 },
@@ -155,36 +164,71 @@ internal static class Opl3Tables {
         { 1, 1, 1, 0 }
     };
 
+    /// <summary>
+    /// Reads log sin.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ushort ReadLogSin(int index) {
         return LogSinRomData[index];
     }
 
+    /// <summary>
+    /// Reads exp.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ushort ReadExp(int index) {
         return ExpRomData[index];
     }
 
+    /// <summary>
+    /// Reads key scale level.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static byte ReadKeyScaleLevel(int index) {
         return KeyScaleLevelData[index];
     }
 
+    /// <summary>
+    /// Reads key scale shift.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static byte ReadKeyScaleShift(int index) {
         return KeyScaleShiftData[index];
     }
 
+    /// <summary>
+    /// Reads frequency multiplier.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static byte ReadFrequencyMultiplier(int index) {
         return FrequencyMultiplierData[index];
     }
 
+    /// <summary>
+    /// Reads channel slot.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static byte ReadChannelSlot(int index) {
         return ChannelSlotData[index];
     }
 
+    /// <summary>
+    /// Reads address decode slot.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sbyte ReadAddressDecodeSlot(int index) {
         return AddressDecodeSlotData[index];

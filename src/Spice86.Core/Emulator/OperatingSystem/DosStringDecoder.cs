@@ -12,11 +12,19 @@ using System.Text;
 /// The class is responsible for decoding DOS strings with the currently set DOS Encoding.
 /// </summary>
 public class DosStringDecoder {
+    /// <summary>
+    /// The max dos string length.
+    /// </summary>
     public const ushort MaxDosStringLength = 256;
 
     private readonly IMemory _memory;
     private readonly State _state;
 
+    /// <summary>
+    /// Performs the dos string decoder operation.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
     public DosStringDecoder(IMemory memory, State state) {
         _memory = memory;
         Encoding = Encoding.GetEncoding("ibm850");
@@ -46,7 +54,7 @@ public class DosStringDecoder {
     public string ConvertDosChars(byte[] characterBytes) {
         return ConvertDosChars(characterBytes.AsSpan());
     }
-    
+
     /// <summary>
     /// Converts a span of DOS character bytes to a string using the current encoding.
     /// </summary>

@@ -6,16 +6,29 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Parser.FieldReader;
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents mod rm parser.
+/// </summary>
 public class ModRmParser {
     private readonly InstructionReader _instructionReader;
     private readonly State _state;
 
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="instructionReader">The instruction reader.</param>
+    /// <param name="state">The state.</param>
     public ModRmParser(InstructionReader instructionReader, State state) {
         _instructionReader = instructionReader;
         _state = state;
     }
 
+    /// <summary>
+    /// Parses next.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public ModRmContext ParseNext(ModRmParsingContext context) {
         InstructionField<byte> modRmByteField = _instructionReader.UInt8.NextField(true);
         byte modRmByte = modRmByteField.Value;
@@ -173,7 +186,12 @@ public class ModRmParser {
             _ => throw new ArgumentOutOfRangeException(nameof(baseRegister), baseRegister, "Base register must be between 0 and 7 inclusive")
         };
     }
-    
+
+    /// <summary>
+    /// Performs the ensure not mode 3 operation.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public ModRmContext EnsureNotMode3(ModRmContext context) {
         if (context.MemoryAddressType == MemoryAddressType.NONE) {
             throw new MemoryAddressMandatoryException(_state);

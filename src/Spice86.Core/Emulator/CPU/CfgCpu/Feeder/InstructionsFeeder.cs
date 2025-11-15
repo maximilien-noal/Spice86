@@ -19,6 +19,13 @@ public class InstructionsFeeder {
     private readonly InstructionParser _instructionParser;
     private readonly SignatureReducer _signatureReducer;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="cpuState">The cpu state.</param>
+    /// <param name="replacerRegistry">The replacer registry.</param>
     public InstructionsFeeder(EmulatorBreakpointsManager emulatorBreakpointsManager, IMemory memory, State cpuState,
         InstructionReplacerRegistry replacerRegistry) {
         _instructionParser = new(memory, cpuState);
@@ -26,10 +33,21 @@ public class InstructionsFeeder {
         PreviousInstructions = new(memory, replacerRegistry);
         _signatureReducer = new(replacerRegistry);
     }
-    
+
+    /// <summary>
+    /// Gets current instructions.
+    /// </summary>
     public CurrentInstructions CurrentInstructions { get; }
+    /// <summary>
+    /// Gets previous instructions.
+    /// </summary>
     public PreviousInstructions PreviousInstructions { get; }
 
+    /// <summary>
+    /// Gets instruction from memory.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CfgInstruction GetInstructionFromMemory(SegmentedAddress address) {
         // Try to get instruction from cache that represents current memory state.

@@ -17,10 +17,23 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
     /// </summary>
     private bool _isLive = true;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
+    /// <param name="maxSuccessorsCount">The max successors count.</param>
     protected CfgInstruction(SegmentedAddress address, InstructionField<ushort> opcodeField, int? maxSuccessorsCount) : this(address,
         opcodeField, new List<InstructionPrefix>(), maxSuccessorsCount) {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="opcodeField">The opcode field.</param>
+    /// <param name="prefixes">The prefixes.</param>
+    /// <param name="maxSuccessorsCount">The max successors count.</param>
     protected CfgInstruction(SegmentedAddress address, InstructionField<ushort> opcodeField,
         List<InstructionPrefix> prefixes, int? maxSuccessorsCount)
         : base(address, maxSuccessorsCount) {
@@ -60,32 +73,67 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
     /// </summary>
     public Dictionary<InstructionSuccessorType, ISet<ICfgNode>> SuccessorsPerType { get; } = new();
 
+    /// <summary>
+    /// Updates successor cache.
+    /// </summary>
     public override void UpdateSuccessorCache() {
         SuccessorsPerAddress = Successors.ToDictionary(node => node.Address);
     }
 
+    /// <summary>
+    /// The is live.
+    /// </summary>
     public override bool IsLive => _isLive;
 
+    /// <summary>
+    /// Gets fields in order.
+    /// </summary>
     public List<FieldWithValue> FieldsInOrder { get; } = new();
 
+    /// <summary>
+    /// Adds field.
+    /// </summary>
+    /// <param name="fieldWithValue">The field with value.</param>
     protected void AddField(FieldWithValue fieldWithValue) {
         FieldsInOrder.Add(fieldWithValue);
         UpdateLength();
     }
-    
+
+    /// <summary>
+    /// Adds fields.
+    /// </summary>
+    /// <param name="fieldWithValues">The field with values.</param>
     protected void AddFields(IEnumerable<FieldWithValue> fieldWithValues) {
         fieldWithValues.ToList().ForEach(AddField);
     }
 
+    /// <summary>
+    /// Gets segment override instruction prefix.
+    /// </summary>
     public SegmentOverrideInstructionPrefix? SegmentOverrideInstructionPrefix { get; }
+    /// <summary>
+    /// Gets operand size 32 prefix.
+    /// </summary>
     public OperandSize32Prefix? OperandSize32Prefix { get; }
+    /// <summary>
+    /// Gets address size 32 prefix.
+    /// </summary>
     public AddressSize32Prefix? AddressSize32Prefix { get; }
+    /// <summary>
+    /// Gets rep prefix.
+    /// </summary>
     public RepPrefix? RepPrefix { get; }
 
     public byte Length { get; private set; }
 
+    /// <summary>
+    /// The next in memory address.
+    /// </summary>
     public SegmentedAddress NextInMemoryAddress => new(Address.Segment, (ushort)(Address.Offset + Length));
 
+    /// <summary>
+    /// Gets instruction prefixes.
+    /// </summary>
     public List<InstructionPrefix> InstructionPrefixes { get; }
 
     /// <summary>
@@ -126,7 +174,11 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
             .SelectMany(i => i)
             .ToImmutableList();
     }
-    
+
+    /// <summary>
+    /// Sets live.
+    /// </summary>
+    /// <param name="isLive">The is live.</param>
     public void SetLive(bool isLive) {
         _isLive = isLive;
     }

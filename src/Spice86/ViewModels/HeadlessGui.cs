@@ -20,19 +20,31 @@ public sealed class HeadlessGui : IGui, IDisposable {
     private byte[]? _pixelBuffer;
     private bool _renderingTimerInitialized;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public HeadlessGui() {
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         Console.CancelKeyPress += OnProcessExit;
     }
 
+    /// <summary>
+    /// Performs the dispose operation.
+    /// </summary>
     public void Dispose() {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// Performs the show mouse cursor operation.
+    /// </summary>
     public void ShowMouseCursor() {
     }
 
+    /// <summary>
+    /// Performs the hide mouse cursor operation.
+    /// </summary>
     public void HideMouseCursor() {
     }
 
@@ -50,10 +62,21 @@ public sealed class HeadlessGui : IGui, IDisposable {
 
     public int Height { get; private set; }
 
+    /// <summary>
+    /// Gets or sets mousex.
+    /// </summary>
     public double MouseX { get; set; }
 
+    /// <summary>
+    /// Gets or sets mousey.
+    /// </summary>
     public double MouseY { get; set; }
 
+    /// <summary>
+    /// Sets resolution.
+    /// </summary>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
     public void SetResolution(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new ArgumentOutOfRangeException($"Invalid resolution: {width}x{height}");

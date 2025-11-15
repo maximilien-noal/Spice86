@@ -6,7 +6,13 @@ using Avalonia.Controls.Templates;
 using System;
 using System.ComponentModel;
 
+/// <summary>
+/// Represents view locator.
+/// </summary>
 internal sealed class ViewLocator : IDataTemplate {
+    /// <summary>
+    /// The supports recycling.
+    /// </summary>
     public bool SupportsRecycling => false;
 
     /// <summary>
@@ -17,10 +23,10 @@ internal sealed class ViewLocator : IDataTemplate {
     /// <returns>The corresponding View, or a TextBlock with the "Not Found" message if a match wasn't found.</returns>
     public Control Build(object? data) {
         string? name = data?.GetType().FullName?.Replace("ViewModel", "View");
-        if(name == "Spice86.Views.StackMemoryView") {
+        if (name == "Spice86.Views.StackMemoryView") {
             name = "Spice86.Views.MemoryView";
         }
-        if(name == "Spice86.Views.DataSegmentMemoryView") {
+        if (name == "Spice86.Views.DataSegmentMemoryView") {
             name = "Spice86.Views.MemoryView";
         }
         if (string.IsNullOrWhiteSpace(name)) {
@@ -36,6 +42,11 @@ internal sealed class ViewLocator : IDataTemplate {
         }
     }
 
+    /// <summary>
+    /// Performs the match operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public bool Match(object? data) {
         return data is INotifyPropertyChanged;
     }

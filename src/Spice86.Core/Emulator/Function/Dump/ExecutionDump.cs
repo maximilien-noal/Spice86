@@ -2,6 +2,9 @@ namespace Spice86.Core.Emulator.Function.Dump;
 
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents execution dump.
+/// </summary>
 public class ExecutionDump {
     /// <summary>
     /// Gets a dictionary of calls from one address to another.
@@ -12,17 +15,17 @@ public class ExecutionDump {
     /// Gets a dictionary of jumps from one address to another.
     /// </summary>
     public IDictionary<uint, HashSet<SegmentedAddress>> JumpsFromTo { get; set; } = new Dictionary<uint, HashSet<SegmentedAddress>>();
-    
+
     /// <summary>
     /// Gets a dictionary of returns from one address to another.
     /// </summary>
     public IDictionary<uint, HashSet<SegmentedAddress>> RetsFromTo { get; set; } = new Dictionary<uint, HashSet<SegmentedAddress>>();
-    
+
     /// <summary>
     /// Gets a dictionary of unaligned returns from one address to another.
     /// </summary>
     public IDictionary<uint, HashSet<SegmentedAddress>> UnalignedRetsFromTo { get; set; } = new Dictionary<uint, HashSet<SegmentedAddress>>();
-    
+
     /// <summary>
     /// Gets the set of executed instructions.
     /// </summary>

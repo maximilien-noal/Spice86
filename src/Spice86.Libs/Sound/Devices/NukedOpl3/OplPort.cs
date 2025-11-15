@@ -3,6 +3,9 @@
 
 namespace Spice86.Libs.Sound.Devices.NukedOpl3;
 
+/// <summary>
+/// Defines the contract for i opl port.
+/// </summary>
 public interface IOplPort {
     const ushort PrimaryAddressPortNumber = 0x388;
     const ushort PrimaryDataPortNumber = 0x389;

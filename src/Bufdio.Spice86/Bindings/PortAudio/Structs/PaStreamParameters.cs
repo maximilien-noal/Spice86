@@ -9,8 +9,7 @@ using System.Runtime.InteropServices;
 /// Represents pa stream parameters.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-internal readonly record struct PaStreamParameters
-{
+internal readonly record struct PaStreamParameters {
     /// <summary>
     /// Gets device.
     /// </summary>

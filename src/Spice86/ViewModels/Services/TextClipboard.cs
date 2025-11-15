@@ -6,6 +6,9 @@ using Avalonia.Input.Platform;
 public class TextClipboard : ITextClipboard {
     private readonly IClipboard? _clipboard;
 
+    /// <summary>
+    /// The _clipboard.
+    /// </summary>
     public TextClipboard(IClipboard? clipboard) => _clipboard = clipboard;
 
     /// <inheritdoc />

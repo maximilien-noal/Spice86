@@ -18,6 +18,11 @@ public class UInt8HighLowRegistersIndexer : RegistersIndexer<byte> {
     private readonly UInt8LowRegistersIndexer _uInt8LowRegistersIndexer;
 
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="uInt8HighRegistersIndexer">The u int 8 high registers indexer.</param>
+    /// <param name="uInt8LowRegistersIndexer">The u int 8 low registers indexer.</param>
     public UInt8HighLowRegistersIndexer(UInt8HighRegistersIndexer uInt8HighRegistersIndexer,
         UInt8LowRegistersIndexer uInt8LowRegistersIndexer) {
         _uInt8HighRegistersIndexer = uInt8HighRegistersIndexer;
@@ -43,10 +48,20 @@ public class UInt8HighLowRegistersIndexer : RegistersIndexer<byte> {
         }
     }
 
+    /// <summary>
+    /// Determines whether high.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns><c>true</c> if the condition is met; otherwise, <c>false</c>.</returns>
     public static bool IsHigh(uint index) {
         return (index & Register8IndexHighBitMask) != 0;
     }
 
+    /// <summary>
+    /// Calculates compute register index in array.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns>The result of the operation.</returns>
     public static uint ComputeRegisterIndexInArray(uint index) {
         return index & Register8IndexHighLowMask;
     }

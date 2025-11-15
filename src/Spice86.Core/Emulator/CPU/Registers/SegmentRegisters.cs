@@ -5,6 +5,9 @@
 /// The segment registers are registers that store segment selectors, which are used to access different parts of memory.
 /// </summary>
 public class SegmentRegisters : RegistersHolder {
+    /// <summary>
+    /// Performs the segment registers operation.
+    /// </summary>
     public SegmentRegisters() : base(6) {
     }
 

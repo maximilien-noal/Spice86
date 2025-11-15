@@ -1,5 +1,8 @@
 namespace Spice86.Libs.Sound.Filters.IirFilters.Common.State;
 
+/// <summary>
+/// Represents direct formi state.
+/// </summary>
 public struct DirectFormIState : ISectionState {
     private double _x1;
     private double _x2;
@@ -13,6 +16,12 @@ public struct DirectFormIState : ISectionState {
         _y2 = 0.0;
     }
 
+    /// <summary>
+    /// Processes .
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <param name="section">The section.</param>
+    /// <returns>The result of the operation.</returns>
     public double Process(double input, Biquad section) {
         double output = (section.B0 * input) +
                         (section.B1 * _x1) +
@@ -29,6 +38,9 @@ public struct DirectFormIState : ISectionState {
     }
 }
 
+/// <summary>
+/// Represents direct form ii state.
+/// </summary>
 public struct DirectFormIiState : ISectionState {
     private double _v1;
     private double _v2;
@@ -38,6 +50,12 @@ public struct DirectFormIiState : ISectionState {
         _v2 = 0.0;
     }
 
+    /// <summary>
+    /// Processes .
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <param name="section">The section.</param>
+    /// <returns>The result of the operation.</returns>
     public double Process(double input, Biquad section) {
         double w = input - (section.A1 * _v1) - (section.A2 * _v2);
         double output = (section.B0 * w) + (section.B1 * _v1) + (section.B2 * _v2);
@@ -49,6 +67,9 @@ public struct DirectFormIiState : ISectionState {
     }
 }
 
+/// <summary>
+/// Represents transposed direct form ii state.
+/// </summary>
 public struct TransposedDirectFormIiState : ISectionState {
     private double _s1;
     private double _s1Prev;
@@ -62,6 +83,12 @@ public struct TransposedDirectFormIiState : ISectionState {
         _s2Prev = 0.0;
     }
 
+    /// <summary>
+    /// Processes .
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <param name="section">The section.</param>
+    /// <returns>The result of the operation.</returns>
     public double Process(double input, Biquad section) {
         double output = _s1Prev + (section.B0 * input);
         _s1 = _s2Prev + (section.B1 * input) - (section.A1 * output);

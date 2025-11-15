@@ -29,7 +29,7 @@ public class MemoryAsmWriter : MemoryWriter {
     public void RegisterAndWriteCallback(byte callbackNumber, Action runnable) {
         RegisterAndWriteCallback((ushort)callbackNumber, runnable);
     }
-    
+
     /// <summary>
     /// Registers a new callback that will call the given runnable.<br/>
     /// Callback number is automatically allocated.
@@ -39,7 +39,7 @@ public class MemoryAsmWriter : MemoryWriter {
         ushort callbackNumber = _callbackHandler.AllocateNextCallback();
         RegisterAndWriteCallback(callbackNumber, runnable);
     }
-    
+
     private void RegisterAndWriteCallback(ushort callbackNumber, Action runnable) {
         Callback callback = new Callback(callbackNumber, runnable, CurrentAddress);
         _callbackHandler.AddCallback(callback);
@@ -94,11 +94,19 @@ public class MemoryAsmWriter : MemoryWriter {
         WriteInt8(offset);
     }
 
+    /// <summary>
+    /// Writes jz.
+    /// </summary>
+    /// <param name="delta">The delta.</param>
     public void WriteJz(sbyte delta) {
         WriteUInt8(0x74);
         WriteInt8(delta);
     }
 
+    /// <summary>
+    /// Writes jnz.
+    /// </summary>
+    /// <param name="delta">The delta.</param>
     public void WriteJnz(sbyte delta) {
         WriteUInt8(0x75);
         WriteInt8(delta);

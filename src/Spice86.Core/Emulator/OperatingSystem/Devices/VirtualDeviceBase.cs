@@ -1,4 +1,5 @@
 namespace Spice86.Core.Emulator.OperatingSystem.Devices;
+
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 
 using System.ComponentModel.DataAnnotations;
@@ -21,13 +22,26 @@ public abstract class VirtualDeviceBase : VirtualFileBase, IVirtualDevice {
     /// <inheritdoc />
     public uint DeviceNumber { get; set; }
 
+    /// <summary>
+    /// The 0.
+    /// </summary>
     public virtual byte GetStatus(bool inputFlag) => 0;
+    /// <summary>
+    /// Performs the try read from control channel operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public virtual bool TryReadFromControlChannel(uint address, ushort size,
         [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
     }
 
+    /// <summary>
+    /// Performs the try write to control channel operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public virtual bool TryWriteToControlChannel(uint address, ushort size,
         [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
@@ -47,5 +61,8 @@ public abstract class VirtualDeviceBase : VirtualFileBase, IVirtualDevice {
     [Range(0, 8)]
     public override string Name => Header.Name;
 
+    /// <summary>
+    /// Gets alias.
+    /// </summary>
     public virtual string? Alias { get; init; }
 }

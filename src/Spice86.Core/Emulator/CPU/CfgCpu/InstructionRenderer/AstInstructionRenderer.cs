@@ -10,13 +10,26 @@ using Spice86.Shared.Emulator.Memory;
 using System.Globalization;
 using System.Linq;
 
+/// <summary>
+/// Represents ast instruction renderer.
+/// </summary>
 public class AstInstructionRenderer : IAstVisitor<string> {
     private readonly RegisterRenderer _registerRenderer = new();
 
+    /// <summary>
+    /// Performs the visit segment register node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitSegmentRegisterNode(SegmentRegisterNode node) {
         return _registerRenderer.ToStringSegmentRegister(node.RegisterIndex);
     }
 
+    /// <summary>
+    /// Performs the visit segmented pointer operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitSegmentedPointer(SegmentedPointerNode node) {
         string offset = node.Offset.Accept(this);
         string segment = node.Segment.Accept(this);
@@ -24,15 +37,30 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         return PointerDataTypeToString(node.DataType) + " " + segment + ":[" + offset + "]";
     }
 
+    /// <summary>
+    /// Performs the visit register node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitRegisterNode(RegisterNode node) {
         return _registerRenderer.ToStringRegister(node.DataType.BitWidth, node.RegisterIndex);
     }
 
+    /// <summary>
+    /// Performs the visit absolute pointer node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitAbsolutePointerNode(AbsolutePointerNode node) {
         string absoluteAddress = node.AbsoluteAddress.Accept(this);
         return PointerDataTypeToString(node.DataType) + " [" + absoluteAddress + "]";
     }
 
+    /// <summary>
+    /// Performs the visit constant node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitConstantNode(ConstantNode node) {
         if (IsNegative(node)) {
             int valueSigned = SignExtend(node.Value, node.DataType.BitWidth);
@@ -71,10 +99,20 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         };
     }
 
+    /// <summary>
+    /// Performs the visit segmented address constant node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitSegmentedAddressConstantNode(SegmentedAddressConstantNode node) {
         return node.Value.ToString();
     }
 
+    /// <summary>
+    /// Performs the visit binary operation node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitBinaryOperationNode(BinaryOperationNode node) {
         string left = node.Left.Accept(this);
         if (IsZero(node.Right) && node.BinaryOperation == BinaryOperation.PLUS) {
@@ -86,7 +124,12 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         }
         return left + OperationToString(node.BinaryOperation) + right;
     }
-    
+
+    /// <summary>
+    /// Performs the visit unary operation node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitUnaryOperationNode(UnaryOperationNode node) {
         string value = node.Value.Accept(this);
         return OperationToString(node.UnaryOperation) + value;
@@ -100,6 +143,11 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         return valueNode is ConstantNode constantNode && IsNegative(constantNode);
     }
 
+    /// <summary>
+    /// Performs the visit instruction node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public string VisitInstructionNode(InstructionNode node) {
         RepPrefix? repPrefix = node.RepPrefix;
         string prefix = "";
@@ -124,7 +172,7 @@ public class AstInstructionRenderer : IAstVisitor<string> {
             _ => throw new InvalidOperationException($"Unsupported AST operation {binaryOperation}")
         };
     }
-    
+
     private string OperationToString(UnaryOperation unaryOperation) {
         return unaryOperation switch {
             UnaryOperation.NOT => "!",

@@ -13,6 +13,9 @@ using Spice86.Shared.Utils;
 /// Implements DOS memory operations, such as allocating and releasing MCBs.
 /// </summary>
 public class DosMemoryManager {
+    /// <summary>
+    /// The last free segment.
+    /// </summary>
     internal const ushort LastFreeSegment = MemoryMap.GraphicVideoMemorySegment - 1;
     private readonly ILoggerService _loggerService;
     private readonly IMemory _memory;
@@ -288,6 +291,11 @@ public class DosMemoryManager {
     /// easier to identify where min/max allocation is requested inernally in the code.
     /// </remarks>
     private struct AllocRange {
+        /// <summary>
+        /// Performs the alloc range operation.
+        /// </summary>
+        /// <param name="minSize">The min size.</param>
+        /// <param name="maxSize">The max size.</param>
         public AllocRange(ushort minSize, ushort maxSize) {
             MinSizeInParagraphs = minSize;
             MaxSizeInParagraphs = minSize > maxSize ? minSize : maxSize;

@@ -4,7 +4,17 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
+/// <summary>
+/// Represents bit test immediate parser.
+/// </summary>
 public class BitTestImmediateParser(BaseInstructionParser other) : BaseGrpOperationParser(other) {
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="modRmContext">The mod rm context.</param>
+    /// <param name="groupIndex">The group index.</param>
+    /// <returns>The result of the operation.</returns>
     protected override CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, int groupIndex) {
         InstructionField<byte> immediate = _instructionReader.UInt8.NextField(false);
         return groupIndex switch {

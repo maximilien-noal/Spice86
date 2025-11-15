@@ -4,9 +4,16 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 
 using System.Linq;
 
+/// <summary>
+/// Represents signature reducer.
+/// </summary>
 public class SignatureReducer {
     private readonly InstructionReplacerRegistry _replacerRegistry;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="replacerRegistry">The replacer registry.</param>
     public SignatureReducer(InstructionReplacerRegistry replacerRegistry) {
         _replacerRegistry = replacerRegistry;
     }
@@ -20,6 +27,11 @@ public class SignatureReducer {
         );
     }
 
+    /// <summary>
+    /// Performs the reduce to one operation.
+    /// </summary>
+    /// <param name="instruction1">The instruction 1.</param>
+    /// <param name="instruction2">The instruction 2.</param>
     public CfgInstruction? ReduceToOne(CfgInstruction instruction1, CfgInstruction instruction2) {
         IList<CfgInstruction> reducedInstructions = ReduceAll([instruction1, instruction2]);
         if (reducedInstructions.Count == 1) {
@@ -28,6 +40,11 @@ public class SignatureReducer {
         return null;
     }
 
+    /// <summary>
+    /// Performs the reduce all operation.
+    /// </summary>
+    /// <param name="instructions">The instructions.</param>
+    /// <returns>The result of the operation.</returns>
     public IList<CfgInstruction> ReduceAll(List<CfgInstruction> instructions) {
         IDictionary<Type, List<CfgInstruction>> groupByType =
             GroupByType(instructions);
@@ -50,14 +67,14 @@ public class SignatureReducer {
         }
         return res;
     }
-    
-    
+
+
     private static Dictionary<Signature, List<CfgInstruction>> GroupBySignatureWithOnlyFinal(
         IList<CfgInstruction> instructions) {
         IEnumerable<IGrouping<Signature, CfgInstruction>> grouped =
             instructions.GroupBy(i => i.SignatureFinal);
         return grouped.ToDictionary(
-            g => g.Key, 
+            g => g.Key,
             g => g.ToList()
         );
     }
@@ -87,8 +104,8 @@ public class SignatureReducer {
             }
         }
     }
-    
-    
+
+
     private bool IsFieldValueSame(FieldWithValue reference, IList<CfgInstruction> instructions, int fieldIndex) {
         foreach (CfgInstruction instruction in instructions) {
             FieldWithValue instructionField = instruction.FieldsInOrder[fieldIndex];

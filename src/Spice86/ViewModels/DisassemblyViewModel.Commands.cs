@@ -4,11 +4,15 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 
 using Serilog.Events;
-using Spice86.ViewModels.Messages;
-using Spice86.ViewModels.ValueViewModels.Debugging;
+
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Emulator.VM.Breakpoint;
+using Spice86.ViewModels.Messages;
+using Spice86.ViewModels.ValueViewModels.Debugging;
 
+/// <summary>
+/// Represents disassembly view model.
+/// </summary>
 public partial class DisassemblyViewModel {
     [RelayCommand(CanExecute = nameof(CanCloseTab))]
     private void CloseTab() {
@@ -110,7 +114,7 @@ public partial class DisassemblyViewModel {
 
     [RelayCommand]
     private void GoToFunction(FunctionInfo? functionInfo) {
-        if(functionInfo is null) {
+        if (functionInfo is null) {
             return;
         }
         if (_logger.IsEnabled(LogEventLevel.Debug)) {
@@ -124,6 +128,10 @@ public partial class DisassemblyViewModel {
         GoToAddress(State.IpSegmentedAddress);
     }
 
+    /// <summary>
+    /// Performs the go to address operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
     [RelayCommand]
     public void GoToAddress(SegmentedAddress? address) {
         if (_logger.IsEnabled(LogEventLevel.Debug)) {

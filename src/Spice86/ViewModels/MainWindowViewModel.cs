@@ -41,6 +41,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     private int? _targetCyclesPerMs;
 
+    /// <summary>
+    /// Gets or sets target cycles per ms.
+    /// </summary>
     public int? TargetCyclesPerMs {
         get => _cyclesLimiter.TargetCpuCyclesPerMs;
         set {
@@ -85,12 +88,26 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
     public event EventHandler<UIRenderEventArgs>? RenderScreen;
     internal event EventHandler? CloseMainWindow;
-    
+
     /// <summary>
     /// Gets the InputEventQueue that processes keyboard and mouse events for the emulator.
     /// </summary>
     public InputEventQueue InputEventQueue => _inputEventQueue;
 
+    /// <summary>
+    /// Performs the main window view model operation.
+    /// </summary>
+    /// <param name="sharedMouseData">The shared mouse data.</param>
+    /// <param name="pit">The pit.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="hostStorageProvider">The host storage provider.</param>
+    /// <param name="textClipboard">The text clipboard.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="loggerService">The logger service.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="performanceViewModel">The performance view model.</param>
+    /// <param name="exceptionHandler">The exception handler.</param>
+    /// <param name="cyclesLimiter">The cycles limiter.</param>
     public MainWindowViewModel(SharedMouseData sharedMouseData,
         ITimeMultiplier pit, IUIDispatcher uiDispatcher,
         IHostStorageProvider hostStorageProvider, ITextClipboard textClipboard,
@@ -104,7 +121,7 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         _exceptionHandler = exceptionHandler;
         Configuration = configuration;
         _loggerService = loggerService;
-        
+
         // Create InputEventQueue with this MainWindowViewModel as the event source
         _inputEventQueue = new InputEventQueue(this, this);
         _hostStorageProvider = hostStorageProvider;
@@ -149,13 +166,20 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     [RelayCommand]
     public void SetLogLevelToFatal() => SetLogLevel("Fatal");
 
+    /// <summary>
+    /// The _is app closing.
+    /// </summary>
     internal void OnMainWindowClosing() => _isAppClosing = true;
 
+    /// <summary>
+    /// Called when key up.
+    /// </summary>
+    /// <param name="e">The e.</param>
     internal void OnKeyUp(KeyEventArgs e) {
         if (_pauseHandler.IsPaused) {
             return;
         }
-        
+
         // Pass only the Avalonia Key - no scancode conversion here
         KeyUp?.Invoke(this, new KeyboardEventArgs((Shared.Emulator.Keyboard.PhysicalKey)e.Key, IsPressed: false));
     }
@@ -201,11 +225,15 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     internal event Action? InvalidateBitmap;
 
+    /// <summary>
+    /// Called when key down.
+    /// </summary>
+    /// <param name="e">The e.</param>
     internal void OnKeyDown(KeyEventArgs e) {
         if (_pauseHandler.IsPaused) {
             return;
         }
-        
+
         // Pass only the Avalonia Key - no scancode conversion here
         KeyDown?.Invoke(this, new KeyboardEventArgs((Shared.Emulator.Keyboard.PhysicalKey)e.Key, IsPressed: true));
     }
@@ -228,10 +256,20 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     public int Height { get; private set; }
 
+    /// <summary>
+    /// Gets or sets mousex.
+    /// </summary>
     public double MouseX { get; set; }
 
+    /// <summary>
+    /// Gets or sets mousey.
+    /// </summary>
     public double MouseY { get; set; }
-    
+
+    /// <summary>
+    /// Called when mouse button down.
+    /// </summary>
+    /// <param name="image">The image.</param>
     public void OnMouseButtonDown(PointerPressedEventArgs @event, Image image) {
         if (_pauseHandler.IsPaused) {
             return;
@@ -240,14 +278,22 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         MouseButtonDown?.Invoke(this, new MouseButtonEventArgs((MouseButton)mouseButton, true));
     }
 
+    /// <summary>
+    /// Called when mouse button up.
+    /// </summary>
+    /// <param name="image">The image.</param>
     public void OnMouseButtonUp(PointerReleasedEventArgs @event, Image image) {
-        if(_pauseHandler.IsPaused) {
+        if (_pauseHandler.IsPaused) {
             return;
         }
         Avalonia.Input.MouseButton mouseButton = @event.GetCurrentPoint(image).Properties.PointerUpdateKind.GetMouseButton();
         MouseButtonUp?.Invoke(this, new MouseButtonEventArgs((MouseButton)mouseButton, false));
     }
 
+    /// <summary>
+    /// Called when mouse moved.
+    /// </summary>
+    /// <param name="image">The image.</param>
     public void OnMouseMoved(PointerEventArgs @event, Image image) {
         if (image.Source is null || _pauseHandler.IsPaused) {
             return;
@@ -258,6 +304,11 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         UpdateShownEmulatorMouseCursorPosition();
     }
 
+    /// <summary>
+    /// Sets resolution.
+    /// </summary>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
     public void SetResolution(int width, int height) {
         _uiDispatcher.Post(() => {
             _isSettingResolution = true;
@@ -284,8 +335,14 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         }, DispatcherPriority.Background);
     }
 
+    /// <summary>
+    /// The show cursor.
+    /// </summary>
     public void HideMouseCursor() => _uiDispatcher.Post(() => ShowCursor = false);
 
+    /// <summary>
+    /// The show cursor.
+    /// </summary>
     public void ShowMouseCursor() => _uiDispatcher.Post(() => ShowCursor = true);
 
     [ObservableProperty]
@@ -325,6 +382,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     [RelayCommand(CanExecute = nameof(CanPlay))]
     public void Play() => _pauseHandler.Resume();
 
+    /// <summary>
+    /// The time multiplier.
+    /// </summary>
     [RelayCommand]
     public void ResetTimeMultiplier() => TimeMultiplier = Configuration.TimeMultiplier;
 
@@ -359,6 +419,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         }
     }
 
+    /// <summary>
+    /// Performs the start emulator operation.
+    /// </summary>
     internal void StartEmulator() {
         if (string.IsNullOrWhiteSpace(Configuration.Exe) ||
             string.IsNullOrWhiteSpace(Configuration.CDrive)) {
@@ -366,8 +429,8 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         }
         StatusMessage = "Emulator starting...";
         AsmOverrideStatus = Configuration switch {
-            {UseCodeOverrideOption: true, OverrideSupplier: not null} => "ASM code overrides: enabled.",
-            {UseCodeOverride: false, OverrideSupplier: not null} =>
+            { UseCodeOverrideOption: true, OverrideSupplier: not null } => "ASM code overrides: enabled.",
+            { UseCodeOverride: false, OverrideSupplier: not null } =>
                 "ASM code overrides: only functions names will be referenced.",
             _ => "ASM code overrides: none."
         };
@@ -376,6 +439,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         StartEmulatorThread();
     }
 
+    /// <summary>
+    /// Performs the dispose operation.
+    /// </summary>
     public void Dispose() {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(disposing: true);
@@ -383,7 +449,7 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     }
 
     internal event Action? Disposing;
-    
+
     private void Dispose(bool disposing) {
         if (!_disposed) {
             _disposed = true;
@@ -395,7 +461,7 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
                 _drawTimer.Stop();
                 _drawTimer.Dispose();
-                
+
                 _inputEventQueue.Dispose();
 
                 // Dispose of UI-related resources in the UI thread
@@ -423,7 +489,7 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     [ObservableProperty]
     private string _currentLogLevel = "";
-    
+
     private void SetLogLevel(string logLevel) {
         if (logLevel == "Silent") {
             CurrentLogLevel = logLevel;

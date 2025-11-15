@@ -4,6 +4,9 @@
 /// </summary>
 /// <remarks>Unimplemented.</remarks>
 public class FloppyDiskDrive : DosDriveBase {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public FloppyDiskDrive() {
         IsRemovable = true;
     }

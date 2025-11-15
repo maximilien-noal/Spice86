@@ -5,14 +5,25 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
+/// <summary>
+/// Represents analog low pass.
+/// </summary>
 public sealed class AnalogLowPass : LayoutBase {
     private int _numPoles = -1;
     private double _stopBandDb;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public AnalogLowPass() {
         SetNormal(0.0, 1.0);
     }
 
+    /// <summary>
+    /// Performs the design operation.
+    /// </summary>
+    /// <param name="numPoles">The num poles.</param>
+    /// <param name="stopBandDb">The stop band db.</param>
     public void Design(int numPoles, double stopBandDb) {
         if (_numPoles == numPoles && Math.Abs(_stopBandDb - stopBandDb) <= double.Epsilon) {
             return;
@@ -50,15 +61,27 @@ public sealed class AnalogLowPass : LayoutBase {
     }
 }
 
+/// <summary>
+/// Represents analog low shelf.
+/// </summary>
 public sealed class AnalogLowShelf : LayoutBase {
     private double _gainDb;
     private int _numPoles = -1;
     private double _stopBandDb;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public AnalogLowShelf() {
         SetNormal(MathEx.DoublePi, 1.0);
     }
 
+    /// <summary>
+    /// Performs the design operation.
+    /// </summary>
+    /// <param name="numPoles">The num poles.</param>
+    /// <param name="gainDb">The gain db.</param>
+    /// <param name="stopBandDb">The stop band db.</param>
     public void Design(int numPoles, double gainDb, double stopBandDb) {
         if (_numPoles == numPoles &&
             Math.Abs(_gainDb - gainDb) <= double.Epsilon &&

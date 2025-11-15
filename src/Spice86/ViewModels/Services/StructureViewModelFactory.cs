@@ -11,12 +11,18 @@ using Spice86.ViewModels;
 using Structurizer;
 using Structurizer.Types;
 
+/// <summary>
+/// Defines the contract for i structure view model factory.
+/// </summary>
 public interface IStructureViewModelFactory {
     bool IsInitialized { get; }
     StructureViewModel CreateNew(IBinaryDocument data);
     void Parse(string headerFilePath);
 }
 
+/// <summary>
+/// Represents structure view model factory.
+/// </summary>
 public class StructureViewModelFactory : IStructureViewModelFactory {
     private readonly Hydrator? _hydrator;
     private readonly Parser? _parser;
@@ -29,6 +35,13 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
 
     public event EventHandler? StructureInformationChanged;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
     public StructureViewModelFactory(Configuration configuration, State state, ILoggerService logger, IPauseHandler pauseHandler) {
         _logger = logger;
         _state = state;
@@ -46,8 +59,16 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
         poller.Start();
     }
 
+    /// <summary>
+    /// The is initialized.
+    /// </summary>
     public bool IsInitialized => _structureInformation != null && _hydrator != null;
 
+    /// <summary>
+    /// Creates new.
+    /// </summary>
+    /// <param name="data">The data.</param>
+    /// <returns>The result of the operation.</returns>
     public StructureViewModel CreateNew(IBinaryDocument data) {
         if (_structureInformation == null || _hydrator == null) {
             throw new InvalidOperationException("Factory not initialized.");
@@ -59,6 +80,10 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
         return viewModel;
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="headerFilePath">The header file path.</param>
     public void Parse(string headerFilePath) {
         _logger.Information("Parsing {HeaderFilePath} for structure information", headerFilePath);
         if (_parser == null) {

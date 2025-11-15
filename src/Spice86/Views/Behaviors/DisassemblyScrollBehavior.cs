@@ -18,9 +18,15 @@ public class DisassemblyScrollBehavior {
     private const int AnimationFramesPerSecond = 60;
 
     // Attached property for enabling the behavior
+    /// <summary>
+    /// The is enabled property.
+    /// </summary>
     public static readonly AttachedProperty<bool> IsEnabledProperty = AvaloniaProperty.RegisterAttached<DisassemblyScrollBehavior, Control, bool>("IsEnabled");
 
     // Attached property for the target address
+    /// <summary>
+    /// The target address property.
+    /// </summary>
     public static readonly AttachedProperty<SegmentedAddress> TargetAddressProperty = AvaloniaProperty.RegisterAttached<DisassemblyScrollBehavior, Control, SegmentedAddress>("TargetAddress");
 
     // Static field to track if we're currently processing a scroll operation
@@ -36,10 +42,20 @@ public class DisassemblyScrollBehavior {
     }
 
     // Helper methods for getting/setting the attached properties
+    /// <summary>
+    /// Gets is enabled.
+    /// </summary>
+    /// <param name="control">The control.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public static bool GetIsEnabled(Control control) {
         return control.GetValue(IsEnabledProperty);
     }
 
+    /// <summary>
+    /// Sets is enabled.
+    /// </summary>
+    /// <param name="control">The control.</param>
+    /// <param name="value">The value.</param>
     public static void SetIsEnabled(Control control, bool value) {
         control.SetValue(IsEnabledProperty, value);
     }

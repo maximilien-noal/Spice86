@@ -1,5 +1,8 @@
 namespace Spice86.Core.Emulator.Devices.Video;
 
+/// <summary>
+/// Represents bit manipulation extensions.
+/// </summary>
 internal static class BitManipulationExtensions {
     /// <summary>
     ///     Rotate right by the specified amount.

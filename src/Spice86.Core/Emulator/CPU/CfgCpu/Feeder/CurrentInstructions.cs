@@ -27,21 +27,40 @@ public class CurrentInstructions : InstructionReplacer {
     /// </summary>
     private readonly Dictionary<SegmentedAddress, List<AddressBreakPoint>> _breakpointsForInstruction = new();
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="replacerRegistry">The replacer registry.</param>
     public CurrentInstructions(IMemory memory, EmulatorBreakpointsManager emulatorBreakpointsManager,
         InstructionReplacerRegistry replacerRegistry) : base(replacerRegistry) {
         _memory = memory;
         _emulatorBreakpointsManager = emulatorBreakpointsManager;
     }
 
+    /// <summary>
+    /// Gets all.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public IEnumerable<CfgInstruction> GetAll() {
         return _currentInstructionAtAddress.Values;
     }
 
+    /// <summary>
+    /// Gets at address.
+    /// </summary>
+    /// <param name="address">The address.</param>
     public CfgInstruction? GetAtAddress(SegmentedAddress address) {
         _currentInstructionAtAddress.TryGetValue(address, out CfgInstruction? res);
         return res;
     }
 
+    /// <summary>
+    /// Performs the replace instruction operation.
+    /// </summary>
+    /// <param name="oldInstruction">The old instruction.</param>
+    /// <param name="newInstruction">The new instruction.</param>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         SegmentedAddress instructionAddress = newInstruction.Address;
         if (_currentInstructionAtAddress.ContainsKey(instructionAddress)) {
@@ -51,6 +70,10 @@ public class CurrentInstructions : InstructionReplacer {
     }
 
 
+    /// <summary>
+    /// Sets as current.
+    /// </summary>
+    /// <param name="instruction">The instruction.</param>
     public void SetAsCurrent(CfgInstruction instruction) {
         // Clear it because in some cases it can be added twice (signature reducer)
         ClearCurrentInstruction(instruction);

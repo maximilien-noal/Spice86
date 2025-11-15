@@ -8,6 +8,10 @@ using Spice86.Core.Emulator.Memory.ReaderWriter;
 public class UInt32RegistersIndexer : RegistersIndexer<uint> {
     private readonly IUIntReaderWriter _uIntArrayReaderWriter;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="uIntArrayReaderWriter">The u int array reader writer.</param>
     public UInt32RegistersIndexer(IUIntReaderWriter uIntArrayReaderWriter) {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }

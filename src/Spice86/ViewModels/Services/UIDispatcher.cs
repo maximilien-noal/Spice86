@@ -6,6 +6,10 @@ using Avalonia.Threading;
 public class UIDispatcher : IUIDispatcher {
     private readonly IDispatcher _dispatcher;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="dispatcher">The dispatcher.</param>
     public UIDispatcher(IDispatcher dispatcher) {
         _dispatcher = dispatcher;
     }
@@ -17,10 +21,19 @@ public class UIDispatcher : IUIDispatcher {
         }
     }
 
+    /// <summary>
+    /// Performs the post operation.
+    /// </summary>
+    /// <param name="callback">The callback.</param>
+    /// <param name="priority">The priority.</param>
     public void Post(Action callback, DispatcherPriority priority = default) {
         _dispatcher.Post(callback, priority);
     }
 
+    /// <summary>
+    /// Performs the check access operation.
+    /// </summary>
+    /// <returns>A boolean value indicating the result.</returns>
     public bool CheckAccess() {
         return _dispatcher.CheckAccess();
     }

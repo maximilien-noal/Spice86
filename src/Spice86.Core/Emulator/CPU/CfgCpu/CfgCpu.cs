@@ -16,6 +16,9 @@ using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
+/// <summary>
+/// Represents cfg cpu.
+/// </summary>
 public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly ILoggerService _loggerService;
     private readonly InstructionExecutionHelper _instructionExecutionHelper;
@@ -25,20 +28,33 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly ExecutionContextManager _executionContextManager;
     private readonly InstructionReplacerRegistry _replacerRegistry = new();
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="ioPortDispatcher">The io port dispatcher.</param>
+    /// <param name="callbackHandler">The callback handler.</param>
+    /// <param name="dualPic">The dual pic.</param>
+    /// <param name="picPitCpuState">The pic pit cpu state.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="functionCatalogue">The function catalogue.</param>
+    /// <param name="useCodeOverride">The use code override.</param>
+    /// <param name="loggerService">The logger service.</param>
     public CfgCpu(IMemory memory, State state, IOPortDispatcher ioPortDispatcher, CallbackHandler callbackHandler,
         DualPic dualPic, PicPitCpuState picPitCpuState, EmulatorBreakpointsManager emulatorBreakpointsManager,
-        FunctionCatalogue functionCatalogue, 
+        FunctionCatalogue functionCatalogue,
         bool useCodeOverride, ILoggerService loggerService) {
         _loggerService = loggerService;
         _state = state;
         _dualPic = dualPic;
         _picPitCpuState = picPitCpuState;
-        
+
         CfgNodeFeeder = new(memory, state, emulatorBreakpointsManager, _replacerRegistry);
         _executionContextManager = new(memory, state, CfgNodeFeeder, _replacerRegistry, functionCatalogue, useCodeOverride, loggerService);
         _instructionExecutionHelper = new(state, memory, ioPortDispatcher, callbackHandler, emulatorBreakpointsManager.InterruptBreakPoints, _executionContextManager, loggerService);
     }
-    
+
     /// <summary>
     /// Handles at high level parsing, linking and book keeping of nodes from the graph.
     /// </summary>
@@ -51,10 +67,16 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     /// </summary>
     public ExecutionContextManager ExecutionContextManager => _executionContextManager;
 
+    /// <summary>
+    /// The function handler in use.
+    /// </summary>
     public FunctionHandler FunctionHandlerInUse => ExecutionContextManager.CurrentExecutionContext.FunctionHandler;
+    /// <summary>
+    /// The is initial execution context.
+    /// </summary>
     public bool IsInitialExecutionContext => ExecutionContextManager.CurrentExecutionContext.Depth == 0;
     private ExecutionContext CurrentExecutionContext => _executionContextManager.CurrentExecutionContext;
-    
+
     /// <inheritdoc />
     public void ExecuteNext() {
         ICfgNode toExecute = CfgNodeFeeder.GetLinkedCfgNodeToExecute(CurrentExecutionContext);
@@ -64,13 +86,13 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
             _loggerService.LoggerPropertyBag.CsIp = toExecute.Address;
             toExecute.Execute(_instructionExecutionHelper);
         } catch (CpuException e) {
-            if(toExecute is CfgInstruction cfgInstruction) {
+            if (toExecute is CfgInstruction cfgInstruction) {
                 _instructionExecutionHelper.HandleCpuException(cfgInstruction, e);
             }
         }
 
         ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
-        
+
         _state.IncCycles();
         if (_picPitCpuState.Cycles > 0) {
             _picPitCpuState.Cycles--;
@@ -94,6 +116,9 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
         _executionContextManager.SignalNewExecutionContext(_state.IpSegmentedAddress, SegmentedAddress.ZERO);
     }
 
+    /// <summary>
+    /// Performs the signal end operation.
+    /// </summary>
     public void SignalEnd() {
         _executionContextManager.CurrentExecutionContext.FunctionHandler.Ret(CallType.MACHINE, null);
     }

@@ -5,6 +5,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Operations;
 using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Value;
 using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Value.Constant;
 
+/// <summary>
+/// Defines the contract for i ast visitor.
+/// </summary>
 public interface IAstVisitor<T> {
     public T VisitSegmentRegisterNode(SegmentRegisterNode node);
     public T VisitSegmentedPointer(SegmentedPointerNode node);

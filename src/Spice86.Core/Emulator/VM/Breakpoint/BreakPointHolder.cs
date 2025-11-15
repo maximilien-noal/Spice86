@@ -21,6 +21,9 @@ public class BreakPointHolder {
         .SelectMany(list => list).Concat(_unconditionalBreakPoints);
     }
 
+    /// <summary>
+    /// The serializable breakpoints.
+    /// </summary>
     internal IEnumerable<AddressBreakPoint> SerializableBreakpoints => GetAllBreakpoints().Where
         (x => x.IsUserBreakpoint).OfType<AddressBreakPoint>();
 

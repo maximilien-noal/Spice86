@@ -62,6 +62,9 @@ public class DosInt2fHandler : InterruptHandler {
         AddAction(0x4A, HighMemoryAreaServices);
     }
 
+    /// <summary>
+    /// Performs the share exe services operation.
+    /// </summary>
     public void ShareExeServices() {
         switch (State.AL) {
             case 0x0:
@@ -76,6 +79,9 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
+    /// <summary>
+    /// Performs the ansi console services operation.
+    /// </summary>
     public void AnsiConsoleServices() {
         switch (State.AL) {
             case 0x0:
@@ -90,6 +96,10 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
+    /// <summary>
+    /// Performs the xms services operation.
+    /// </summary>
+    /// <param name="calledFromVm">The called from vm.</param>
     public void XmsServices(bool calledFromVm) {
         switch (State.AL) {
             //Is XMS Driver installed
@@ -98,7 +108,7 @@ public class DosInt2fHandler : InterruptHandler {
                 break;
             //Get XMS Control Function Address
             case (byte)XmsInt2FFunctionsCodes.GetCallbackAddress:
-                SegmentedAddress segmentedAddress = _xms?.CallbackAddress ?? new(0,0);
+                SegmentedAddress segmentedAddress = _xms?.CallbackAddress ?? new(0, 0);
                 State.ES = segmentedAddress.Segment;
                 State.BX = segmentedAddress.Offset;
                 break;
@@ -111,8 +121,11 @@ public class DosInt2fHandler : InterruptHandler {
         SetCarryFlag(false, calledFromVm);
     }
 
+    /// <summary>
+    /// Performs the high memory area services operation.
+    /// </summary>
     public void HighMemoryAreaServices() {
-        switch(State.AL) {
+        switch (State.AL) {
             case 0x1 or 0x2: // Query Free HMA Space or Allocate HMA Space
                 State.BX = 0; // Number of bytes available / Amount allocated
                 State.ES = A20Gate.SegmentStartOfHighMemoryArea;
@@ -136,8 +149,11 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
+    /// <summary>
+    /// Performs the windows virtual machine services operation.
+    /// </summary>
     public void WindowsVirtualMachineServices() {
-        switch(State.AL) {
+        switch (State.AL) {
             case 0x80: //MS Windows v3.0 - INSTALLATION CHECK {undocumented} (AX: 4680h)
                 State.AX = 1; //We are not Windows, but plain ol' MS-DOS.
                 break;

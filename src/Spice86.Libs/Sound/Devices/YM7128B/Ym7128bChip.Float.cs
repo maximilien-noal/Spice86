@@ -3,15 +3,27 @@
 
 namespace Spice86.Libs.Sound.Devices.YM7128B;
 
+/// <summary>
+/// Represents ym 7128 b chip.
+/// </summary>
 internal sealed partial class Ym7128BChip {
     private Ym7128BChipFloat Float { get; } = new();
 
+    /// <summary>
+    /// Gets float process data.
+    /// </summary>
     internal Ym7128BChipFloatProcessData FloatProcessData { get; } = new();
 
+    /// <summary>
+    /// Performs the float ctor operation.
+    /// </summary>
     internal void FloatCtor() {
         // No additional initialization required (struct fields already zeroed).
     }
 
+    /// <summary>
+    /// Performs the float dtor operation.
+    /// </summary>
     internal void FloatDtor() {
         // No heap-managed resources to release.
     }
@@ -22,6 +34,9 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the float start operation.
+    /// </summary>
     internal void FloatStart() {
         Float.T0D = 0f;
         Float.Tail = 0;
@@ -31,10 +46,17 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the float stop operation.
+    /// </summary>
     internal void FloatStop() {
         // No-op
     }
 
+    /// <summary>
+    /// Performs the float process operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void FloatProcess(Ym7128BChipFloatProcessData data) {
         ArgumentNullException.ThrowIfNull(data);
 
@@ -82,6 +104,11 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the float read operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte FloatRead(byte address) {
         return address switch {
             < (byte)Ym7128BRegister.C0 => (byte)(Float.Registers[address] & Ym7128BDatasheetSpecs.GainDataMask),
@@ -91,6 +118,11 @@ internal sealed partial class Ym7128BChip {
         };
     }
 
+    /// <summary>
+    /// Performs the float write operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void FloatWrite(byte address, byte value) {
         switch (address) {
             case < (byte)Ym7128BRegister.C0:

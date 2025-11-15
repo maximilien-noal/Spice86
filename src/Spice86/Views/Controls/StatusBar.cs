@@ -13,8 +13,11 @@ using Avalonia.Layout;
 /// can be chosen even within the same application.
 /// </summary>
 internal sealed class StatusBar : StackPanel {
+    /// <summary>
+    /// Gets style key override.
+    /// </summary>
     protected override Type StyleKeyOverride { get; } = typeof(StackPanel);
-    
+
     static StatusBar() {
         OrientationProperty.OverrideDefaultValue<StatusBar>(Orientation.Horizontal);
         HorizontalAlignmentProperty.OverrideDefaultValue<StatusBar>(HorizontalAlignment.Stretch);

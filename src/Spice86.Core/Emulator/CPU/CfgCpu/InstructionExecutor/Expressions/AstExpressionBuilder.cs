@@ -14,6 +14,9 @@ using Spice86.Shared.Emulator.Memory;
 using System.Linq.Expressions;
 using System.Reflection;
 
+/// <summary>
+/// Represents ast expression builder.
+/// </summary>
 public class AstExpressionBuilder : IAstVisitor<Expression> {
     private readonly ParameterExpression _memoryParameter = Expression.Parameter(typeof(Memory), "memory");
     private readonly ParameterExpression _stateParameter = Expression.Parameter(typeof(State), "cpuState");
@@ -22,6 +25,9 @@ public class AstExpressionBuilder : IAstVisitor<Expression> {
 
     private readonly RegisterRenderer _registerRenderer = new();
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public AstExpressionBuilder() {
         _allParameters = [_stateParameter, _memoryParameter];
     }
@@ -48,14 +54,14 @@ public class AstExpressionBuilder : IAstVisitor<Expression> {
             _ => throw new InvalidOperationException($"Unhandled Operation: {binaryOperation}")
         };
     }
-    
+
     private UnaryExpression ToExpression(UnaryOperation unaryOperation, Expression value) {
         return unaryOperation switch {
             UnaryOperation.NOT => Expression.Not(value),
             _ => throw new InvalidOperationException($"Unhandled Operation: {unaryOperation}")
         };
     }
-    
+
     private T EnsureNonNull<T>(T? argument) {
         ArgumentNullException.ThrowIfNull(argument);
         return argument;
@@ -89,7 +95,7 @@ public class AstExpressionBuilder : IAstVisitor<Expression> {
         }
         throw new ArgumentException($"Couldn't find a property named Item with 1 parameter for type {type}");
     }
-    
+
     private PropertyInfo FindDualParameterIndexer(Type type) {
         PropertyInfo[] propertyInfos = type.GetProperties();
         foreach (PropertyInfo propertyInfo in propertyInfos) {
@@ -112,91 +118,168 @@ public class AstExpressionBuilder : IAstVisitor<Expression> {
         PropertyInfo indexer = FindSingleParameterIndexer(ToMemoryIndexerType(dataType));
         return Expression.Property(indexerProperty, indexer, indexExpression);
     }
-    
-    private IndexExpression ToMemoryIndexer(DataType dataType, Expression segmentExpression, Expression offsetExpression ) {
+
+    private IndexExpression ToMemoryIndexer(DataType dataType, Expression segmentExpression, Expression offsetExpression) {
         MemberExpression indexerProperty = ToMemoryIndexerProperty(dataType);
         PropertyInfo indexer = FindDualParameterIndexer(ToMemoryIndexerType(dataType));
         return Expression.Property(indexerProperty, indexer, segmentExpression, offsetExpression);
     }
-    
+
     private Expression ToRegisterProperty(int registerIndex, DataType dataType, bool isSegmentRegister) {
         string name = isSegmentRegister ? _registerRenderer.ToStringSegmentRegister(registerIndex) : _registerRenderer.ToStringRegister(dataType.BitWidth, registerIndex);
         PropertyInfo stateRegisterProperty = EnsureNonNull(typeof(State).GetProperty(name));
         return Expression.Property(_stateParameter, stateRegisterProperty);
     }
 
+    /// <summary>
+    /// Performs the visit segment register node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitSegmentRegisterNode(SegmentRegisterNode node) {
-       return ToRegisterProperty(node.RegisterIndex, node.DataType, true);
+        return ToRegisterProperty(node.RegisterIndex, node.DataType, true);
     }
 
+    /// <summary>
+    /// Performs the visit segmented pointer operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitSegmentedPointer(SegmentedPointerNode node) {
         Expression segmentExpression = node.Segment.Accept(this);
         Expression offsetExpression = node.Offset.Accept(this);
         return ToMemoryIndexer(node.DataType, segmentExpression, offsetExpression);
     }
 
+    /// <summary>
+    /// Performs the visit register node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitRegisterNode(RegisterNode node) {
         return ToRegisterProperty(node.RegisterIndex, node.DataType, false);
     }
 
+    /// <summary>
+    /// Performs the visit absolute pointer node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitAbsolutePointerNode(AbsolutePointerNode node) {
         Expression index = node.AbsoluteAddress.Accept(this);
         return ToMemoryIndexer(node.DataType, index);
     }
-    
+
+    /// <summary>
+    /// Performs the visit segmented address constant node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitSegmentedAddressConstantNode(SegmentedAddressConstantNode node) {
         throw new NotImplementedException();
     }
-    
+
+    /// <summary>
+    /// Performs the visit binary operation node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitBinaryOperationNode(BinaryOperationNode node) {
         Expression left = node.Left.Accept(this);
         Expression right = node.Right.Accept(this);
         return ToExpression(node.BinaryOperation, left, right);
     }
-    
+
+    /// <summary>
+    /// Performs the visit unary operation node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitUnaryOperationNode(UnaryOperationNode node) {
         Expression value = node.Value.Accept(this);
         return ToExpression(node.UnaryOperation, value);
     }
-    
+
+    /// <summary>
+    /// Performs the visit instruction node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitInstructionNode(InstructionNode node) {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Performs the visit constant node operation.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>The result of the operation.</returns>
     public Expression VisitConstantNode(ConstantNode node) {
         Type type = FromDataType(node.DataType);
         object castValue = Convert.ChangeType(node.Value, type);
         return Expression.Constant(castValue, type);
     }
 
+    /// <summary>
+    /// Converts to action.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Action<State, Memory>> ToAction(Expression expression) {
         return Expression.Lambda<Action<State, Memory>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to funcu int 8.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, byte>> ToFuncUInt8(Expression expression) {
         return Expression.Lambda<Func<State, Memory, byte>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to func int 8.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, sbyte>> ToFuncInt8(Expression expression) {
         return Expression.Lambda<Func<State, Memory, sbyte>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to funcu int 16.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, ushort>> ToFuncUInt16(Expression expression) {
         return Expression.Lambda<Func<State, Memory, ushort>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to func int 16.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, short>> ToFuncInt16(Expression expression) {
         return Expression.Lambda<Func<State, Memory, short>>(expression, _allParameters);
     }
 
+    /// <summary>
+    /// Converts to funcu int 32.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, uint>> ToFuncUInt32(Expression expression) {
         return Expression.Lambda<Func<State, Memory, uint>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to func int 32.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, int>> ToFuncInt32(Expression expression) {
         return Expression.Lambda<Func<State, Memory, int>>(expression, _allParameters);
     }
-    
+
+    /// <summary>
+    /// Converts to func bool.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
     public Expression<Func<State, Memory, bool>> ToFuncBool(Expression expression) {
         return Expression.Lambda<Func<State, Memory, bool>>(expression, _allParameters);
     }

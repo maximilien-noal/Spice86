@@ -11,6 +11,12 @@ using Spice86.Shared.Emulator.Memory;
 /// </summary>
 public class ExecutionContext {
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="entryPoint">The entry point.</param>
+    /// <param name="depth">The depth.</param>
+    /// <param name="functionHandler">The function handler.</param>
     public ExecutionContext(SegmentedAddress entryPoint, int depth, FunctionHandler functionHandler) {
         EntryPoint = entryPoint;
         Depth = depth;
@@ -21,7 +27,7 @@ public class ExecutionContext {
     /// Where the context started
     /// </summary>
     public SegmentedAddress EntryPoint { get; }
-    
+
     /// <summary>
     /// Function handler tracking the functions for this context. Function call stack is context dependant.
     /// </summary>
@@ -36,12 +42,12 @@ public class ExecutionContext {
     /// Last node actually executed by the CPU
     /// </summary>
     public ICfgNode? LastExecuted { get; set; }
-    
+
     /// <summary>
     /// Next node to execute according to the CFG Graph.
     /// </summary>
     public ICfgNode? NodeToExecuteNextAccordingToGraph { get; set; }
-    
+
     /// <summary>
     /// True when last executed triggered a CPU fault
     /// </summary>

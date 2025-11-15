@@ -12,9 +12,18 @@ using System.Xml;
 /// Operation is performed on 16 or 32 bits operands depending on the operand size prefix.
 /// </summary>
 public abstract class OperationRegIndexParser : BaseInstructionParser {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public OperationRegIndexParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context) {
         int regIndex = ComputeRegIndex(context.OpcodeField);
         BitWidth bitWidth = GetBitWidth(false, context.HasOperandSize32);
@@ -23,14 +32,29 @@ public abstract class OperationRegIndexParser : BaseInstructionParser {
     protected abstract CfgInstruction Parse(ParsingContext context, int regIndex, BitWidth bitWidth);
 }
 
+/// <summary>
+/// Represents inc reg index parser.
+/// </summary>
 [OperationRegIndexParser("IncReg", false)]
 public partial class IncRegIndexParser;
+/// <summary>
+/// Represents dec reg index parser.
+/// </summary>
 [OperationRegIndexParser("DecReg", false)]
 public partial class DecRegIndexParser;
+/// <summary>
+/// Represents push reg index parser.
+/// </summary>
 [OperationRegIndexParser("PushReg", false)]
 public partial class PushRegIndexParser;
+/// <summary>
+/// Represents pop reg index parser.
+/// </summary>
 [OperationRegIndexParser("PopReg", false)]
 public partial class PopRegIndexParser;
 
+/// <summary>
+/// Represents xchg reg acc parser.
+/// </summary>
 [OperationRegIndexParser("XchgRegAcc", false)]
 public partial class XchgRegAccParser;

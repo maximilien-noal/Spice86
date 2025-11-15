@@ -17,6 +17,9 @@ using Spice86.ViewModels.Services;
 
 using System.Collections.ObjectModel;
 
+/// <summary>
+/// Represents breakpoints view model.
+/// </summary>
 public partial class BreakpointsViewModel : ViewModelBase {
     private const string ExecutionBreakpoint = "Execution breakpoint";
     private const string MemoryRangeBreakpoint = "Memory range breakpoint";
@@ -26,6 +29,14 @@ public partial class BreakpointsViewModel : ViewModelBase {
     private readonly IUIDispatcher _uiDispatcher;
     private readonly State _state;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="messenger">The messenger.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
     public BreakpointsViewModel(State state,
         IPauseHandler pauseHandler,
         IMessenger messenger,
@@ -84,6 +95,9 @@ public partial class BreakpointsViewModel : ViewModelBase {
 
     private bool EditSelectedBreakpointCanExecute() => SelectedBreakpoint is not null;
 
+    /// <summary>
+    /// Gets breakpoint tabs.
+    /// </summary>
     public AvaloniaList<BreakpointTypeTabItemViewModel> BreakpointTabs { get; } = new AvaloniaList<BreakpointTypeTabItemViewModel>
     {
         new BreakpointTypeTabItemViewModel { Header = "Cycles", IsSelected = false },
@@ -116,16 +130,34 @@ public partial class BreakpointsViewModel : ViewModelBase {
         OnPropertyChanged(nameof(IsIoPortBreakpointSelected));
     }
 
+    /// <summary>
+    /// The state.
+    /// </summary>
     public State State => _state;
 
+    /// <summary>
+    /// The is execution breakpoint selected.
+    /// </summary>
     public bool IsExecutionBreakpointSelected => BreakpointTabs.Any(x => x.Header == "Execution" && x.IsSelected);
 
+    /// <summary>
+    /// The is memory breakpoint selected.
+    /// </summary>
     public bool IsMemoryBreakpointSelected => BreakpointTabs.Any(x => x.Header == "Memory" && x.IsSelected);
 
+    /// <summary>
+    /// The is cycles breakpoint selected.
+    /// </summary>
     public bool IsCyclesBreakpointSelected => BreakpointTabs.Any(x => x.Header == "Cycles" && x.IsSelected);
 
+    /// <summary>
+    /// The is interrupt breakpoint selected.
+    /// </summary>
     public bool IsInterruptBreakpointSelected => BreakpointTabs.Any(x => x.Header == "Interrupt" && x.IsSelected);
 
+    /// <summary>
+    /// The is io port breakpoint selected.
+    /// </summary>
     public bool IsIoPortBreakpointSelected => BreakpointTabs.Any(x => x.Header == "I/O Port" && x.IsSelected);
 
     [ObservableProperty]
@@ -217,6 +249,9 @@ public partial class BreakpointsViewModel : ViewModelBase {
     [ObservableProperty]
     private BreakPointType _selectedMemoryBreakpointType = BreakPointType.MEMORY_WRITE;
 
+    /// <summary>
+    /// The memory breakpoint types.
+    /// </summary>
     public BreakPointType[] MemoryBreakpointTypes => [
         BreakPointType.MEMORY_WRITE, BreakPointType.MEMORY_READ, BreakPointType.MEMORY_ACCESS
     ];
@@ -290,6 +325,13 @@ public partial class BreakpointsViewModel : ViewModelBase {
         CreatingBreakpoint = false;
     }
 
+    /// <summary>
+    /// Creates memory breakpoint at address.
+    /// </summary>
+    /// <param name="startAddress">The start address.</param>
+    /// <param name="endAddress">The end address.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="additionalTriggerCondition">The additional trigger condition.</param>
     internal void CreateMemoryBreakpointAtAddress(uint startAddress, uint endAddress, BreakPointType type, Func<long, bool>? additionalTriggerCondition) {
         BreakpointViewModel breakpointVm = AddAddressRangeBreakpoint(
             startAddress,
@@ -385,6 +427,11 @@ public partial class BreakpointsViewModel : ViewModelBase {
     [NotifyCanExecuteChangedFor(nameof(EditSelectedBreakpointCommand))]
     private BreakpointViewModel? _selectedBreakpoint;
 
+    /// <summary>
+    /// Adds unconditional breakpoint.
+    /// </summary>
+    /// <param name="onReached">The on reached.</param>
+    /// <param name="removedOnTrigger">The removed on trigger.</param>
     public void AddUnconditionalBreakpoint(Action onReached, bool removedOnTrigger) {
         _emulatorBreakpointsManager.ToggleBreakPoint(
             new UnconditionalBreakPoint(
@@ -401,6 +448,16 @@ public partial class BreakpointsViewModel : ViewModelBase {
         BreakpointCreated?.Invoke(breakpointViewModel);
     }
 
+    /// <summary>
+    /// Adds address breakpoint.
+    /// </summary>
+    /// <param name="trigger">The trigger.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="isRemovedOnTrigger">The is removed on trigger.</param>
+    /// <param name="onReached">The on reached.</param>
+    /// <param name="additionalTriggerCondition">The additional trigger condition.</param>
+    /// <param name="comment">The comment.</param>
+    /// <returns>The result of the operation.</returns>
     public BreakpointViewModel AddAddressBreakpoint(
             long trigger,
             BreakPointType type,
@@ -412,6 +469,17 @@ public partial class BreakpointsViewModel : ViewModelBase {
             additionalTriggerCondition, comment);
     }
 
+    /// <summary>
+    /// Adds address range breakpoint.
+    /// </summary>
+    /// <param name="trigger">The trigger.</param>
+    /// <param name="endTrigger">The end trigger.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="isRemovedOnTrigger">The is removed on trigger.</param>
+    /// <param name="onReached">The on reached.</param>
+    /// <param name="additionalTriggerCondition">The additional trigger condition.</param>
+    /// <param name="comment">The comment.</param>
+    /// <returns>The result of the operation.</returns>
     public BreakpointViewModel AddAddressRangeBreakpoint(
             long trigger,
             long endTrigger,
@@ -467,6 +535,10 @@ public partial class BreakpointsViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>
+    /// Removes breakpoint internal.
+    /// </summary>
+    /// <param name="vm">The vm.</param>
     public void RemoveBreakpointInternal(BreakpointViewModel vm) {
         DeleteBreakpoint(vm);
     }
@@ -487,6 +559,10 @@ public partial class BreakpointsViewModel : ViewModelBase {
         return Breakpoints.Where(bp => bp.Address == addressLinear && bp.Type == BreakPointType.CPU_EXECUTION_ADDRESS);
     }
 
+    /// <summary>
+    /// Performs the restore breakpoints operation.
+    /// </summary>
+    /// <param name="breakpointsData">The breakpoints data.</param>
     public void RestoreBreakpoints(SerializableUserBreakpointCollection breakpointsData) {
         if (breakpointsData?.Breakpoints == null || breakpointsData.Breakpoints.Count == 0) {
             return;

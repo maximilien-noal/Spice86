@@ -58,7 +58,7 @@ public sealed class GeneralMidiDevice : MidiDevice {
         if (!OperatingSystem.IsWindows() && configuration.AudioEngine != AudioEngine.Dummy) {
             _soundChannel = softwareMixer.CreateChannel(nameof(GeneralMidiDevice));
         }
-        
+
         _deviceThread = new DeviceThread(nameof(GeneralMidiDevice), PlaybackLoopBody, pauseHandler, loggerService);
         if (OperatingSystem.IsWindows() && configuration.AudioEngine != AudioEngine.Dummy) {
             NativeMethods.midiOutOpen(out _midiOutHandle, NativeMethods.MIDI_MAPPER, IntPtr.Zero, IntPtr.Zero, 0);
@@ -79,6 +79,10 @@ public sealed class GeneralMidiDevice : MidiDevice {
         synthesizer?.RenderInterleaved(data);
     }
 
+    /// <summary>
+    /// Performs the play short message operation.
+    /// </summary>
+    /// <param name="message">The message.</param>
     protected override void PlayShortMessage(uint message) {
         if (OperatingSystem.IsWindows() && _configuration.AudioEngine != AudioEngine.Dummy) {
             NativeMethods.midiOutShortMsg(_midiOutHandle, message);
@@ -122,6 +126,10 @@ public sealed class GeneralMidiDevice : MidiDevice {
         // NOP
     }
 
+    /// <summary>
+    /// Performs the dispose operation.
+    /// </summary>
+    /// <param name="disposing">The disposing.</param>
     protected override void Dispose(bool disposing) {
         if (!_disposed) {
             if (disposing) {

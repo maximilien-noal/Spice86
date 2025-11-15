@@ -7,8 +7,14 @@ using Avalonia.Threading;
 using Spice86.ViewModels;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// Represents software mixer view.
+/// </summary>
 internal sealed partial class SoftwareMixerView : UserControl {
     private DispatcherTimer? _timer;
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public SoftwareMixerView() {
         InitializeComponent();
         this.DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -22,6 +28,10 @@ internal sealed partial class SoftwareMixerView : UserControl {
         }
     }
 
+    /// <summary>
+    /// Called when data context changed.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnDataContextChanged(EventArgs e) {
         base.OnDataContextChanged(e);
         if (DataContext is IEmulatorObjectViewModel vm) {

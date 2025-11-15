@@ -7,6 +7,9 @@ using Spice86.Shared.Interfaces;
 
 using System.Diagnostics;
 
+/// <summary>
+/// Represents dma channel.
+/// </summary>
 public sealed class DmaChannel {
     /// <summary>
     ///     Callback invoked when the channel changes state.
@@ -41,6 +44,9 @@ public sealed class DmaChannel {
     /// </summary>
     private readonly uint _wrappingMask;
 
+    /// <summary>
+    /// The shift count.
+    /// </summary>
     internal readonly byte ShiftCount;
 
     /// <summary>
@@ -361,7 +367,7 @@ public sealed class DmaChannel {
                     } else {
                         PerformWrite(PageBase, CurrentAddress, want, writeBuffer, IsIncremented, bufferOffsetBytes);
                     }
-                    
+
                     done += want;
                     CurrentAddress = IsIncremented
                         ? unchecked(CurrentAddress + want)
@@ -457,6 +463,10 @@ public sealed class DmaChannel {
         _reservationOwnerName = null;
     }
 
+    /// <summary>
+    /// Sets mode.
+    /// </summary>
+    /// <param name="value">The value.</param>
     public void SetMode(byte value) {
         IsAutoiniting = (value & 0x10) != 0;
         IsIncremented = (value & 0x20) == 0;

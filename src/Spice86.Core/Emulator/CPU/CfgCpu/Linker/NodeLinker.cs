@@ -11,9 +11,16 @@ using Spice86.Shared.Emulator.Memory;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
+/// <summary>
+/// Represents node linker.
+/// </summary>
 public class NodeLinker : InstructionReplacer {
     private readonly NodeToString _nodeToString = new();
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="replacerRegistry">The replacer registry.</param>
     public NodeLinker(InstructionReplacerRegistry replacerRegistry) : base(replacerRegistry) {
     }
 
@@ -117,7 +124,7 @@ public class NodeLinker : InstructionReplacer {
             throw new UnhandledCfgDiscrepancyException("Trying to attach a non ASM instruction to a selector node which is not allowed. This should never happen.");
         }
     }
-    
+
     private void ReplaceSuccessorsPerType(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         // Merge the SuccessorsPerType with the new instruction
         foreach (KeyValuePair<InstructionSuccessorType, ISet<ICfgNode>> oldEntry in oldInstruction.SuccessorsPerType) {
@@ -149,6 +156,11 @@ public class NodeLinker : InstructionReplacer {
         }
     }
 
+    /// <summary>
+    /// Performs the replace instruction operation.
+    /// </summary>
+    /// <param name="oldInstruction">The old instruction.</param>
+    /// <param name="newInstruction">The new instruction.</param>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         // Switch predecessors and successors of old to new
         SwitchPredecessorsToNew(oldInstruction, newInstruction);
@@ -196,7 +208,7 @@ public class NodeLinker : InstructionReplacer {
     }
 
     private void ReplaceSuccessorOfCallInstruction(CfgInstruction instruction, ICfgNode currentSuccesor, ICfgNode newSuccesor) {
-        foreach(KeyValuePair<InstructionSuccessorType, ISet<ICfgNode>> entry in instruction.SuccessorsPerType) {
+        foreach (KeyValuePair<InstructionSuccessorType, ISet<ICfgNode>> entry in instruction.SuccessorsPerType) {
             ISet<ICfgNode> successors = entry.Value;
             if (successors.Contains(currentSuccesor)) {
                 successors.Remove(currentSuccesor);

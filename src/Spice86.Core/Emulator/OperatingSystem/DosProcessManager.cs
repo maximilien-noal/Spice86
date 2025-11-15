@@ -33,6 +33,17 @@ public class DosProcessManager : DosFileLoader {
     /// </remarks>
     private readonly EnvironmentVariables _environmentVariables;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="dosPspTracker">The dos psp tracker.</param>
+    /// <param name="dosMemoryManager">The dos memory manager.</param>
+    /// <param name="dosFileManager">The dos file manager.</param>
+    /// <param name="dosDriveManager">The dos drive manager.</param>
+    /// <param name="envVars">The env vars.</param>
+    /// <param name="loggerService">The logger service.</param>
     public DosProcessManager(IMemory memory, State state,
         DosProgramSegmentPrefixTracker dosPspTracker, DosMemoryManager dosMemoryManager,
         DosFileManager dosFileManager, DosDriveManager dosDriveManager,
@@ -80,6 +91,11 @@ public class DosProcessManager : DosFileLoader {
         return res[0..endIndex];
     }
 
+    /// <summary>
+    /// Performs the load file operation.
+    /// </summary>
+    /// <param name="file">The file.</param>
+    /// <param name="arguments">The arguments.</param>
     public override byte[] LoadFile(string file, string? arguments) {
         // TODO: We should be asking DosMemoryManager for a new block for the PSP, program, its
         // stack, and its requested extra space first. We shouldn't always assume that this is the
@@ -128,7 +144,7 @@ public class DosProcessManager : DosFileLoader {
     /// <returns>A byte array containing the DOS environment block.</returns>
     private byte[] CreateEnvironmentBlock(string programPath) {
         using MemoryStream ms = new();
-    
+
         // Add each environment variable as NAME=VALUE followed by a null terminator
         foreach (KeyValuePair<string, string> envVar in _environmentVariables) {
             string envString = $"{envVar.Key}={envVar.Value}";
@@ -136,23 +152,23 @@ public class DosProcessManager : DosFileLoader {
             ms.Write(envBytes, 0, envBytes.Length);
             ms.WriteByte(0); // Null terminator for this variable
         }
-    
+
         // Add final null byte to mark end of environment block
         ms.WriteByte(0);
-    
+
         // Write a word with value 1 after the environment variables
         // This is required by DOS
         ms.WriteByte(1);
         ms.WriteByte(0);
-    
+
         // Get the DOS path for the program (not the host path)
         string dosPath = _fileManager.GetDosProgramPath(programPath);
-    
+
         // Write the DOS path to the environment block
         byte[] programPathBytes = Encoding.ASCII.GetBytes(dosPath);
         ms.Write(programPathBytes, 0, programPathBytes.Length);
         ms.WriteByte(0); // Null terminator for program path
-    
+
         return ms.ToArray();
     }
 

@@ -4,11 +4,14 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Value;
 using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Value.Constant;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents pointer ast builder.
+/// </summary>
 public class PointerAstBuilder {
     public AbsolutePointerNode ToAbsolutePointer(DataType targetDataType, uint address) {
         return new AbsolutePointerNode(targetDataType, new ConstantNode(DataType.UINT32, address));
     }
-    
+
     public ValueNode ToSegmentedPointer(DataType targetDataType, SegmentRegisterIndex segmentRegisterIndex, ValueNode offset) {
         return ToSegmentedPointer(targetDataType, (int)segmentRegisterIndex, offset);
     }

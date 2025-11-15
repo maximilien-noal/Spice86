@@ -15,12 +15,26 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Represents view model base.
+/// </summary>
 public abstract partial class ViewModelBase : ObservableObject, INotifyDataErrorInfo {
+    /// <summary>
+    /// The _validation errors.
+    /// </summary>
     protected readonly Dictionary<string, List<string>> _validationErrors = new();
+    /// <summary>
+    /// The has errors.
+    /// </summary>
     public bool HasErrors => _validationErrors.Count > 0;
 
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
+    /// <summary>
+    /// Gets errors.
+    /// </summary>
+    /// <param name="propertyName">The property name.</param>
+    /// <returns>The result of the operation.</returns>
     public IEnumerable GetErrors(string? propertyName) {
         if (propertyName is not null &&
             _validationErrors.TryGetValue(propertyName, out List<string>? value)) {
@@ -29,11 +43,22 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
         return Array.Empty<string>();
     }
 
+    /// <summary>
+    /// Called when errors changed.
+    /// </summary>
+    /// <param name="propertyName">The property name.</param>
     protected void OnErrorsChanged(string propertyName) {
         ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(
             propertyName));
     }
 
+    /// <summary>
+    /// Validates memory address is within limit.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="limit">The limit.</param>
+    /// <param name="bindedPropertyName">The binded property name.</param>
     protected void ValidateMemoryAddressIsWithinLimit(State state, string? value,
         uint limit = A20Gate.EndOfHighMemoryArea,
         [CallerMemberName] string? bindedPropertyName = null) {
@@ -72,6 +97,13 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
         OnErrorsChanged(bindedPropertyName);
     }
 
+    /// <summary>
+    /// Gets is memory range valid.
+    /// </summary>
+    /// <param name="startAddress">The start address.</param>
+    /// <param name="endAddress">The end address.</param>
+    /// <param name="minRangeWidth">The min range width.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     protected bool GetIsMemoryRangeValid(uint? startAddress, uint? endAddress, uint minRangeWidth) {
         if (startAddress is null || endAddress is null) {
             return false;
@@ -79,6 +111,11 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
         return Math.Abs(endAddress.Value - startAddress.Value) >= minRangeWidth;
     }
 
+    /// <summary>
+    /// Performs the scan for validation errors operation.
+    /// </summary>
+    /// <param name="properties">The properties.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     protected bool ScanForValidationErrors(params string[] properties) {
         foreach (string property in properties) {
             _validationErrors.TryGetValue(property, out List<string>? values);
@@ -89,6 +126,14 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
         return false;
     }
 
+    /// <summary>
+    /// Validates address range.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="startAddress">The start address.</param>
+    /// <param name="endAddress">The end address.</param>
+    /// <param name="minRangeWidth">The min range width.</param>
+    /// <param name="textBoxBindedPropertyName">The text box binded property name.</param>
     protected void ValidateAddressRange(State state, string? startAddress,
         string? endAddress, uint minRangeWidth, string textBoxBindedPropertyName) {
         const string RangeError = "Invalid address range.";
@@ -121,6 +166,12 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
     }
 
 
+    /// <summary>
+    /// Validates address property.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="propertyName">The property name.</param>
     protected void ValidateAddressProperty(object? value, State state, [CallerMemberName]
         string? propertyName = null) {
         if (string.IsNullOrWhiteSpace(propertyName)) {
@@ -141,7 +192,13 @@ public abstract partial class ViewModelBase : ObservableObject, INotifyDataError
         }
         OnErrorsChanged(propertyName);
     }
-    
+
+    /// <summary>
+    /// Validates hex property.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="length">The length.</param>
+    /// <param name="propertyName">The property name.</param>
     protected void ValidateHexProperty(object? value, int length, [CallerMemberName] string? propertyName = null) {
         if (string.IsNullOrWhiteSpace(propertyName)) {
             return;

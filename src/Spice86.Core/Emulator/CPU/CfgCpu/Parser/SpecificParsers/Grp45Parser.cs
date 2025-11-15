@@ -5,10 +5,24 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents grp 45 parser.
+/// </summary>
 public class Grp45Parser : BaseGrpOperationParser {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public Grp45Parser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="modRmContext">The mod rm context.</param>
+    /// <param name="groupIndex">The group index.</param>
+    /// <returns>The result of the operation.</returns>
     protected override CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, int groupIndex) {
         bool grp4 = context.OpcodeField.Value is 0xFE;
         if (grp4) {

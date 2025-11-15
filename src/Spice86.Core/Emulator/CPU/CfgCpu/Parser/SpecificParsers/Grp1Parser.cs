@@ -4,10 +4,24 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents grp 1 parser.
+/// </summary>
 public class Grp1Parser : BaseGrpOperationParser {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="instructionParser">The instruction parser.</param>
     public Grp1Parser(BaseInstructionParser instructionParser) : base(instructionParser) {
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="modRmContext">The mod rm context.</param>
+    /// <param name="groupIndex">The group index.</param>
+    /// <returns>The result of the operation.</returns>
     protected override CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, int groupIndex) {
         ushort opCode = context.OpcodeField.Value;
         bool signExtendOp2 = opCode is 0x83;
@@ -36,9 +50,21 @@ public class Grp1Parser : BaseGrpOperationParser {
 /// Internal base class for generated code that will instantiate one of the grp1 operation in 8,16,32 bits mode, signed / unsigned
 /// </summary>
 public abstract class Grp1OperationParser : BaseInstructionParser {
+    /// <summary>
+    /// Performs the grp 1 operation parser operation.
+    /// </summary>
+    /// <param name="other">The other.</param>
     protected Grp1OperationParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="modRmContext">The mod rm context.</param>
+    /// <param name="bitWidth">The bit width.</param>
+    /// <param name="signExtendOp2">The sign extend op 2.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, BitWidth bitWidth, bool signExtendOp2) {
         return bitWidth switch {
             BitWidth.BYTE_8 => BuildOperandSize8(context, modRmContext,
@@ -73,26 +99,50 @@ public abstract class Grp1OperationParser : BaseInstructionParser {
         InstructionField<uint> valueField);
 }
 
+/// <summary>
+/// Represents grp 1 add operation parser.
+/// </summary>
 [Grp1OperationParser("Add")]
 public partial class Grp1AddOperationParser;
 
+/// <summary>
+/// Represents grp 1 or operation parser.
+/// </summary>
 [Grp1OperationParser("Or")]
 public partial class Grp1OrOperationParser;
 
+/// <summary>
+/// Represents grp 1 adc operation parser.
+/// </summary>
 [Grp1OperationParser("Adc")]
 public partial class Grp1AdcOperationParser;
 
+/// <summary>
+/// Represents grp 1 sbb operation parser.
+/// </summary>
 [Grp1OperationParser("Sbb")]
 public partial class Grp1SbbOperationParser;
 
+/// <summary>
+/// Represents grp 1 and operation parser.
+/// </summary>
 [Grp1OperationParser("And")]
 public partial class Grp1AndOperationParser;
 
+/// <summary>
+/// Represents grp 1 sub operation parser.
+/// </summary>
 [Grp1OperationParser("Sub")]
 public partial class Grp1SubOperationParser;
 
+/// <summary>
+/// Represents grp 1 xor operation parser.
+/// </summary>
 [Grp1OperationParser("Xor")]
 public partial class Grp1XorOperationParser;
 
+/// <summary>
+/// Represents grp 1 cmp operation parser.
+/// </summary>
 [Grp1OperationParser("Cmp")]
 public partial class Grp1CmpOperationParser;

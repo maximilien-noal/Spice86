@@ -5,7 +5,15 @@ using Spice86.Core.Emulator.Devices.Sound.Midi;
 using Spice86.Core.Emulator.Devices.Video;
 using Spice86.ViewModels.ValueViewModels.Debugging;
 
+/// <summary>
+/// Represents mapper extensions.
+/// </summary>
 public static class MapperExtensions {
+    /// <summary>
+    /// Performs the copy to state info operation.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="stateInfo">The state info.</param>
     public static void CopyToStateInfo(this State state, StateInfo stateInfo) {
         stateInfo.AH = state.AH;
         stateInfo.AL = state.AL;
@@ -44,6 +52,11 @@ public static class MapperExtensions {
         stateInfo.SegmentOverrideIndex = state.SegmentOverrideIndex;
     }
 
+    /// <summary>
+    /// Performs the copy flags to state info operation.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="cpuFlagsInfo">The cpu flags info.</param>
     public static void CopyFlagsToStateInfo(this State state, CpuFlagsInfo cpuFlagsInfo) {
         cpuFlagsInfo.AuxiliaryFlag = state.AuxiliaryFlag;
         cpuFlagsInfo.CarryFlag = state.CarryFlag;
@@ -55,12 +68,22 @@ public static class MapperExtensions {
         cpuFlagsInfo.ContinueZeroFlag = state.ContinueZeroFlagValue;
     }
 
+    /// <summary>
+    /// Performs the copy to midi info operation.
+    /// </summary>
+    /// <param name="midi">The midi.</param>
+    /// <param name="midiInfo">The midi info.</param>
     public static void CopyToMidiInfo(this Midi midi, MidiInfo midiInfo) {
         midiInfo.LastPortRead = midi.LastPortRead;
         midiInfo.LastPortWritten = midi.LastPortWritten;
         midiInfo.LastPortWrittenValue = midi.LastPortWrittenValue;
     }
 
+    /// <summary>
+    /// Performs the copy to video card info operation.
+    /// </summary>
+    /// <param name="vgaRenderer">The vga renderer.</param>
+    /// <param name="videoCardInfo">The video card info.</param>
     public static void CopyToVideoCardInfo(this IVgaRenderer vgaRenderer, VideoCardInfo videoCardInfo) {
         videoCardInfo.RendererWidth = vgaRenderer.Width;
         videoCardInfo.RendererHeight = vgaRenderer.Height;
@@ -68,6 +91,11 @@ public static class MapperExtensions {
         videoCardInfo.LastFrameRenderTime = vgaRenderer.LastFrameRenderTime;
     }
 
+    /// <summary>
+    /// Performs the copy to video card info operation.
+    /// </summary>
+    /// <param name="videoState">The video state.</param>
+    /// <param name="videoCardInfo">The video card info.</param>
     public static void CopyToVideoCardInfo(this IVideoState videoState, VideoCardInfo videoCardInfo) {
         try {
             videoCardInfo.GeneralMiscellaneousOutputRegister = videoState.GeneralRegisters.MiscellaneousOutput.Value;

@@ -4,15 +4,25 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Utils;
+
 using System;
 
 /// <summary>
 /// Centralizes global DOS memory structures
 /// </summary>
 public class DosTables {
+    /// <summary>
+    /// The dos private tables segment start.
+    /// </summary>
     public const ushort DosPrivateTablesSegmentStart = 0xC800;
+    /// <summary>
+    /// The dos private tables segment end.
+    /// </summary>
     public const ushort DosPrivateTablesSegmentEnd = 0xD000;
 
+    /// <summary>
+    /// Gets or sets current memory segment.
+    /// </summary>
     public ushort CurrentMemorySegment { get; set; } = DosPrivateTablesSegmentStart;
 
     /// <summary>

@@ -11,6 +11,13 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
 
     private const uint MsbMask = 0x80000000;
 
+    /// <summary>
+    /// Adds .
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Add(uint value1, uint value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         uint res = (uint)(value1 + value2 + carry);
@@ -23,6 +30,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the and operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint And(uint value1, uint value2) {
         uint res = value1 & value2;
         UpdateFlags(res);
@@ -31,6 +44,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the div operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Div(ulong value1, uint value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -44,6 +63,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return (uint)res;
     }
 
+    /// <summary>
+    /// Performs the idiv operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override int Idiv(long value1, int value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -59,6 +84,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return (int)res;
     }
 
+    /// <summary>
+    /// Performs the imul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override long Imul(int value1, int value2) {
         long res = (long)value1 * value2;
         bool doesNotFitInDWord = res != (int)res;
@@ -67,6 +98,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the mul operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override ulong Mul(uint value1, uint value2) {
         ulong res = (ulong)value1 * value2;
         bool upperHalfNonZero = (res & 0xFFFFFFFF00000000) != 0;
@@ -76,6 +113,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the or operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Or(uint value1, uint value2) {
         uint res = value1 | value2;
         UpdateFlags(res);
@@ -86,8 +129,14 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Rcl(uint value, byte count) {
-        count = (byte) ((count & ShiftCountMask) % 33);
+        count = (byte)((count & ShiftCountMask) % 33);
         if (count == 0) {
             return value;
         }
@@ -107,6 +156,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rcr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Rcr(uint value, int count) {
         count = (count & ShiftCountMask) % 33;
         if (count == 0) {
@@ -127,8 +182,14 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the rol operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Rol(uint value, byte count) {
-        count = (byte) ((count & ShiftCountMask) % 32);
+        count = (byte)((count & ShiftCountMask) % 32);
         if (count == 0) {
             return value;
         }
@@ -143,6 +204,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the ror operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Ror(uint value, int count) {
         count = (count & ShiftCountMask) % 32;
         if (count == 0) {
@@ -158,6 +225,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sar operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Sar(uint value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -172,6 +245,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return (uint)res;
     }
 
+    /// <summary>
+    /// Performs the shl operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Shl(uint value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -186,6 +265,13 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shld operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Shld(uint destination, uint source, byte count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -201,6 +287,13 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shrd operation.
+    /// </summary>
+    /// <param name="destination">The destination.</param>
+    /// <param name="source">The source.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Shrd(uint destination, uint source, byte count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -216,6 +309,12 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the shr operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="count">The count.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Shr(uint value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -230,6 +329,13 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
+    /// <summary>
+    /// Performs the sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="useCarry">The use carry.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Sub(uint value1, uint value2, bool useCarry) {
         int carry = (useCarry && _state.CarryFlag) ? 1 : 0;
         uint res = (uint)(value1 - value2 - carry);
@@ -242,7 +348,13 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         return res;
     }
 
-    
+
+    /// <summary>
+    /// Performs the xor operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public override uint Xor(uint value1, uint value2) {
         uint res = value1 ^ value2;
         UpdateFlags(res);
@@ -257,6 +369,10 @@ public class Alu32(State state) : Alu<uint, int, ulong, long>(state) {
         _state.OverflowFlag = msb ^ beforeMsb;
     }
 
+    /// <summary>
+    /// Sets sign flag.
+    /// </summary>
+    /// <param name="value">The value.</param>
     protected override void SetSignFlag(uint value) {
         _state.SignFlag = (value & MsbMask) != 0;
     }

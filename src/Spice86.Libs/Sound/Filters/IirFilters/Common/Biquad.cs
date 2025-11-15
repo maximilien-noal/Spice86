@@ -4,14 +4,40 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
+/// <summary>
+/// Represents biquad.
+/// </summary>
 public sealed class Biquad {
+    /// <summary>
+    /// The a0.
+    /// </summary>
     internal double A0 = 1.0;
+    /// <summary>
+    /// The a1.
+    /// </summary>
     internal double A1;
+    /// <summary>
+    /// The a2.
+    /// </summary>
     internal double A2;
+    /// <summary>
+    /// The b0.
+    /// </summary>
     internal double B0 = 1.0;
+    /// <summary>
+    /// The b1.
+    /// </summary>
     internal double B1;
+    /// <summary>
+    /// The b2.
+    /// </summary>
     internal double B2;
 
+    /// <summary>
+    /// Performs the response operation.
+    /// </summary>
+    /// <param name="normalizedFrequency">The normalized frequency.</param>
+    /// <returns>The result of the operation.</returns>
     internal Complex Response(double normalizedFrequency) {
         double a0 = GetA0();
         double a1 = GetA1();
@@ -32,34 +58,71 @@ public sealed class Biquad {
         return ct / cb;
     }
 
+    /// <summary>
+    /// Gets pole zero pairs.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal IReadOnlyList<PoleZeroPair> GetPoleZeroPairs() {
         return [new BiquadPoleState(this)];
     }
 
+    /// <summary>
+    /// Gets a0.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetA0() {
         return A0;
     }
 
+    /// <summary>
+    /// Gets a1.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetA1() {
         return A1 * A0;
     }
 
+    /// <summary>
+    /// Gets a2.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetA2() {
         return A2 * A0;
     }
 
+    /// <summary>
+    /// Gets b0.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetB0() {
         return B0 * A0;
     }
 
+    /// <summary>
+    /// Gets b1.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetB1() {
         return B1 * A0;
     }
 
+    /// <summary>
+    /// Gets b2.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     internal double GetB2() {
         return B2 * A0;
     }
 
+    /// <summary>
+    /// Sets coefficients.
+    /// </summary>
+    /// <param name="a0">The a 0.</param>
+    /// <param name="a1">The a 1.</param>
+    /// <param name="a2">The a 2.</param>
+    /// <param name="b0">The b 0.</param>
+    /// <param name="b1">The b 1.</param>
+    /// <param name="b2">The b 2.</param>
     internal void SetCoefficients(double a0, double a1, double a2, double b0, double b1, double b2) {
         if (double.IsNaN(a0)) {
             throw new ArgumentException("a0 is NaN");
@@ -93,6 +156,11 @@ public sealed class Biquad {
         B2 = b2 / a0;
     }
 
+    /// <summary>
+    /// Sets one pole.
+    /// </summary>
+    /// <param name="pole">The pole.</param>
+    /// <param name="zero">The zero.</param>
     internal void SetOnePole(Complex pole, Complex zero) {
         if (pole.Imaginary != 0.0) {
             throw new ArgumentException("Imaginary part of pole is non-zero.");
@@ -105,6 +173,13 @@ public sealed class Biquad {
         SetCoefficients(1.0, -pole.Real, 0.0, 1.0, -zero.Real, 0.0);
     }
 
+    /// <summary>
+    /// Sets two pole.
+    /// </summary>
+    /// <param name="pole1">The pole 1.</param>
+    /// <param name="zero1">The zero 1.</param>
+    /// <param name="pole2">The pole 2.</param>
+    /// <param name="zero2">The zero 2.</param>
     internal void SetTwoPole(Complex pole1, Complex zero1, Complex pole2, Complex zero2) {
         const string poleErr = "imaginary parts of both poles need to be 0 or complex conjugate";
         const string zeroErr = "imaginary parts of both zeros need to be 0 or complex conjugate";
@@ -150,6 +225,10 @@ public sealed class Biquad {
         SetCoefficients(1.0, a1, a2, 1.0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets pole zero pair.
+    /// </summary>
+    /// <param name="pair">The pair.</param>
     internal void SetPoleZeroPair(PoleZeroPair pair) {
         if (pair.IsSinglePole()) {
             SetOnePole(pair.Poles.First, pair.Zeros.First);
@@ -158,15 +237,26 @@ public sealed class Biquad {
         }
     }
 
+    /// <summary>
+    /// Sets pole zero form.
+    /// </summary>
+    /// <param name="state">The state.</param>
     internal void SetPoleZeroForm(BiquadPoleState state) {
         SetPoleZeroPair(state);
         ApplyScale(state.Gain);
     }
 
+    /// <summary>
+    /// Sets identity.
+    /// </summary>
     internal void SetIdentity() {
         SetCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
     }
 
+    /// <summary>
+    /// Performs the apply scale operation.
+    /// </summary>
+    /// <param name="scale">The scale.</param>
     internal void ApplyScale(double scale) {
         B0 *= scale;
         B1 *= scale;
@@ -174,10 +264,23 @@ public sealed class Biquad {
     }
 }
 
+/// <summary>
+/// Represents biquad pole state.
+/// </summary>
 internal readonly struct BiquadPoleState {
+    /// <summary>
+    /// The pair.
+    /// </summary>
     internal readonly PoleZeroPair Pair;
+    /// <summary>
+    /// The gain.
+    /// </summary>
     internal readonly double Gain;
 
+    /// <summary>
+    /// Performs the biquad pole state operation.
+    /// </summary>
+    /// <param name="s">The s.</param>
     internal BiquadPoleState(Biquad s) {
         double a0 = s.GetA0();
         double a1 = s.GetA1();
@@ -218,6 +321,11 @@ internal readonly struct BiquadPoleState {
         Gain = b0 / a0;
     }
 
+    /// <summary>
+    /// Performs the pole zero pair operation.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <returns>The result of the operation.</returns>
     public static implicit operator PoleZeroPair(BiquadPoleState state) {
         return state.Pair;
     }

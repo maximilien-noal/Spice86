@@ -4,9 +4,19 @@ using Spice86.Core.Emulator.CPU.Exceptions;
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory;
 
+/// <summary>
+/// Represents instructions 16.
+/// </summary>
 public class Instructions16 : Instructions16Or32 {
     private readonly Alu16 _alu16;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="cpu">The cpu.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="modRm">The mod rm.</param>
     public Instructions16(State state, Cpu cpu, IMemory memory, ModRM modRm)
         : base(cpu, memory, modRm) {
         _alu16 = new(state);
@@ -14,162 +24,253 @@ public class Instructions16 : Instructions16Or32 {
 
     private UInt16RegistersIndexer UInt16Registers => State.GeneralRegisters.UInt16;
 
+    /// <summary>
+    /// Adds rm reg.
+    /// </summary>
     public override void AddRmReg() {
         // ADD rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Add(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Adds reg rm.
+    /// </summary>
     public override void AddRegRm() {
         // ADD rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Add(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Adds acc imm.
+    /// </summary>
     public override void AddAccImm() {
         // ADD AX iw
         State.AX = _alu16.Add(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the or rm reg operation.
+    /// </summary>
     public override void OrRmReg() {
         // OR rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Or(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the or reg rm operation.
+    /// </summary>
     public override void OrRegRm() {
         // OR rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Or(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the or acc imm operation.
+    /// </summary>
     public override void OrAccImm() {
         // OR AX iw
         State.AX = _alu16.Or(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the adc rm reg operation.
+    /// </summary>
     public override void AdcRmReg() {
         // ADC rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Adc(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the adc reg rm operation.
+    /// </summary>
     public override void AdcRegRm() {
         // ADC rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Adc(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the adc acc imm operation.
+    /// </summary>
     public override void AdcAccImm() {
         // ADC AX iw
         State.AX = _alu16.Adc(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the sbb rm reg operation.
+    /// </summary>
     public override void SbbRmReg() {
         // SBB rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Sbb(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the sbb reg rm operation.
+    /// </summary>
     public override void SbbRegRm() {
         // SBB rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Sbb(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the sbb acc imm operation.
+    /// </summary>
     public override void SbbAccImm() {
         // SBB AX iw
         State.AX = _alu16.Sbb(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the and rm reg operation.
+    /// </summary>
     public override void AndRmReg() {
         // AND rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.And(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the and reg rm operation.
+    /// </summary>
     public override void AndRegRm() {
         // AND rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.And(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the and acc imm operation.
+    /// </summary>
     public override void AndAccImm() {
         // AND AX ib
         State.AX = _alu16.And(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the sub rm reg operation.
+    /// </summary>
     public override void SubRmReg() {
         // SUB rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Sub(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the sub reg rm operation.
+    /// </summary>
     public override void SubRegRm() {
         // SUB rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Sub(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the sub acc imm operation.
+    /// </summary>
     public override void SubAccImm() {
         // SUB AX iw
         State.AX = _alu16.Sub(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the xor rm reg operation.
+    /// </summary>
     public override void XorRmReg() {
         // XOR rmw rw
         ModRM.Read();
         ModRM.SetRm16(_alu16.Xor(ModRM.GetRm16(), ModRM.R16));
     }
 
+    /// <summary>
+    /// Performs the xor reg rm operation.
+    /// </summary>
     public override void XorRegRm() {
         // XOR rw rmw
         ModRM.Read();
         ModRM.R16 = _alu16.Xor(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the xor acc imm operation.
+    /// </summary>
     public override void XorAccImm() {
         // XOR AX iw
         State.AX = _alu16.Xor(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the cmp rm reg operation.
+    /// </summary>
     public override void CmpRmReg() {
         // CMP rmw rw
         ModRM.Read();
         _alu16.Sub(ModRM.GetRm16(), ModRM.R16);
     }
 
+    /// <summary>
+    /// Performs the cmp reg rm operation.
+    /// </summary>
     public override void CmpRegRm() {
         // CMP rw rmw
         ModRM.Read();
         _alu16.Sub(ModRM.R16, ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the cmp acc imm operation.
+    /// </summary>
     public override void CmpAccImm() {
         // CMP AX iw
         _alu16.Sub(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the inc reg operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void IncReg(int regIndex) {
         // INC regIndex
         UInt16Registers[regIndex] = _alu16.Inc(UInt16Registers[regIndex]);
     }
 
+    /// <summary>
+    /// Performs the dec reg operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void DecReg(int regIndex) {
         // DEC regIndex
         UInt16Registers[regIndex] = _alu16.Dec(UInt16Registers[regIndex]);
     }
 
+    /// <summary>
+    /// Performs the push reg operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void PushReg(int regIndex) {
         // PUSH regIndex
         Stack.Push16(UInt16Registers[regIndex]);
     }
 
+    /// <summary>
+    /// Performs the pop reg operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void PopReg(int regIndex) {
         // POP regIndex
         UInt16Registers[regIndex] = Stack.Pop16();
     }
 
+    /// <summary>
+    /// Performs the pusha operation.
+    /// </summary>
     public override void Pusha() {
         ushort sp = State.SP;
         Stack.Push16(State.AX);
@@ -182,6 +283,9 @@ public class Instructions16 : Instructions16Or32 {
         Stack.Push16(State.DI);
     }
 
+    /// <summary>
+    /// Performs the popa operation.
+    /// </summary>
     public override void Popa() {
         State.DI = Stack.Pop16();
         State.SI = Stack.Pop16();
@@ -195,12 +299,18 @@ public class Instructions16 : Instructions16Or32 {
     }
 
     // Push immediate value
+    /// <summary>
+    /// Performs the push imm operation.
+    /// </summary>
     public override void PushImm() {
         // PUSH Imm16
         Stack.Push16(Cpu.NextUint16());
     }
 
     // Push Sign extended 8bit immediate value
+    /// <summary>
+    /// Performs the push imm 8 sign extended operation.
+    /// </summary>
     public override void PushImm8SignExtended() {
         // sign extend it to 16 bits
         short signedValue = (sbyte)Cpu.NextUint8();
@@ -209,12 +319,18 @@ public class Instructions16 : Instructions16Or32 {
     }
 
 
+    /// <summary>
+    /// Performs the imul rm imm 8 operation.
+    /// </summary>
     public override void ImulRmImm8() {
         // IMUL16 rm16 Imm8
         ModRM.Read();
         ImulRmVal(Cpu.NextUint8());
     }
 
+    /// <summary>
+    /// Performs the imul rm imm 16 or 32 operation.
+    /// </summary>
     public override void ImulRmImm16Or32() {
         // IMUL16 rm16 Imm16
         ModRM.Read();
@@ -226,58 +342,91 @@ public class Instructions16 : Instructions16Or32 {
         ModRM.R16 = (ushort)result;
     }
 
+    /// <summary>
+    /// Performs the imul rm reg 16 or 32 operation.
+    /// </summary>
     public override void ImulRmReg16Or32() {
         // IMUL16 r16 rm16
         ModRM.Read();
         ImulRmVal((short)ModRM.R16);
     }
 
+    /// <summary>
+    /// Performs the advancesi operation.
+    /// </summary>
     protected override void AdvanceSI() {
         AdvanceSI(State.Direction16);
     }
 
+    /// <summary>
+    /// Performs the advancedi operation.
+    /// </summary>
     protected override void AdvanceDI() {
         AdvanceDI(State.Direction16);
     }
 
+    /// <summary>
+    /// Performs the movs operation.
+    /// </summary>
     public override void Movs() {
         ushort value = Memory.UInt16[MemoryAddressOverridableDsSi];
         Memory.UInt16[MemoryAddressEsDi] = value;
         AdvanceSIDI();
     }
 
+    /// <summary>
+    /// Performs the cmps operation.
+    /// </summary>
     public override void Cmps() {
         ushort value = Memory.UInt16[MemoryAddressOverridableDsSi];
         _alu16.Sub(value, Memory.UInt16[MemoryAddressEsDi]);
         AdvanceSIDI();
     }
 
+    /// <summary>
+    /// Performs the test rm reg operation.
+    /// </summary>
     public override void TestRmReg() {
         // TEST rmw rw
         ModRM.Read();
         _alu16.And(ModRM.GetRm16(), ModRM.R16);
     }
 
+    /// <summary>
+    /// Performs the test acc imm operation.
+    /// </summary>
     public override void TestAccImm() {
         // TEST AX iw
         _alu16.And(State.AX, Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the stos operation.
+    /// </summary>
     public override void Stos() {
         Memory.UInt16[MemoryAddressEsDi] = State.AX;
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the lods operation.
+    /// </summary>
     public override void Lods() {
         State.AX = Memory.UInt16[MemoryAddressOverridableDsSi];
         AdvanceSI();
     }
 
+    /// <summary>
+    /// Performs the scas operation.
+    /// </summary>
     public override void Scas() {
         _alu16.Sub(State.AX, Memory.UInt16[MemoryAddressEsDi]);
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the ins operation.
+    /// </summary>
     public override void Ins() {
         ushort port = State.DX;
         ushort value = Cpu.In16(port);
@@ -285,6 +434,9 @@ public class Instructions16 : Instructions16Or32 {
         AdvanceDI();
     }
 
+    /// <summary>
+    /// Performs the outs operation.
+    /// </summary>
     public override void Outs() {
         ushort port = State.DX;
         ushort value = Memory.UInt16[MemoryAddressOverridableDsSi];
@@ -292,6 +444,10 @@ public class Instructions16 : Instructions16Or32 {
         AdvanceSI();
     }
 
+    /// <summary>
+    /// Performs the grp 1 operation.
+    /// </summary>
+    /// <param name="signExtendOp2">The sign extend op 2.</param>
     public override void Grp1(bool signExtendOp2) {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -320,6 +476,10 @@ public class Instructions16 : Instructions16Or32 {
         }
     }
 
+    /// <summary>
+    /// Performs the grp 2 operation.
+    /// </summary>
+    /// <param name="countSource">The count source.</param>
     public override void Grp2(Grp2CountSource countSource) {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -339,14 +499,23 @@ public class Instructions16 : Instructions16Or32 {
         ModRM.SetRm16(res);
     }
 
+    /// <summary>
+    /// Performs the grp 3 test rm operation.
+    /// </summary>
     protected override void Grp3TestRm() {
         _alu16.And(ModRM.GetRm16(), Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the grp 3 not rm operation.
+    /// </summary>
     protected override void Grp3NotRm() {
         ModRM.SetRm16((ushort)~ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the grp 3 neg rm operation.
+    /// </summary>
     protected override void Grp3NegRm() {
         ushort value = ModRM.GetRm16();
         value = _alu16.Sub(0, value);
@@ -354,6 +523,9 @@ public class Instructions16 : Instructions16Or32 {
         State.CarryFlag = value != 0;
     }
 
+    /// <summary>
+    /// Performs the grp 3 mul rm acc operation.
+    /// </summary>
     protected override void Grp3MulRmAcc() {
         uint result = _alu16.Mul(State.AX, ModRM.GetRm16());
         // Upper part of the result goes in DX
@@ -361,6 +533,9 @@ public class Instructions16 : Instructions16Or32 {
         State.AX = (ushort)result;
     }
 
+    /// <summary>
+    /// Performs the grp 3 i mul rm acc operation.
+    /// </summary>
     protected override void Grp3IMulRmAcc() {
         int result = _alu16.Imul((short)State.AX, (short)ModRM.GetRm16());
         // Upper part of the result goes in DX
@@ -368,6 +543,9 @@ public class Instructions16 : Instructions16Or32 {
         State.AX = (ushort)result;
     }
 
+    /// <summary>
+    /// Performs the grp 3 div rm acc operation.
+    /// </summary>
     protected override void Grp3DivRmAcc() {
         uint v1 = (uint)(State.DX << 16 | State.AX);
         ushort v2 = ModRM.GetRm16();
@@ -376,29 +554,44 @@ public class Instructions16 : Instructions16Or32 {
         State.DX = (ushort)(v1 % v2);
     }
 
+    /// <summary>
+    /// Performs the grp 3 idiv rm acc operation.
+    /// </summary>
     protected override void Grp3IdivRmAcc() {
         // no sign extension for v1 as it is already a 32bit value
         int v1 = State.DX << 16 | State.AX;
-        short v2 = (short) ModRM.GetRm16();
+        short v2 = (short)ModRM.GetRm16();
         short result = _alu16.Idiv(v1, v2);
         State.AX = (ushort)result;
         State.DX = (ushort)(v1 % v2);
     }
 
+    /// <summary>
+    /// Performs the grp 45 rm inc operation.
+    /// </summary>
     protected override void Grp45RmInc() {
         // INC
         ModRM.SetRm16(_alu16.Inc(ModRM.GetRm16()));
     }
 
+    /// <summary>
+    /// Performs the grp 45 rm dec operation.
+    /// </summary>
     protected override void Grp45RmDec() {
         // DEC
         ModRM.SetRm16(_alu16.Dec(ModRM.GetRm16()));
     }
 
+    /// <summary>
+    /// Performs the grp 5 rm push operation.
+    /// </summary>
     protected override void Grp5RmPush() {
         Stack.Push16(ModRM.GetRm16());
     }
 
+    /// <summary>
+    /// Performs the xchg rm operation.
+    /// </summary>
     public override void XchgRm() {
         // XCHG rmw rw
         ModRM.Read();
@@ -408,6 +601,9 @@ public class Instructions16 : Instructions16Or32 {
         ModRM.SetRm16(value2);
     }
 
+    /// <summary>
+    /// Performs the xadd rm operation.
+    /// </summary>
     public override void XaddRm() {
         // XADD rmw rw
         ModRM.Read();
@@ -417,44 +613,70 @@ public class Instructions16 : Instructions16Or32 {
         ModRM.SetRm16(_alu16.Add(src, dest));
     }
 
+    /// <summary>
+    /// Performs the xchg acc operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void XchgAcc(int regIndex) {
         // XCHG AX regIndex
         (State.AX, UInt16Registers[regIndex]) = (UInt16Registers[regIndex], State.AX);
     }
 
+    /// <summary>
+    /// Performs the mov rm reg operation.
+    /// </summary>
     public override void MovRmReg() {
         // MOV rmw rw
         ModRM.Read();
         ModRM.SetRm16(ModRM.R16);
     }
 
+    /// <summary>
+    /// Performs the mov reg rm operation.
+    /// </summary>
     public override void MovRegRm() {
         // MOV rw, rmw
         ModRM.Read();
         ModRM.R16 = ModRM.GetRm16();
     }
 
+    /// <summary>
+    /// Performs the mov reg imm operation.
+    /// </summary>
+    /// <param name="regIndex">The reg index.</param>
     public override void MovRegImm(int regIndex) {
         // MOV reg66(regIndex) iw
         UInt16Registers[regIndex] = Cpu.NextUint16();
     }
 
+    /// <summary>
+    /// Performs the mov acc moffs operation.
+    /// </summary>
     public override void MovAccMoffs() {
         // MOV AX moffs16
         State.AX = Memory.UInt16[DsNextUint16Address];
     }
 
+    /// <summary>
+    /// Performs the mov moffs acc operation.
+    /// </summary>
     public override void MovMoffsAcc() {
         // MOV moffs16 AX
         Memory.UInt16[DsNextUint16Address] = State.AX;
     }
 
+    /// <summary>
+    /// Performs the mov rm imm operation.
+    /// </summary>
     public override void MovRmImm() {
         // MOV rmw iw
         ModRM.Read();
         ModRM.SetRm16(Cpu.NextUint16());
     }
 
+    /// <summary>
+    /// Performs the mov rm sreg operation.
+    /// </summary>
     public override void MovRmSreg() {
         // MOV rmw sreg
         ModRM.Read();
@@ -462,6 +684,9 @@ public class Instructions16 : Instructions16Or32 {
     }
 
     // Only present in 16 bit
+    /// <summary>
+    /// Performs the mov sreg rm operation.
+    /// </summary>
     public void MovSregRm() {
         // MOV sreg rmw
         ModRM.Read();
@@ -475,22 +700,34 @@ public class Instructions16 : Instructions16Or32 {
         }
     }
 
+    /// <summary>
+    /// Performs the lea operation.
+    /// </summary>
     public override void Lea() {
         ModRM.R16 = ExtractLeaMemoryOffset16();
     }
 
+    /// <summary>
+    /// Performs the pop rm operation.
+    /// </summary>
     public override void PopRm() {
         // POP rmw
         ModRM.Read();
         ModRM.SetRm16(Stack.Pop16());
     }
 
+    /// <summary>
+    /// Performs the cbw operation.
+    /// </summary>
     public override void Cbw() {
         // CBW, Convert byte to word
         short shortValue = (sbyte)State.AL;
         State.AX = (ushort)shortValue;
     }
 
+    /// <summary>
+    /// Performs the cwd operation.
+    /// </summary>
     public override void Cwd() {
         // CWD, Sign extend AX into DX (word to dword)
         if (State.AX >= 0x8000) {
@@ -500,28 +737,44 @@ public class Instructions16 : Instructions16Or32 {
         }
     }
 
+    /// <summary>
+    /// Performs the pushf operation.
+    /// </summary>
     public override void Pushf() {
         // PUSHF
         Stack.Push16((ushort)State.Flags.FlagRegister);
     }
 
+    /// <summary>
+    /// Performs the popf operation.
+    /// </summary>
     public override void Popf() {
         // POPF
         State.Flags.FlagRegister = Stack.Pop16();
     }
 
+    /// <summary>
+    /// Performs the do lxs and return segment value operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     protected override ushort DoLxsAndReturnSegmentValue() {
         uint memoryAddress = ReadLxsMemoryAddress();
         (ushort segment, ModRM.R16) = Memory.SegmentedAddress16[memoryAddress];
         return segment;
     }
 
+    /// <summary>
+    /// Performs the in imm 8 operation.
+    /// </summary>
     public override void InImm8() {
         // IN AX Imm8
         byte port = Cpu.NextUint8();
         State.AX = Cpu.In16(port);
     }
 
+    /// <summary>
+    /// Performs the out imm 8 operation.
+    /// </summary>
     public override void OutImm8() {
         // OUT AX Imm8
         byte port = Cpu.NextUint8();
@@ -529,16 +782,25 @@ public class Instructions16 : Instructions16Or32 {
         Cpu.Out16(port, value);
     }
 
+    /// <summary>
+    /// Performs the in dx operation.
+    /// </summary>
     public override void InDx() {
         // IN AX DX
         State.AX = Cpu.In16(State.DX);
     }
 
+    /// <summary>
+    /// Performs the out dx operation.
+    /// </summary>
     public override void OutDx() {
         // OUT DX AX
         Cpu.Out16(State.DX, State.AX);
     }
 
+    /// <summary>
+    /// Performs the enter operation.
+    /// </summary>
     public override void Enter() {
         ushort storage = Cpu.NextUint16();
         byte level = Cpu.NextUint8();
@@ -555,11 +817,18 @@ public class Instructions16 : Instructions16Or32 {
         State.SP -= storage;
     }
 
+    /// <summary>
+    /// Performs the leave operation.
+    /// </summary>
     public override void Leave() {
         State.SP = State.BP;
         State.BP = Stack.Pop16();
     }
 
+    /// <summary>
+    /// Performs the shld operation.
+    /// </summary>
+    /// <param name="countSource">The count source.</param>
     public override void Shld(Grp2CountSource countSource) {
         ModRM.Read();
         byte count = ComputeGrp2Count(countSource);
@@ -570,11 +839,17 @@ public class Instructions16 : Instructions16Or32 {
         ModRM.SetRm16(value);
     }
 
+    /// <summary>
+    /// Performs the movzx byte operation.
+    /// </summary>
     public override void MovzxByte() {
         ModRM.Read();
         ModRM.R16 = ModRM.GetRm8();
     }
 
+    /// <summary>
+    /// Performs the movsx byte operation.
+    /// </summary>
     public override void MovsxByte() {
         ModRM.Read();
         ModRM.R16 = (ushort)(sbyte)ModRM.GetRm8();

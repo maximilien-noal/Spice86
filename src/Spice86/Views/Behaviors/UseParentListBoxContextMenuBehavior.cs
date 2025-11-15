@@ -4,7 +4,13 @@ using Avalonia.Interactivity;
 
 namespace Spice86.Views.Behaviors;
 
+/// <summary>
+/// Represents use parent list box context menu behavior.
+/// </summary>
 public class UseParentListBoxContextMenuBehavior {
+    /// <summary>
+    /// The use parent context menu property.
+    /// </summary>
     public static readonly AttachedProperty<bool> UseParentContextMenuProperty = AvaloniaProperty.RegisterAttached<Control, bool>("UseParentContextMenu", typeof(UseParentListBoxContextMenuBehavior));
 
     static UseParentListBoxContextMenuBehavior() {
@@ -50,10 +56,20 @@ public class UseParentListBoxContextMenuBehavior {
         }
     }
 
+    /// <summary>
+    /// Sets use parent context menu.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="value">The value.</param>
     public static void SetUseParentContextMenu(Control element, bool value) {
         element.SetValue(UseParentContextMenuProperty, value);
     }
 
+    /// <summary>
+    /// Gets use parent context menu.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public static bool GetUseParentContextMenu(Control element) {
         return element.GetValue(UseParentContextMenuProperty);
     }

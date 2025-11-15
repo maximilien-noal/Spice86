@@ -17,8 +17,14 @@ public static class HighlightBehavior {
     private static readonly TimeSpan AnimationDuration = TimeSpan.FromSeconds(0.5);
     private const FillMode AnimationFillMode = FillMode.Forward;
 
+    /// <summary>
+    /// The is highlighted property.
+    /// </summary>
     public static readonly AttachedProperty<bool> IsHighlightedProperty = AvaloniaProperty.RegisterAttached<TextBlock, bool>("IsHighlighted", typeof(HighlightBehavior), defaultValue: false);
 
+    /// <summary>
+    /// The highlight foreground property.
+    /// </summary>
     public static readonly AttachedProperty<bool> HighlightForegroundProperty =
         AvaloniaProperty.RegisterAttached<TextBlock, bool>("HighlightForeground", typeof(HighlightBehavior), defaultValue: true);
 
@@ -70,9 +76,15 @@ public static class HighlightBehavior {
         }
     }
 
+    /// <summary>
+    /// The is content highlighted property.
+    /// </summary>
     public static readonly AttachedProperty<bool> IsContentHighlightedProperty =
         AvaloniaProperty.RegisterAttached<ContentControl, bool>("IsContentHighlighted", typeof(HighlightBehavior), defaultValue: false);
 
+    /// <summary>
+    /// The highlight content foreground property.
+    /// </summary>
     public static readonly AttachedProperty<bool> HighlightContentForegroundProperty =
         AvaloniaProperty.RegisterAttached<ContentControl, bool>("HighlightContentForeground", typeof(HighlightBehavior), defaultValue: true);
 
@@ -119,6 +131,9 @@ public static class HighlightBehavior {
         }
     }
 
+    /// <summary>
+    /// The is panel highlighted property.
+    /// </summary>
     public static readonly AttachedProperty<bool> IsPanelHighlightedProperty = AvaloniaProperty.RegisterAttached<Panel, bool>("IsPanelHighlighted", typeof(HighlightBehavior), defaultValue: false);
 
     public static void SetIsPanelHighlighted(Panel element, bool value) =>

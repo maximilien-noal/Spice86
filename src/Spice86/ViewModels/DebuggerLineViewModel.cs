@@ -38,6 +38,11 @@ public partial class DebuggerLineViewModel : ViewModelBase {
     [ObservableProperty]
     private bool? _willJump;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="instruction">The instruction.</param>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
     public DebuggerLineViewModel(EnrichedInstruction instruction, BreakpointsViewModel? breakpointsViewModel = null) {
         _info = instruction.Instruction;
         _breakpointsViewModel = breakpointsViewModel;
@@ -55,8 +60,17 @@ public partial class DebuggerLineViewModel : ViewModelBase {
         GenerateFormattedDisassembly();
     }
 
+    /// <summary>
+    /// Gets byte string.
+    /// </summary>
     public string ByteString { get; }
+    /// <summary>
+    /// Gets function.
+    /// </summary>
     public FunctionInformation? Function { get; }
+    /// <summary>
+    /// Gets segmented address.
+    /// </summary>
     public SegmentedAddress SegmentedAddress { get; }
 
     /// <summary>
@@ -64,10 +78,19 @@ public partial class DebuggerLineViewModel : ViewModelBase {
     /// </summary>
     public uint Address { get; }
 
+    /// <summary>
+    /// The continues to next instruction.
+    /// </summary>
     public bool ContinuesToNextInstruction => _info.FlowControl == FlowControl.Next;
+    /// <summary>
+    /// The can be stepped over.
+    /// </summary>
     public bool CanBeSteppedOver => _info.FlowControl is FlowControl.Call or FlowControl.IndirectCall or FlowControl.Interrupt;
     public uint NextAddress { get; private set; }
 
+    /// <summary>
+    /// The disassembly.
+    /// </summary>
     public string Disassembly => _customFormattedInstruction != null ? string.Join(' ', _customFormattedInstruction.Select(segment => segment.Text)) : _info.ToString();
 
     /// <summary>
@@ -99,6 +122,10 @@ public partial class DebuggerLineViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>
+    /// Converts to string.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public override string ToString() {
         return $"{SegmentedAddress} {Disassembly} [{ByteString}]";
     }

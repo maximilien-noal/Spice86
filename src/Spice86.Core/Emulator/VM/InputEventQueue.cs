@@ -26,12 +26,17 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
     public event EventHandler<MouseButtonEventArgs>? MouseButtonDown;
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="keyboardEvents">The keyboard events.</param>
+    /// <param name="mouseEvents">The mouse events.</param>
     public InputEventQueue(
         IGuiKeyboardEvents keyboardEvents,
         IGuiMouseEvents mouseEvents) {
         _keyboardEvents = keyboardEvents;
         _mouseEvents = mouseEvents;
-        
+
         _keyboardEvents.KeyDown += OnKeyDown;
         _keyboardEvents.KeyUp += OnKeyUp;
         _mouseEvents.MouseMoved += OnMouseMoved;

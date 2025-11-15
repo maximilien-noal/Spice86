@@ -1,6 +1,7 @@
 namespace Spice86.Core.Emulator.Devices.Input.Keyboard;
 
 using Serilog.Events;
+
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Shared.Emulator.Keyboard;
@@ -9,6 +10,9 @@ using Spice86.Shared.Interfaces;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+/// <summary>
+/// Represents ps2 keyboard.
+/// </summary>
 [DebuggerDisplay("PS2Keyboard Set={_codeSet} Scanning={_isScanning} Buf={_bufferNumUsed}/{BufferSize} Overflowed={_bufferOverflowed} Repeat={_repeat.Key} WaitMs={_repeat.WaitMs}")]
 public class PS2Keyboard : IDisposable {
     private readonly Intel8042Controller _controller;
@@ -17,7 +21,7 @@ public class PS2Keyboard : IDisposable {
     private readonly State _cpuState;
     private readonly DualPic _dualPic;
     private readonly IGuiKeyboardEvents? _gui;
-    
+
     // Handler references for PIC event management
     private readonly PicEventHandler _service1msHandler;
     private readonly PicEventHandler _ledsAllOnExpireHandler;
@@ -31,17 +35,38 @@ public class PS2Keyboard : IDisposable {
 
     // Key repetition (ms-based), DOSBox-style
     private struct RepeatData {
+        /// <summary>
+        /// The key.
+        /// </summary>
         public KbdKey Key;     // key which went typematic
+        /// <summary>
+        /// The wait ms.
+        /// </summary>
         public int WaitMs;     // ms until next event
+        /// <summary>
+        /// The pause ms.
+        /// </summary>
         public int PauseMs;    // initial delay (ms)
+        /// <summary>
+        /// The rate ms.
+        /// </summary>
         public int RateMs;     // repeat rate (ms)
     }
     private RepeatData _repeat = new() { Key = KbdKey.None, WaitMs = 0, PauseMs = 500, RateMs = 33 };
 
     // Set3-specific code info
     private class Set3CodeInfoEntry {
+        /// <summary>
+        /// The is enabled typematic.
+        /// </summary>
         public bool IsEnabledTypematic = true;
+        /// <summary>
+        /// The is enabled make.
+        /// </summary>
         public bool IsEnabledMake = true;
+        /// <summary>
+        /// The is enabled break.
+        /// </summary>
         public bool IsEnabledBreak = true;
     }
     private readonly Dictionary<byte, Set3CodeInfoEntry> _set3CodeInfo = new();
@@ -122,7 +147,7 @@ public class PS2Keyboard : IDisposable {
         _cpuState = cpuState;
         _loggerService = loggerService;
         _dualPic = dualPic;
-        
+
         // Initialize handler references
         _service1msHandler = TypematicTickHandler;
         _ledsAllOnExpireHandler = LedsAllOnExpireHandler;
@@ -230,7 +255,7 @@ public class PS2Keyboard : IDisposable {
         // Simulate key press
         AddKey(_repeat.Key, isPressed: true);
     }
-    
+
     private void LedsAllOnExpireHandler(uint _) {
         _ledsAllOn = false;
         MaybeNotifyLedState();
@@ -357,7 +382,7 @@ public class PS2Keyboard : IDisposable {
     }
 
     private void ExecuteCommand(KeyboardCommand command) {
-        if(_loggerService.IsEnabled(LogEventLevel.Debug)) {
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug("KEYBOARD: Command 0x{Command:X2}", (byte)command);
         }
 
@@ -485,7 +510,7 @@ public class PS2Keyboard : IDisposable {
     }
 
     private void ExecuteCommand(KeyboardCommand command, byte param) {
-        if(_loggerService.IsEnabled(LogEventLevel.Debug)) {
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug("KEYBOARD: Command 0x{Command:X2}, parameter 0x{Param:X2}", (byte)command, param);
         }
 

@@ -7,27 +7,37 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
-using Spice86.ViewModels.ValueViewModels.Debugging;
 using Spice86.Shared.Utils;
+using Spice86.ViewModels.PropertiesMappers;
+using Spice86.ViewModels.Services;
+using Spice86.ViewModels.ValueViewModels.Debugging;
 
 using System.ComponentModel;
 using System.Reflection;
-using Spice86.ViewModels.PropertiesMappers;
-using Spice86.ViewModels.Services;
 
+/// <summary>
+/// Represents cpu view model.
+/// </summary>
 public partial class CpuViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly State _cpuState;
     private readonly IMemory _memory;
-    
+
     [ObservableProperty]
     private StateInfo _state = new();
 
     [ObservableProperty]
     private CpuFlagsInfo _flags = new();
-    
+
     [ObservableProperty]
     private RegistersViewModel _registers;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
     public CpuViewModel(State state, IMemory memory, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher) {
         _cpuState = state;
         _memory = memory;
@@ -38,17 +48,25 @@ public partial class CpuViewModel : ViewModelBase, IEmulatorObjectViewModel {
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, UpdateValues);
     }
 
+    /// <summary>
+    /// Gets or sets is visible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
+    /// <summary>
+    /// Updates values.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;
         }
         VisitCpuState(_cpuState);
     }
-    
+
     private bool _isPaused;
-    
+
     private void VisitCpuState(State state) {
         UpdateCpuState(state);
 
@@ -87,7 +105,7 @@ public partial class CpuViewModel : ViewModelBase, IEmulatorObjectViewModel {
         state.CopyFlagsToStateInfo(this.Flags);
         // Update the registers view model
         Registers.Update();
-        
+
         EsDiString = _memory.GetZeroTerminatedString(
             MemoryUtils.ToPhysicalAddress(State.ES, State.DI),
             32);

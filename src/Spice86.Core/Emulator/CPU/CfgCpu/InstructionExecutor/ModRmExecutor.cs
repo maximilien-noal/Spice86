@@ -3,11 +3,20 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.Memory;
 
+/// <summary>
+/// Represents mod rm executor.
+/// </summary>
 public class ModRmExecutor {
     private readonly State _state;
     private readonly IMemory _memory;
     private readonly ModRmComputer _computer;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="instructionFieldValueRetriever">The instruction field value retriever.</param>
     public ModRmExecutor(State state, IMemory memory, InstructionFieldValueRetriever instructionFieldValueRetriever) {
         _state = state;
         _memory = memory;
@@ -28,8 +37,8 @@ public class ModRmExecutor {
     /// <summary>
     /// Gets the linear address the ModRM byte can point at. Can be <c>null</c>.
     /// </summary>
-    public uint? MemoryAddress  { get; private set; }
-    
+    public uint? MemoryAddress { get; private set; }
+
     /// <summary>
     /// Gets the MemoryAddress field, crashes if it was <c>null</c>.
     /// </summary>
@@ -42,7 +51,7 @@ public class ModRmExecutor {
             return MemoryAddress.Value;
         }
     }
-    
+
     /// <summary>
     /// Gets the memory offset of the ModRM byte can point at. Can be <c>null</c>.
     /// </summary>

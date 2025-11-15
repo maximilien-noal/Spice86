@@ -14,6 +14,15 @@ public class InstructionField<T> : FieldWithValue {
     /// </summary>
     public int IndexInInstruction { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="indexInInstruction">The index in instruction.</param>
+    /// <param name="length">The length.</param>
+    /// <param name="physicalAddress">The physical address.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="signatureValue">The signature value.</param>
+    /// <param name="final">The final.</param>
     public InstructionField(int indexInInstruction, int length, uint physicalAddress, T value,
         ImmutableList<byte?> signatureValue, bool final) : base(signatureValue, final) {
         IndexInInstruction = indexInInstruction;

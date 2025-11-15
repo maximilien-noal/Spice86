@@ -18,6 +18,9 @@ public class DosMemoryControlBlock : MemoryBasedDataStructure {
     private const int PspSegmentFieldOffset = TypeFieldOffset + 1;
     private const int SizeFieldOffset = PspSegmentFieldOffset + 2;
     private const int FilenameFieldOffset = SizeFieldOffset + 2 + 3;
+    /// <summary>
+    /// The free mcb marker.
+    /// </summary>
     public const byte FreeMcbMarker = 0x0;
     private const byte McbLastEntry = 0x5A;
     private const byte McbNonLastEntry = 0x4D;

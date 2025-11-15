@@ -14,11 +14,23 @@ using System.Collections.Immutable;
 /// </summary>
 /// <param name="Instruction">The Iced assembly instruction</param>
 public record EnrichedInstruction(Instruction Instruction) {
+    /// <summary>
+    /// Gets bytes.
+    /// </summary>
     public byte[] Bytes { get; init; } = [];
+    /// <summary>
+    /// Gets function.
+    /// </summary>
     public FunctionInformation? Function { get; init; }
+    /// <summary>
+    /// Gets segmented address.
+    /// </summary>
     public SegmentedAddress SegmentedAddress { get; init; }
+    /// <summary>
+    /// Gets breakpoints.
+    /// </summary>
     public ImmutableList<BreakpointViewModel> Breakpoints { get; init; } = [];
-    
+
     /// <summary>
     /// Gets or sets a custom formatted representation of the instruction.
     /// If null, the default formatting from Iced will be used.

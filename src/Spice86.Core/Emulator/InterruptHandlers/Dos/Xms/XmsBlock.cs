@@ -2,6 +2,9 @@
 
 using System.Diagnostics;
 
+/// <summary>
+/// Represents xms block.
+/// </summary>
 [DebuggerDisplay("Handle={Handle}, Length={Length}, IsFree={IsFree}")]
 public readonly struct XmsBlock : IEquatable<XmsBlock> {
     public XmsBlock(int handle, uint offset, uint length, bool free) {
@@ -30,6 +33,10 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
     /// </summary>
     public bool IsFree { get; }
 
+    /// <summary>
+    /// Converts to string.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public override string ToString() {
         if (!IsFree) {
             return $"{Handle:X4}: {Offset:X8} to {Offset + Length:X8}";
@@ -42,6 +49,9 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
 
     public override int GetHashCode() => Handle ^ (int)Offset ^ (int)Length;
 
+    /// <summary>
+    /// The handle.
+    /// </summary>
     public bool Equals(XmsBlock other) => Handle == other.Handle && Offset == other.Offset && Length == other.Length && !IsFree == !other.IsFree;
 
     /// <summary>
@@ -94,6 +104,11 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
         return new XmsBlock(0, Offset, Length + other.Length, true);
     }
 
+    /// <summary>
+    /// Determines whether it can be joined with.
+    /// </summary>
+    /// <param name="other">The other.</param>
+    /// <returns><c>true</c> if the condition is met; otherwise, <c>false</c>.</returns>
     public bool CanBeJoinedWith(XmsBlock other) {
         return IsFree && other.IsFree && Offset + Length == other.Offset;
     }

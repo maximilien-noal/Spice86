@@ -150,6 +150,9 @@ public class KeyboardInt16Handler : InterruptHandler {
         // Note: AX is intentionally left unchanged if no key is available to avoid bugs in emulated programs
     }
 
+    /// <summary>
+    /// Gets shift flags.
+    /// </summary>
     public void GetShiftFlags() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
             LoggerService.Verbose("GET SHIFT FLAGS");

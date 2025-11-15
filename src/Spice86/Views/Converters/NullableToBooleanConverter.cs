@@ -5,6 +5,9 @@ using Avalonia.Data.Converters;
 
 using System.Globalization;
 
+/// <summary>
+/// Represents nullable to boolean converter.
+/// </summary>
 public class NullableToBooleanConverter : IValueConverter {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) {
         return value is not null;

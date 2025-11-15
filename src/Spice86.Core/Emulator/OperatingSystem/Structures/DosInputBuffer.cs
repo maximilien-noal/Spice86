@@ -7,6 +7,11 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// Small structure used to represent a DOS input buffer for DOS INT21H 0xA function.
 /// </summary>
 public class DosInputBuffer : MemoryBasedDataStructure {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="byteReaderWriter">The byte reader writer.</param>
+    /// <param name="baseAddress">The base address.</param>
     public DosInputBuffer(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
     }
 

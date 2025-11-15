@@ -25,7 +25,7 @@ public class EmulatorStateSerializer {
     /// Initializes a new instance of <see cref="EmulatorStateSerializer"/>.
     /// </summary>
     public EmulatorStateSerializer(DumpFolderMetadata dumpContext,
-        MemoryDataExporter memoryDataExporter, 
+        MemoryDataExporter memoryDataExporter,
         State state, IExecutionDumpFactory executionDumpFactory,
         FunctionCatalogue functionCatalogue,
         ISerializableBreakpointsSource serializableBreakpointsSource,
@@ -51,7 +51,7 @@ public class EmulatorStateSerializer {
                 _executionDumpFactory,
                 _memoryDataExporter,
                 _functionCatalogue,
-                dirPath, 
+                dirPath,
                 _loggerService)
             .DumpAll();
         SaveBreakpoints(dirPath);
@@ -92,6 +92,11 @@ public class EmulatorStateSerializer {
         }
     }
 
+    /// <summary>
+    /// Performs the load breakpoints operation.
+    /// </summary>
+    /// <param name="dirPath">The dir path.</param>
+    /// <returns>The result of the operation.</returns>
     public SerializableUserBreakpointCollection LoadBreakpoints(string dirPath) {
         string fileName = ComputeFileName(dirPath);
         return DeserializeBreakpoints(fileName);

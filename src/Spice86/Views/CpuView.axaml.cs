@@ -1,13 +1,20 @@
 namespace Spice86.Views;
 
-using Avalonia.Threading;
 using Avalonia;
-using Spice86.ViewModels;
 using Avalonia.Controls;
+using Avalonia.Threading;
+
+using Spice86.ViewModels;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// Represents cpu view.
+/// </summary>
 public partial class CpuView : UserControl {
     private DispatcherTimer? _timer;
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public CpuView() {
         InitializeComponent();
         this.DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -21,6 +28,10 @@ public partial class CpuView : UserControl {
         }
     }
 
+    /// <summary>
+    /// Called when data context changed.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnDataContextChanged(EventArgs e) {
         base.OnDataContextChanged(e);
         if (DataContext is IEmulatorObjectViewModel vm) {

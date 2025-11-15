@@ -1,8 +1,15 @@
 ﻿namespace Spice86.Core.Emulator.OperatingSystem.Structures;
+
 using System;
 using System.IO;
 
+/// <summary>
+/// Represents virtual file base.
+/// </summary>
 public abstract class VirtualFileBase : Stream, IVirtualFile {
+    /// <summary>
+    /// Gets or sets name.
+    /// </summary>
     public virtual string Name { get; set; } = "";
 
     /// <summary>

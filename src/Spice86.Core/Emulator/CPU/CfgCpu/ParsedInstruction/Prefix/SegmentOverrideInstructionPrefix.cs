@@ -6,6 +6,11 @@ using Spice86.Core.Emulator.CPU.Registers;
 /// Prefix representing that the instruction segmented address register will be overridden by segmentRegisterIndex
 /// </summary>
 public class SegmentOverrideInstructionPrefix : InstructionPrefix {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="prefixField">The prefix field.</param>
+    /// <param name="segmentRegisterIndex">The segment register index.</param>
     public SegmentOverrideInstructionPrefix(InstructionField<byte> prefixField,
         SegmentRegisterIndex segmentRegisterIndex) : base(prefixField) {
         SegmentRegisterIndex = segmentRegisterIndex;

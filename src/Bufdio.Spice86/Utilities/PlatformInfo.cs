@@ -5,8 +5,7 @@ using System.Runtime.InteropServices;
 /// <summary>
 /// Represents platform info.
 /// </summary>
-internal static class PlatformInfo
-{
+internal static class PlatformInfo {
     /// <summary>
     /// The is windows.
     /// </summary>

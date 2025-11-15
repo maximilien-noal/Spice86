@@ -3,7 +3,13 @@
 
 namespace Spice86.Libs.Sound.Devices.YM7128B;
 
+/// <summary>
+/// Represents ym 7128 b chip.
+/// </summary>
 internal sealed partial class Ym7128BChip {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     internal Ym7128BChip() {
         ChipIdealCtor(Ideal);
         FixedCtor();
@@ -11,10 +17,16 @@ internal sealed partial class Ym7128BChip {
         ShortCtor();
     }
 
+    /// <summary>
+    /// Performs the ideal ctor operation.
+    /// </summary>
     internal void IdealCtor() {
         ChipIdealCtor(Ideal);
     }
 
+    /// <summary>
+    /// Performs the ideal dtor operation.
+    /// </summary>
     internal void IdealDtor() {
         ChipIdealDtor(Ideal);
     }
@@ -23,26 +35,50 @@ internal sealed partial class Ym7128BChip {
         ChipIdealReset(Ideal);
     }
 
+    /// <summary>
+    /// Performs the ideal start operation.
+    /// </summary>
     internal void IdealStart() {
         ChipIdealStart(Ideal);
     }
 
+    /// <summary>
+    /// Performs the ideal stop operation.
+    /// </summary>
     internal void IdealStop() {
         ChipIdealStop(Ideal);
     }
 
+    /// <summary>
+    /// Performs the ideal setup operation.
+    /// </summary>
+    /// <param name="sampleRate">The sample rate.</param>
     internal void IdealSetup(nuint sampleRate) {
         ChipIdealSetup(Ideal, sampleRate);
     }
 
+    /// <summary>
+    /// Performs the ideal write operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void IdealWrite(byte address, byte value) {
         ChipIdealWrite(Ideal, address, value);
     }
 
+    /// <summary>
+    /// Performs the ideal read operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte IdealRead(byte address) {
         return ChipIdealRead(Ideal, address);
     }
 
+    /// <summary>
+    /// Performs the ideal process operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void IdealProcess(Ym7128BChipIdealProcessData data) {
         ChipIdealProcess(Ideal, data);
     }
@@ -51,22 +87,42 @@ internal sealed partial class Ym7128BChip {
         FixedReset();
     }
 
+    /// <summary>
+    /// Performs the fixed start shim operation.
+    /// </summary>
     internal void FixedStartShim() {
         FixedStart();
     }
 
+    /// <summary>
+    /// Performs the fixed stop shim operation.
+    /// </summary>
     internal void FixedStopShim() {
         FixedStop();
     }
 
+    /// <summary>
+    /// Performs the fixed process shim operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void FixedProcessShim(Ym7128BChipFixedProcessData data) {
         FixedProcess(data);
     }
 
+    /// <summary>
+    /// Performs the fixed read shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte FixedReadShim(byte address) {
         return FixedRead(address);
     }
 
+    /// <summary>
+    /// Performs the fixed write shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void FixedWriteShim(byte address, byte value) {
         FixedWrite(address, value);
     }
@@ -75,22 +131,42 @@ internal sealed partial class Ym7128BChip {
         FloatReset();
     }
 
+    /// <summary>
+    /// Performs the float start shim operation.
+    /// </summary>
     internal void FloatStartShim() {
         FloatStart();
     }
 
+    /// <summary>
+    /// Performs the float stop shim operation.
+    /// </summary>
     internal void FloatStopShim() {
         FloatStop();
     }
 
+    /// <summary>
+    /// Performs the float process shim operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void FloatProcessShim(Ym7128BChipFloatProcessData data) {
         FloatProcess(data);
     }
 
+    /// <summary>
+    /// Performs the float read shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte FloatReadShim(byte address) {
         return FloatRead(address);
     }
 
+    /// <summary>
+    /// Performs the float write shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void FloatWriteShim(byte address, byte value) {
         FloatWrite(address, value);
     }
@@ -99,26 +175,50 @@ internal sealed partial class Ym7128BChip {
         ShortReset();
     }
 
+    /// <summary>
+    /// Performs the short start shim operation.
+    /// </summary>
     internal void ShortStartShim() {
         ShortStart();
     }
 
+    /// <summary>
+    /// Performs the short stop shim operation.
+    /// </summary>
     internal void ShortStopShim() {
         ShortStop();
     }
 
+    /// <summary>
+    /// Performs the short setup shim operation.
+    /// </summary>
+    /// <param name="sampleRate">The sample rate.</param>
     internal void ShortSetupShim(nuint sampleRate) {
         ShortSetup(sampleRate);
     }
 
+    /// <summary>
+    /// Performs the short process shim operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void ShortProcessShim(Ym7128BChipShortProcessData data) {
         ShortProcess(data);
     }
 
+    /// <summary>
+    /// Performs the short read shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte ShortReadShim(byte address) {
         return ShortRead(address);
     }
 
+    /// <summary>
+    /// Performs the short write shim operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void ShortWriteShim(byte address, byte value) {
         ShortWrite(address, value);
     }

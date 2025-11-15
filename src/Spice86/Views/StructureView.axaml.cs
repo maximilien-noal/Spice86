@@ -6,7 +6,13 @@ using Avalonia.Controls;
 using Spice86.ViewModels;
 using Spice86.ViewModels.Messages;
 
+/// <summary>
+/// Represents structure view.
+/// </summary>
 public partial class StructureView : Window {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public StructureView() {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;

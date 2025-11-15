@@ -9,6 +9,9 @@ using Spice86.ViewModels;
 
 using System;
 
+/// <summary>
+/// Represents main window.
+/// </summary>
 internal partial class MainWindow : Window {
     /// <summary>
     /// Initializes a new instance
@@ -29,6 +32,9 @@ internal partial class MainWindow : Window {
         }, DispatcherPriority.Background);
     }
 
+    /// <summary>
+    /// The performance view model property.
+    /// </summary>
     public static readonly StyledProperty<PerformanceViewModel?> PerformanceViewModelProperty =
         AvaloniaProperty.Register<MainWindow, PerformanceViewModel?>(nameof(PerformanceViewModel),
             defaultValue: null);
@@ -45,8 +51,8 @@ internal partial class MainWindow : Window {
     }
 
     private void OnMenuKeyUp(object? sender, KeyEventArgs e) {
-          (DataContext as MainWindowViewModel)?.OnKeyUp(e);
-          e.Handled = true;
+        (DataContext as MainWindowViewModel)?.OnKeyUp(e);
+        e.Handled = true;
     }
 
     private void OnMenuKeyDown(object? sender, KeyEventArgs e) {
@@ -58,6 +64,10 @@ internal partial class MainWindow : Window {
         Image.Focus();
     }
 
+    /// <summary>
+    /// Called when opened.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnOpened(EventArgs e) {
         base.OnOpened(e);
         if (DataContext is not MainWindowViewModel mainVm) {
@@ -66,6 +76,10 @@ internal partial class MainWindow : Window {
         mainVm.CloseMainWindow += (_, _) => Close();
     }
 
+    /// <summary>
+    /// Called when key up.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnKeyUp(KeyEventArgs e) {
         FocusOnVideoBuffer();
         var mainWindowViewModel = (DataContext as MainWindowViewModel);
@@ -73,17 +87,29 @@ internal partial class MainWindow : Window {
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Called when key down.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnKeyDown(KeyEventArgs e) {
         FocusOnVideoBuffer();
         (DataContext as MainWindowViewModel)?.OnKeyDown(e);
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Called when closing.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnClosing(WindowClosingEventArgs e) {
         (DataContext as MainWindowViewModel)?.OnMainWindowClosing();
         base.OnClosing(e);
     }
 
+    /// <summary>
+    /// Called when closed.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnClosed(EventArgs e) {
         (DataContext as IDisposable)?.Dispose();
         base.OnClosed(e);

@@ -14,6 +14,13 @@ public class HostStorageProvider : IHostStorageProvider {
     private readonly EmulatorStateSerializer _emulatorStateSerializer;
     private readonly DumpFolderMetadata _dumpContext;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="storageProvider">The storage provider.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="emulatorStateSerializer">The emulator state serializer.</param>
+    /// <param name="dumpContext">The dump context.</param>
     public HostStorageProvider(IStorageProvider storageProvider, Configuration configuration, EmulatorStateSerializer emulatorStateSerializer, DumpFolderMetadata dumpContext) {
         _storageProvider = storageProvider;
         _configuration = configuration;
@@ -50,6 +57,11 @@ public class HostStorageProvider : IHostStorageProvider {
         return await _storageProvider.TryGetWellKnownFolderAsync(wellKnownFolder);
     }
 
+    /// <summary>
+    /// Performs the save bitmap file operation.
+    /// </summary>
+    /// <param name="bitmap">The bitmap.</param>
+    /// <returns>The result of the operation.</returns>
     public async Task SaveBitmapFile(WriteableBitmap bitmap) {
         if (CanSave && CanPickFolder) {
             FilePickerSaveOptions options = new() {
@@ -63,7 +75,12 @@ public class HostStorageProvider : IHostStorageProvider {
             }
         }
     }
-    
+
+    /// <summary>
+    /// Performs the save binary file operation.
+    /// </summary>
+    /// <param name="bytes">The bytes.</param>
+    /// <returns>The result of the operation.</returns>
     public async Task SaveBinaryFile(byte[] bytes) {
         if (CanSave && CanPickFolder) {
             FilePickerSaveOptions options = new() {
@@ -79,6 +96,11 @@ public class HostStorageProvider : IHostStorageProvider {
         }
     }
 
+    /// <summary>
+    /// Performs the save video card info file operation.
+    /// </summary>
+    /// <param name="videoCardInfoJson">The video card info json.</param>
+    /// <returns>The result of the operation.</returns>
     public async Task SaveVideoCardInfoFile(string videoCardInfoJson) {
         string dumpDir = _dumpContext.DumpDirectory;
         if (!Directory.Exists(dumpDir)) {
@@ -88,6 +110,10 @@ public class HostStorageProvider : IHostStorageProvider {
         await File.WriteAllTextAsync(filePath, videoCardInfoJson);
     }
 
+    /// <summary>
+    /// Performs the dump emulator state to file operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public async Task DumpEmulatorStateToFile() {
         if (CanSave && CanPickFolder) {
             FolderPickerOpenOptions options = new() {

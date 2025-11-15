@@ -8,17 +8,17 @@ public sealed record CpuRegistersResponse {
     /// Gets the general purpose registers.
     /// </summary>
     public required GeneralPurposeRegisters GeneralPurpose { get; init; }
-    
+
     /// <summary>
     /// Gets the segment registers.
     /// </summary>
     public required SegmentRegisters Segments { get; init; }
-    
+
     /// <summary>
     /// Gets the instruction pointer.
     /// </summary>
     public required InstructionPointer InstructionPointer { get; init; }
-    
+
     /// <summary>
     /// Gets the CPU flags.
     /// </summary>
@@ -29,13 +29,37 @@ public sealed record CpuRegistersResponse {
 /// General purpose registers state.
 /// </summary>
 public sealed record GeneralPurposeRegisters {
+    /// <summary>
+    /// Gets eax.
+    /// </summary>
     public required uint EAX { get; init; }
+    /// <summary>
+    /// Gets ebx.
+    /// </summary>
     public required uint EBX { get; init; }
+    /// <summary>
+    /// Gets ecx.
+    /// </summary>
     public required uint ECX { get; init; }
+    /// <summary>
+    /// Gets edx.
+    /// </summary>
     public required uint EDX { get; init; }
+    /// <summary>
+    /// Gets esi.
+    /// </summary>
     public required uint ESI { get; init; }
+    /// <summary>
+    /// Gets edi.
+    /// </summary>
     public required uint EDI { get; init; }
+    /// <summary>
+    /// Gets esp.
+    /// </summary>
     public required uint ESP { get; init; }
+    /// <summary>
+    /// Gets ebp.
+    /// </summary>
     public required uint EBP { get; init; }
 }
 
@@ -43,11 +67,29 @@ public sealed record GeneralPurposeRegisters {
 /// Segment registers state.
 /// </summary>
 public sealed record SegmentRegisters {
+    /// <summary>
+    /// Gets cs.
+    /// </summary>
     public required ushort CS { get; init; }
+    /// <summary>
+    /// Gets ds.
+    /// </summary>
     public required ushort DS { get; init; }
+    /// <summary>
+    /// Gets es.
+    /// </summary>
     public required ushort ES { get; init; }
+    /// <summary>
+    /// Gets fs.
+    /// </summary>
     public required ushort FS { get; init; }
+    /// <summary>
+    /// Gets gs.
+    /// </summary>
     public required ushort GS { get; init; }
+    /// <summary>
+    /// Gets ss.
+    /// </summary>
     public required ushort SS { get; init; }
 }
 
@@ -55,6 +97,9 @@ public sealed record SegmentRegisters {
 /// Instruction pointer state.
 /// </summary>
 public sealed record InstructionPointer {
+    /// <summary>
+    /// Gets ip.
+    /// </summary>
     public required ushort IP { get; init; }
 }
 
@@ -62,13 +107,37 @@ public sealed record InstructionPointer {
 /// CPU flags state.
 /// </summary>
 public sealed record CpuFlags {
+    /// <summary>
+    /// Gets carry flag.
+    /// </summary>
     public required bool CarryFlag { get; init; }
+    /// <summary>
+    /// Gets parity flag.
+    /// </summary>
     public required bool ParityFlag { get; init; }
+    /// <summary>
+    /// Gets auxiliary flag.
+    /// </summary>
     public required bool AuxiliaryFlag { get; init; }
+    /// <summary>
+    /// Gets zero flag.
+    /// </summary>
     public required bool ZeroFlag { get; init; }
+    /// <summary>
+    /// Gets sign flag.
+    /// </summary>
     public required bool SignFlag { get; init; }
+    /// <summary>
+    /// Gets direction flag.
+    /// </summary>
     public required bool DirectionFlag { get; init; }
+    /// <summary>
+    /// Gets overflow flag.
+    /// </summary>
     public required bool OverflowFlag { get; init; }
+    /// <summary>
+    /// Gets interrupt flag.
+    /// </summary>
     public required bool InterruptFlag { get; init; }
 }
 
@@ -80,12 +149,12 @@ public sealed record MemoryReadResponse {
     /// Gets the starting address that was read.
     /// </summary>
     public required uint Address { get; init; }
-    
+
     /// <summary>
     /// Gets the number of bytes that were read.
     /// </summary>
     public required int Length { get; init; }
-    
+
     /// <summary>
     /// Gets the memory data as a hexadecimal string.
     /// </summary>
@@ -100,7 +169,7 @@ public sealed record FunctionListResponse {
     /// Gets the array of functions.
     /// </summary>
     public required FunctionInfo[] Functions { get; init; }
-    
+
     /// <summary>
     /// Gets the total count of functions in the catalogue.
     /// </summary>
@@ -115,17 +184,17 @@ public sealed record FunctionInfo {
     /// Gets the function address as a string.
     /// </summary>
     public required string Address { get; init; }
-    
+
     /// <summary>
     /// Gets the function name.
     /// </summary>
     public required string Name { get; init; }
-    
+
     /// <summary>
     /// Gets the number of times this function was called.
     /// </summary>
     public required int CalledCount { get; init; }
-    
+
     /// <summary>
     /// Gets whether this function has a C# override.
     /// </summary>
@@ -136,7 +205,13 @@ public sealed record FunctionInfo {
 /// JSON schema property descriptor.
 /// </summary>
 internal sealed record JsonSchemaProperty {
+    /// <summary>
+    /// Gets type.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets description.
+    /// </summary>
     public required string Description { get; init; }
 }
 
@@ -150,8 +225,17 @@ internal sealed record EmptySchemaProperties {
 /// Empty input schema for tools with no parameters.
 /// </summary>
 internal sealed record EmptyInputSchema {
+    /// <summary>
+    /// Gets type.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets properties.
+    /// </summary>
     public required EmptySchemaProperties Properties { get; init; }
+    /// <summary>
+    /// Gets required.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 
@@ -159,7 +243,13 @@ internal sealed record EmptyInputSchema {
 /// Input schema properties for memory read operation.
 /// </summary>
 internal sealed record MemoryReadInputProperties {
+    /// <summary>
+    /// Gets address.
+    /// </summary>
     public required JsonSchemaProperty Address { get; init; }
+    /// <summary>
+    /// Gets length.
+    /// </summary>
     public required JsonSchemaProperty Length { get; init; }
 }
 
@@ -167,8 +257,17 @@ internal sealed record MemoryReadInputProperties {
 /// Input schema for memory read operation.
 /// </summary>
 internal sealed record MemoryReadInputSchema {
+    /// <summary>
+    /// Gets type.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets properties.
+    /// </summary>
     public required MemoryReadInputProperties Properties { get; init; }
+    /// <summary>
+    /// Gets required.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 
@@ -176,6 +275,9 @@ internal sealed record MemoryReadInputSchema {
 /// Input schema properties for function list operation.
 /// </summary>
 internal sealed record FunctionListInputProperties {
+    /// <summary>
+    /// Gets limit.
+    /// </summary>
     public required JsonSchemaProperty Limit { get; init; }
 }
 
@@ -183,8 +285,17 @@ internal sealed record FunctionListInputProperties {
 /// Input schema for function list operation.
 /// </summary>
 internal sealed record FunctionListInputSchema {
+    /// <summary>
+    /// Gets type.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets properties.
+    /// </summary>
     public required FunctionListInputProperties Properties { get; init; }
+    /// <summary>
+    /// Gets required.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 
@@ -197,22 +308,22 @@ public sealed record CfgCpuGraphResponse {
     /// Depth 0 is the initial context, higher values indicate nested interrupt contexts.
     /// </summary>
     public required int CurrentContextDepth { get; init; }
-    
+
     /// <summary>
     /// Gets the entry point address of the current execution context.
     /// </summary>
     public required string CurrentContextEntryPoint { get; init; }
-    
+
     /// <summary>
     /// Gets the total number of entry points across all contexts.
     /// </summary>
     public required int TotalEntryPoints { get; init; }
-    
+
     /// <summary>
     /// Gets the addresses of all entry points in the CFG graph.
     /// </summary>
     public required string[] EntryPointAddresses { get; init; }
-    
+
     /// <summary>
     /// Gets the address of the last executed instruction.
     /// </summary>

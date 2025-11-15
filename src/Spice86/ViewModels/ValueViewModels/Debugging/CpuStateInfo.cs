@@ -4,6 +4,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using System.ComponentModel;
 
+/// <summary>
+/// Represents state info.
+/// </summary>
 public partial class StateInfo : ObservableObject {
     [ObservableProperty] private byte _AH;
     [ObservableProperty] private byte _AL;

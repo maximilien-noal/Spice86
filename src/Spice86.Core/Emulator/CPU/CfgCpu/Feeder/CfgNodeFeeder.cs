@@ -21,6 +21,13 @@ public class CfgNodeFeeder {
     private readonly NodeLinker _nodeLinker;
     private readonly SignatureReducer _signatureReducer;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="replacerRegistry">The replacer registry.</param>
     public CfgNodeFeeder(IMemory memory, State state, EmulatorBreakpointsManager emulatorBreakpointsManager,
         InstructionReplacerRegistry replacerRegistry) {
         _state = state;
@@ -29,11 +36,22 @@ public class CfgNodeFeeder {
         _signatureReducer = new(replacerRegistry);
     }
 
+    /// <summary>
+    /// Gets instructions feeder.
+    /// </summary>
     public InstructionsFeeder InstructionsFeeder { get; }
 
+    /// <summary>
+    /// The current node from instruction feeder.
+    /// </summary>
     public CfgInstruction CurrentNodeFromInstructionFeeder =>
         InstructionsFeeder.GetInstructionFromMemory(_state.IpSegmentedAddress);
 
+    /// <summary>
+    /// Gets linked cfg node to execute.
+    /// </summary>
+    /// <param name="executionContext">The execution context.</param>
+    /// <returns>The result of the operation.</returns>
     public ICfgNode GetLinkedCfgNodeToExecute(ExecutionContext executionContext) {
         // Determine actual node to execute. Graph may not represent what is actually in memory if graph is not complete or if self modifying code
         ICfgNode toExecute = DetermineToExecute(executionContext.NodeToExecuteNextAccordingToGraph);
@@ -45,7 +63,7 @@ public class CfgNodeFeeder {
             // Reset it
             executionContext.CpuFault = false;
             // Node can still have successors, try to register the link in the graph
-            _nodeLinker.Link(type,lastExecuted, toExecute);
+            _nodeLinker.Link(type, lastExecuted, toExecute);
         }
 
         return toExecute;

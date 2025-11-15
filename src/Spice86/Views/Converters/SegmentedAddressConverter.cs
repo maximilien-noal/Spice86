@@ -12,7 +12,13 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Represents segmented address converter.
+/// </summary>
 public class SegmentedAddressConverter : AvaloniaObject, IValueConverter {
+    /// <summary>
+    /// The state property.
+    /// </summary>
     public static readonly StyledProperty<State?> StateProperty = AvaloniaProperty.Register<SegmentedAddressConverter, State?>(nameof(State));
 
     public State? State {

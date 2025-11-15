@@ -11,8 +11,17 @@ using System.Text;
 /// Translates DOS filepaths to host file paths, and vice-versa.
 /// </summary>
 internal class DosPathResolver {
+    /// <summary>
+    /// The volume separator char.
+    /// </summary>
     internal const char VolumeSeparatorChar = ':';
+    /// <summary>
+    /// The directory separator char.
+    /// </summary>
     internal const char DirectorySeparatorChar = '\\';
+    /// <summary>
+    /// The alt directory separator char.
+    /// </summary>
     internal const char AltDirectorySeparatorChar = '/';
     private const int MaxPathLength = 255;
     private const int DosMfnlength = 8;
@@ -53,6 +62,11 @@ internal class DosPathResolver {
     private static string GetFullCurrentDosPathOnDrive(VirtualDrive virtualDrive) =>
         Path.Combine($"{virtualDrive.DosVolume}{DirectorySeparatorChar}", virtualDrive.CurrentDosDirectory);
 
+    /// <summary>
+    /// Gets exe parent folder.
+    /// </summary>
+    /// <param name="exe">The exe.</param>
+    /// <returns>The result of the operation.</returns>
     internal static string GetExeParentFolder(string? exe) {
         string fallbackValue = ConvertUtils.ToSlashFolderPath(Environment.CurrentDirectory);
         if (string.IsNullOrWhiteSpace(exe)) {
@@ -105,7 +119,7 @@ internal class DosPathResolver {
     }
 
     private string GetFullDosPathIncludingRoot(string absoluteOrRelativeDosPath) {
-        if(string.IsNullOrWhiteSpace(absoluteOrRelativeDosPath)) {
+        if (string.IsNullOrWhiteSpace(absoluteOrRelativeDosPath)) {
             return absoluteOrRelativeDosPath;
         }
         StringBuilder normalizedDosPath = new();
@@ -115,10 +129,9 @@ internal class DosPathResolver {
         string driveRoot = $"{GetDosDrivePathFromDosPath(backslashedDosPath)}{DirectorySeparatorChar}";
         normalizedDosPath.Append(driveRoot);
 
-        if(backslashedDosPath.StartsWith(driveRoot)) {
+        if (backslashedDosPath.StartsWith(driveRoot)) {
             backslashedDosPath = backslashedDosPath[3..];
-        }
-        else if (backslashedDosPath.StartsWith(driveRoot[..2])) {
+        } else if (backslashedDosPath.StartsWith(driveRoot[..2])) {
             backslashedDosPath = backslashedDosPath[2..];
         }
 
@@ -128,17 +141,16 @@ internal class DosPathResolver {
         bool appendedFolder = false;
         bool mustPrependDirectorySeparator = false;
         foreach (string pathElement in pathElements) {
-            if(pathElement == ".." && appendedFolder) {
+            if (pathElement == ".." && appendedFolder) {
                 moveNext = true;
-            }
-            else {
-                if(moveNext) {
+            } else {
+                if (moveNext) {
                     moveNext = false;
                     continue;
                 }
-                if(pathElement != "." && pathElement != ".." && !pathElement.Contains(VolumeSeparatorChar)) {
+                if (pathElement != "." && pathElement != ".." && !pathElement.Contains(VolumeSeparatorChar)) {
                     appendedFolder = true;
-                    if(mustPrependDirectorySeparator) {
+                    if (mustPrependDirectorySeparator) {
                         normalizedDosPath.Append(DirectorySeparatorChar);
                     }
                     normalizedDosPath.Append(pathElement.ToUpperInvariant());
@@ -157,7 +169,7 @@ internal class DosPathResolver {
     /// <returns>A string containing the full path to the parent directory in the host file system, or <c>null</c> if nothing was found.</returns>
     public string? GetFullHostParentPathFromDosOrDefault(string dosPath) {
         string? parentPath = Path.GetDirectoryName(dosPath);
-        if(string.IsNullOrWhiteSpace(parentPath)) {
+        if (string.IsNullOrWhiteSpace(parentPath)) {
             parentPath = GetFullCurrentDosPathOnDrive(_dosDriveManager.CurrentDrive);
         }
         string? fullHostPath = GetFullHostPathFromDosOrDefault(parentPath);
@@ -247,7 +259,13 @@ internal class DosPathResolver {
 
         return current;
     }
-    
+
+    /// <summary>
+    /// Gets short file name.
+    /// </summary>
+    /// <param name="hostFileName">The host file name.</param>
+    /// <param name="hostDir">The host dir.</param>
+    /// <returns>The result of the operation.</returns>
     internal static string GetShortFileName(string hostFileName, string hostDir) {
         string fileName = Path.GetFileNameWithoutExtension(hostFileName);
         string extension = Path.GetExtension(hostFileName);
@@ -283,7 +301,7 @@ internal class DosPathResolver {
         }
         return shortName.ToString().ToUpperInvariant();
     }
-    
+
     /// <summary>
     /// Prefixes the given DOS path by either the mapped drive folder or the current host folder depending on whether there is a root in the path.<br/>
     /// Does not convert to a case sensitive path. <br/>
@@ -328,12 +346,25 @@ internal class DosPathResolver {
     }
 
 
+    /// <summary>
+    /// Finds files using wild cmp.
+    /// </summary>
+    /// <param name="searchFolder">The search folder.</param>
+    /// <param name="searchPattern">The search pattern.</param>
+    /// <param name="enumerationOptions">The enumeration options.</param>
+    /// <returns>The result of the operation.</returns>
     public IEnumerable<string> FindFilesUsingWildCmp(string searchFolder, string searchPattern,
         EnumerationOptions enumerationOptions) {
         return Directory.EnumerateFileSystemEntries(searchFolder, "*", enumerationOptions)
             .Where(path => WildFileCmp(Path.GetFileName(path), searchPattern));
     }
 
+    /// <summary>
+    /// Performs the wild file cmp operation.
+    /// </summary>
+    /// <param name="filename">The filename.</param>
+    /// <param name="pattern">The pattern.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public static bool WildFileCmp(string? filename, string? pattern) {
         if (filename is null || pattern is null) {
             return false;
@@ -379,7 +410,7 @@ internal class DosPathResolver {
                 return false;
             }
         }
-        
+
         // ---- EXT compare (early '*' accept) ----
         return CompareSegment(fileExt, wildExt, DosExtlength) switch {
             true => true,

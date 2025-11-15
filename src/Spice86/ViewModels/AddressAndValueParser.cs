@@ -9,11 +9,14 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Represents address and value parser.
+/// </summary>
 public partial class AddressAndValueParser {
-    
+
     [GeneratedRegex(@"^0x[0-9A-Fa-f]+$")]
     public static partial Regex HexUintRegex();
-    
+
     /// <summary>
     /// A000:0000 is valid
     /// DS:SI is valid
@@ -40,11 +43,16 @@ public partial class AddressAndValueParser {
         if (address != null) {
             return true;
         }
-        
+
         address = ParseHex(valueTrimmed);
         return address != null;
     }
 
+    /// <summary>
+    /// Parses segmented address.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="state">The state.</param>
     public static SegmentedAddress? ParseSegmentedAddress(string value, State? state) {
         string trimmedValue = value.Trim();
         Match segmentedMatch = SegmentedAddressRegex()
@@ -63,7 +71,12 @@ public partial class AddressAndValueParser {
 
         return null;
     }
-    
+
+    /// <summary>
+    /// Performs the try parse segment or register operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="state">The state.</param>
     public static ushort? TryParseSegmentOrRegister(string value, State? state) {
         // Try a property of the CPU state first (there is no collision with hex values)
         ushort? res = GetUshortStateProperty(value, state);
@@ -78,7 +91,12 @@ public partial class AddressAndValueParser {
 
         return null;
     }
-    
+
+    /// <summary>
+    /// Gets ushort state property.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="state">The state.</param>
     public static ushort? GetUshortStateProperty(string value, State? state) {
         if (state is null) {
             return null;
@@ -93,10 +111,19 @@ public partial class AddressAndValueParser {
         return null;
     }
 
+    /// <summary>
+    /// Determines whether valid hex.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns><c>true</c> if the condition is met; otherwise, <c>false</c>.</returns>
     public static bool IsValidHex(string value) {
-       return HexUintRegex().Match(value).Success;
+        return HexUintRegex().Match(value).Success;
     }
 
+    /// <summary>
+    /// Parses hex.
+    /// </summary>
+    /// <param name="value">The value.</param>
     public static uint? ParseHex(string value) {
         if (!IsValidHex(value)) {
             return null;
@@ -113,7 +140,11 @@ public partial class AddressAndValueParser {
 
         return null;
     }
-    
+
+    /// <summary>
+    /// Parses hex as array.
+    /// </summary>
+    /// <param name="value">The value.</param>
     public static byte[]? ParseHexAsArray(string? value) {
         if (value == null) {
             return null;
@@ -122,22 +153,29 @@ public partial class AddressAndValueParser {
         if (!IsValidHex(valueTrimmed)) {
             return null;
         }
-        
+
         if (valueTrimmed.StartsWith("0x")) {
             valueTrimmed = valueTrimmed[2..];
         }
 
         return ConvertUtils.HexToByteArray(valueTrimmed);
     }
-    
-    
+
+
+    /// <summary>
+    /// Performs the try validate address operation.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="message">The message.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public static bool TryValidateAddress(string? value, State state, out string message) {
         if (string.IsNullOrWhiteSpace(value)) {
             message = "Address is required";
             return false;
         }
         if (!IsValidHex(value) &&
-            !SegmentedAddressRegex().IsMatch(value) && 
+            !SegmentedAddressRegex().IsMatch(value) &&
             GetUshortStateProperty(value, state) == null) {
             message = "Invalid address format";
             return false;

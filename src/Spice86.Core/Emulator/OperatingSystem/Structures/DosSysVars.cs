@@ -15,6 +15,9 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure.Array;
 /// In DOSBox, this is the 'DOS_InfoBlock' class 
 /// </remarks>
 public class DosSysVars : MemoryBasedDataStructure {
+    /// <summary>
+    /// The first mcb segment.
+    /// </summary>
     public const int FirstMcbSegment = 0x16F;
     private readonly DosDeviceHeader _nullDeviceHeader;
     /// <summary>

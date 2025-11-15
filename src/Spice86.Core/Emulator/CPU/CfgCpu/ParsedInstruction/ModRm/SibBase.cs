@@ -1,5 +1,8 @@
 ﻿namespace Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
+/// <summary>
+/// Defines sib base values.
+/// </summary>
 public enum SibBase {
     EAX,
     ECX,

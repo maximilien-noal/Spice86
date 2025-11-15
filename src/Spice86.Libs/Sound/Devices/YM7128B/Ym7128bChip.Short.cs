@@ -3,17 +3,29 @@
 
 namespace Spice86.Libs.Sound.Devices.YM7128B;
 
+/// <summary>
+/// Represents ym 7128 b chip.
+/// </summary>
 internal sealed partial class Ym7128BChip {
     private Ym7128BChipShort Short { get; } = new();
 
+    /// <summary>
+    /// Gets short process data.
+    /// </summary>
     internal Ym7128BChipShortProcessData ShortProcessData { get; } = new();
 
+    /// <summary>
+    /// Performs the short ctor operation.
+    /// </summary>
     internal void ShortCtor() {
         Short.Buffer = null;
         Short.Length = 0;
         Short.SampleRate = 0;
     }
 
+    /// <summary>
+    /// Performs the short dtor operation.
+    /// </summary>
     internal void ShortDtor() {
         Short.Buffer = null;
         Short.Length = 0;
@@ -25,6 +37,9 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the short start operation.
+    /// </summary>
     internal void ShortStart() {
         Short.T0D = 0;
         Short.Tail = 0;
@@ -33,10 +48,17 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the short stop operation.
+    /// </summary>
     internal void ShortStop() {
         // No-op
     }
 
+    /// <summary>
+    /// Performs the short setup operation.
+    /// </summary>
+    /// <param name="sampleRate">The sample rate.</param>
     internal void ShortSetup(nuint sampleRate) {
         if (Short.SampleRate == sampleRate && Short.Buffer != null) {
             return;
@@ -60,6 +82,10 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the short process operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
     internal void ShortProcess(Ym7128BChipShortProcessData data) {
         ArgumentNullException.ThrowIfNull(data);
 
@@ -105,6 +131,11 @@ internal sealed partial class Ym7128BChip {
         }
     }
 
+    /// <summary>
+    /// Performs the short read operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     internal byte ShortRead(byte address) {
         return address switch {
             < (byte)Ym7128BRegister.C0 => (byte)(Short.Registers[address] & Ym7128BDatasheetSpecs.GainDataMask),
@@ -114,6 +145,11 @@ internal sealed partial class Ym7128BChip {
         };
     }
 
+    /// <summary>
+    /// Performs the short write operation.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="value">The value.</param>
     internal void ShortWrite(byte address, byte value) {
         switch (address) {
             case < (byte)Ym7128BRegister.C0:

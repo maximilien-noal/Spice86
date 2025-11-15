@@ -10,19 +10,34 @@ using Spice86.ViewModels.ValueViewModels.Debugging;
 
 using System.ComponentModel;
 
+/// <summary>
+/// Represents software mixer view model.
+/// </summary>
 public partial class SoftwareMixerViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly Dictionary<SoundChannel, SoundChannelInfo> _channelInfos = new();
     private readonly SoftwareMixer _softwareMixer;
-    
+
     [ObservableProperty]
     private AvaloniaList<SoundChannelInfo> _channels = new();
-    
+
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="softwareMixer">The software mixer.</param>
     public SoftwareMixerViewModel(SoftwareMixer softwareMixer) {
         _softwareMixer = softwareMixer;
     }
 
+    /// <summary>
+    /// Gets or sets is visible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
+    /// <summary>
+    /// Updates values.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;
@@ -32,11 +47,11 @@ public partial class SoftwareMixerViewModel : ViewModelBase, IEmulatorObjectView
 
     [RelayCommand]
     private void ResetStereoSeparation(object? parameter) {
-        if(parameter is SoundChannelInfo info && _channelInfos.FirstOrDefault(x => x.Value == info).Key is { } channel) {
+        if (parameter is SoundChannelInfo info && _channelInfos.FirstOrDefault(x => x.Value == info).Key is { } channel) {
             channel.StereoSeparation = info.StereoSeparation = 50;
         }
     }
-    
+
     private void UpdateChannels(SoftwareMixer mixer) {
         foreach (SoundChannel channel in mixer.Channels.Keys) {
             if (!_channelInfos.TryGetValue(channel, out SoundChannelInfo? info)) {

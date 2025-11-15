@@ -5,7 +5,15 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 
 using System.ComponentModel.DataAnnotations;
 
+/// <summary>
+/// Represents dos command tail.
+/// </summary>
 public class DosCommandTail : MemoryBasedDataStructure {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="byteReaderWriter">The byte reader writer.</param>
+    /// <param name="baseAddress">The base address.</param>
     public DosCommandTail(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
     }
 
@@ -25,7 +33,13 @@ public class DosCommandTail : MemoryBasedDataStructure {
         }
     }
 
+    /// <summary>
+    /// The max character length.
+    /// </summary>
     public const int MaxCharacterLength = 128;
 
+    /// <summary>
+    /// The offset in psp segment.
+    /// </summary>
     public const int OffsetInPspSegment = 0x80;
 }

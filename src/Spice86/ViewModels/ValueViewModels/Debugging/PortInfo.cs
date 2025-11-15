@@ -4,6 +4,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using System.ComponentModel;
 
+/// <summary>
+/// Represents port info.
+/// </summary>
 public partial class PortInfo : ObservableObject {
     [ObservableProperty, ReadOnly(true)] private int _lastPortRead;
     [ObservableProperty, ReadOnly(true)] private int _lastPortWritten;

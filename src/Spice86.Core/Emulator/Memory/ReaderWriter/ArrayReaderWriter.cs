@@ -1,12 +1,19 @@
-namespace Spice86.Core.Emulator.Memory.ReaderWriter; 
+namespace Spice86.Core.Emulator.Memory.ReaderWriter;
 
 /// <summary>
 /// Implementation of IReaderWriter on top of an array of type T
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public abstract class ArrayReaderWriter<T>: IReaderWriter<T> {
+public abstract class ArrayReaderWriter<T> : IReaderWriter<T> {
+    /// <summary>
+    /// Gets array.
+    /// </summary>
     public T[] Array { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="array">The array.</param>
     public ArrayReaderWriter(T[] array) {
         Array = array;
     }

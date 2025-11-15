@@ -317,9 +317,21 @@ public sealed class PicEventQueue {
     ///     Represents a pooled event entry associated with the PIC.
     /// </summary>
     private sealed class PicEntry {
+        /// <summary>
+        /// The handler.
+        /// </summary>
         public PicEventHandler? Handler; // Callback stored for dispatch.
+        /// <summary>
+        /// The index.
+        /// </summary>
         public double Index; // Fractional tick deadline.
+        /// <summary>
+        /// The next.
+        /// </summary>
         public PicEntry? Next;
+        /// <summary>
+        /// The value.
+        /// </summary>
         public uint Value; // Value forwarded to the handler.
     }
 }

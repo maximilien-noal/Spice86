@@ -12,6 +12,9 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Linq;
 
+/// <summary>
+/// Represents instruction parser.
+/// </summary>
 public class InstructionParser : BaseInstructionParser {
     private readonly AdcAluOperationParser _adcAluOperationParser;
     private readonly AddAluOperationParser _addAluOperationParser;
@@ -90,6 +93,11 @@ public class InstructionParser : BaseInstructionParser {
     private readonly BsrRmParser _bsrRmParser;
     private readonly CmpxchgRmParser _cmpxchgRmParser;
 
+    /// <summary>
+    /// Performs the instruction parser operation.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
     public InstructionParser(IIndexable memory, State state) : base(new(memory), state) {
         _adcAluOperationParser = new(this);
         _addAluOperationParser = new(this);
@@ -180,6 +188,11 @@ public class InstructionParser : BaseInstructionParser {
         return _instructionReader.UInt8AsUshort.NextField(true);
     }
 
+    /// <summary>
+    /// Parses instruction at.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction ParseInstructionAt(SegmentedAddress address) {
         _instructionReader.InstructionReaderAddressSource.InstructionAddress = address;
         List<InstructionPrefix> prefixes = ParsePrefixes();
@@ -334,14 +347,14 @@ public class InstructionParser : BaseInstructionParser {
             case 0x61:
                 return _popaParser.Parse(context);
             case 0x62: {
-                // BOUND
-                ModRmContext modRmContext = _modRmParser.EnsureNotMode3(_modRmParser.ParseNext(context));
-                if (HasOperandSize32(context.Prefixes)) {
-                    return new Bound32(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
-                }
+                    // BOUND
+                    ModRmContext modRmContext = _modRmParser.EnsureNotMode3(_modRmParser.ParseNext(context));
+                    if (HasOperandSize32(context.Prefixes)) {
+                        return new Bound32(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
+                    }
 
-                return new Bound16(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
-            }
+                    return new Bound16(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
+                }
             case 0x63: // ARPL
                 return HandleInvalidOpcode(context);
             case 0x64:
@@ -557,28 +570,28 @@ public class InstructionParser : BaseInstructionParser {
                 // FPU stuff
                 return HandleInvalidOpcode(context);
             case 0xD9: {
-                ModRmContext modRmContext = _modRmParser.ParseNext(context);
-                int groupIndex = modRmContext.RegisterIndex;
-                if (groupIndex != 7) {
-                    throw new InvalidGroupIndexException(_state, groupIndex);
-                }
+                    ModRmContext modRmContext = _modRmParser.ParseNext(context);
+                    int groupIndex = modRmContext.RegisterIndex;
+                    if (groupIndex != 7) {
+                        throw new InvalidGroupIndexException(_state, groupIndex);
+                    }
 
-                return new Fnstcw(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
-            }
+                    return new Fnstcw(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
+                }
             case 0xDA:
             case 0xDB:
             case 0xDC:
                 // FPU stuff
                 return HandleInvalidOpcode(context);
             case 0xDD: {
-                ModRmContext modRmContext = _modRmParser.ParseNext(context);
-                int groupIndex = modRmContext.RegisterIndex;
-                if (groupIndex != 7) {
-                    throw new InvalidGroupIndexException(_state, groupIndex);
-                }
+                    ModRmContext modRmContext = _modRmParser.ParseNext(context);
+                    int groupIndex = modRmContext.RegisterIndex;
+                    if (groupIndex != 7) {
+                        throw new InvalidGroupIndexException(_state, groupIndex);
+                    }
 
-                return new Fnstsw(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
-            }
+                    return new Fnstsw(context.Address, context.OpcodeField, context.Prefixes, modRmContext);
+                }
             case 0xDE:
             case 0xDF:
                 // FPU stuff
@@ -759,9 +772,9 @@ public class InstructionParser : BaseInstructionParser {
             case 0x0FCD:
             case 0x0FCE:
             case 0x0FCF: {
-                int regIndex = context.OpcodeField.Value & 0x7;
-                return new BswapReg32(context.Address, context.OpcodeField, context.Prefixes, regIndex);
-            }
+                    int regIndex = context.OpcodeField.Value & 0x7;
+                    return new BswapReg32(context.Address, context.OpcodeField, context.Prefixes, regIndex);
+                }
             case 0xDBE3:
                 return new FnInit(context.Address, context.OpcodeField, context.Prefixes);
         }

@@ -214,11 +214,11 @@ public sealed class DualPic : IDisposable {
                 WriteCommand(PrimaryPicCommandPort, (uint)(SpecificEoiBase | irq));
                 break;
             default: {
-                byte secondaryIrq = (byte)(irq - 8);
-                WriteCommand(SecondaryPicCommandPort, (uint)(SpecificEoiBase | secondaryIrq));
-                WriteCommand(PrimaryPicCommandPort, SpecificEoiBase | 2);
-                break;
-            }
+                    byte secondaryIrq = (byte)(irq - 8);
+                    WriteCommand(SecondaryPicCommandPort, (uint)(SpecificEoiBase | secondaryIrq));
+                    WriteCommand(PrimaryPicCommandPort, SpecificEoiBase | 2);
+                    break;
+                }
         }
     }
 
@@ -900,7 +900,13 @@ public sealed class DualPic : IDisposable {
     }
 
     private sealed class TickerBlock {
+        /// <summary>
+        /// The handler.
+        /// </summary>
         public TimerTickHandler? Handler;
+        /// <summary>
+        /// The next.
+        /// </summary>
         public TickerBlock? Next;
     }
 }

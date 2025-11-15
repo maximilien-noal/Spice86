@@ -5,7 +5,13 @@ using Avalonia.Input;
 
 using Spice86.ViewModels;
 
+/// <summary>
+/// Represents cfg cpu view.
+/// </summary>
 public partial class CfgCpuView : UserControl {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     public CfgCpuView() {
         InitializeComponent();
         ZoomBorder.PointerPressed += ZoomBorder_PointerPressed;

@@ -4,23 +4,32 @@ namespace Spice86.Core.Emulator.Devices.Video.Registers.General;
 ///     Emulates the Miscellaneous Output register.
 /// </summary>
 public class MiscellaneousOutput : Register8 {
+    /// <summary>
+    /// Defines clock select value values.
+    /// </summary>
     public enum ClockSelectValue {
         Use25175Khz,
         Use28322Khz,
         External,
         Reserved
     }
-    
+
+    /// <summary>
+    /// Defines io address select value values.
+    /// </summary>
     public enum IoAddressSelectValue {
         Monochrome,
         Color
     }
-    
+
+    /// <summary>
+    /// Defines polarity value values.
+    /// </summary>
     public enum PolarityValue {
         Negative,
         Positive
     }
-    
+
     /// <summary>
     ///     The I/O Address Select field (bit 0) selects the CRT controller addresses. When set to 0, this bit sets the
     ///     CRT controller addresses to hex 03Bx and the address for the Input Status Register 1 to hex 03BA for

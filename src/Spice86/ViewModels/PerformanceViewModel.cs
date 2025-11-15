@@ -11,6 +11,9 @@ using Spice86.ViewModels.Services;
 
 using System;
 
+/// <summary>
+/// Represents performance view model.
+/// </summary>
 public partial class PerformanceViewModel : ViewModelBase {
     private readonly IPerformanceMeasureReader _cpuPerformanceReader;
     private readonly State _state;
@@ -19,7 +22,14 @@ public partial class PerformanceViewModel : ViewModelBase {
     private double _averageInstructionsPerSecond;
 
     private bool _isPaused;
-    
+
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="cpuPerfReader">The cpu perf reader.</param>
     public PerformanceViewModel(State state, IPauseHandler pauseHandler,
         IUIDispatcher uiDispatcher, IPerformanceMeasureReader cpuPerfReader) {
         _cpuPerformanceReader = cpuPerfReader;

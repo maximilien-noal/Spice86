@@ -4,10 +4,22 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents mov reg imm parser.
+/// </summary>
 public class MovRegImmParser : BaseInstructionParser {
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="other">The other.</param>
     public MovRegImmParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parses mov reg imm.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction ParseMovRegImm(ParsingContext context) {
         int regIndex = ComputeRegIndex(context.OpcodeField);
         bool is8 = (context.OpcodeField.Value & WordMask) == 0;

@@ -7,11 +7,26 @@ using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Emulator.VM.Breakpoint;
 
+/// <summary>
+/// Represents breakpoint view model.
+/// </summary>
 public partial class BreakpointViewModel : ViewModelBase {
     private readonly List<BreakPoint> _breakpoints = new List<BreakPoint>();
     private readonly Action _onReached;
     private readonly EmulatorBreakpointsManager _emulatorBreakpointsManager;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="trigger">The trigger.</param>
+    /// <param name="endAddress">The end address.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="isRemovedOnTrigger">The is removed on trigger.</param>
+    /// <param name="onReached">The on reached.</param>
+    /// <param name="additionalTriggerCondition">The additional trigger condition.</param>
+    /// <param name="comment">The comment.</param>
     public BreakpointViewModel(
         BreakpointsViewModel breakpointsViewModel,
         EmulatorBreakpointsManager emulatorBreakpointsManager,
@@ -49,10 +64,19 @@ public partial class BreakpointViewModel : ViewModelBase {
     [ObservableProperty]
     private string _parameter;
 
+    /// <summary>
+    /// Gets segmented address.
+    /// </summary>
     public SegmentedAddress? SegmentedAddress { get; }
 
+    /// <summary>
+    /// The on reached.
+    /// </summary>
     public Action OnReached => _onReached;
 
+    /// <summary>
+    /// Gets type.
+    /// </summary>
     public BreakPointType Type { get; }
 
     private bool _isEnabled;
@@ -69,12 +93,24 @@ public partial class BreakpointViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>
+    /// Gets is removed on trigger.
+    /// </summary>
     public bool IsRemovedOnTrigger { get; }
 
+    /// <summary>
+    /// Gets address.
+    /// </summary>
     public long Address { get; }
 
+    /// <summary>
+    /// Gets end address.
+    /// </summary>
     public long EndAddress { get; }
 
+    /// <summary>
+    /// Converts toggle.
+    /// </summary>
     public void Toggle() {
         if (IsEnabled) {
             Disable();
@@ -92,12 +128,21 @@ public partial class BreakpointViewModel : ViewModelBase {
         return breakPoint;
     }
 
+    /// <summary>
+    /// Creates breakpoint with address and condition.
+    /// </summary>
+    /// <param name="address">The address.</param>
+    /// <param name="additionalTriggerCondition">The additional trigger condition.</param>
+    /// <returns>The result of the operation.</returns>
     protected AddressBreakPoint CreateBreakpointWithAddressAndCondition(long address, Func<long, bool>? additionalTriggerCondition) {
         AddressBreakPoint bp = new AddressBreakPoint(Type, address, _ => _onReached(), IsRemovedOnTrigger, additionalTriggerCondition);
         bp.IsUserBreakpoint = true;
         return bp;
     }
 
+    /// <summary>
+    /// Performs the enable operation.
+    /// </summary>
     [RelayCommand]
     public void Enable() {
         if (IsEnabled) {
@@ -110,6 +155,9 @@ public partial class BreakpointViewModel : ViewModelBase {
         OnPropertyChanged(nameof(IsEnabled));
     }
 
+    /// <summary>
+    /// Performs the disable operation.
+    /// </summary>
     [RelayCommand]
     public void Disable() {
         if (!IsEnabled) {
@@ -123,6 +171,9 @@ public partial class BreakpointViewModel : ViewModelBase {
         OnPropertyChanged(nameof(IsEnabled));
     }
 
+    /// <summary>
+    /// Deletes .
+    /// </summary>
     internal void Delete() {
         foreach (BreakPoint breakpoint in _breakpoints) {
             _emulatorBreakpointsManager.RemoveUserBreakpoint(breakpoint);

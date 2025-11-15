@@ -101,14 +101,31 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
     public abstract TUnsigned Add(TUnsigned value1, TUnsigned value2, bool useCarry);
 
 
+    /// <summary>
+    /// Performs the sbb operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public TUnsigned Sbb(TUnsigned value1, TUnsigned value2) {
         return Sub(value1, value2, true);
     }
 
+    /// <summary>
+    /// Performs the sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <returns>The result of the operation.</returns>
     public TUnsigned Sub(TUnsigned value1, TUnsigned value2) {
         return Sub(value1, value2, false);
     }
 
+    /// <summary>
+    /// Performs the dec operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <returns>The result of the operation.</returns>
     public TUnsigned Dec(TUnsigned value1) {
         bool carry = _state.CarryFlag;
         TUnsigned res = Sub(value1, TUnsigned.One, false);
@@ -154,10 +171,24 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
 
     public abstract TUnsigned Shr(TUnsigned value, int count);
 
+    /// <summary>
+    /// Performs the borrow bits sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="dst">The dst.</param>
+    /// <returns>The result of the operation.</returns>
     protected static uint BorrowBitsSub(uint value1, uint value2, uint dst) {
         return value1 ^ value2 ^ dst ^ ((value1 ^ dst) & (value1 ^ value2));
     }
 
+    /// <summary>
+    /// Performs the carry bits add operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="dst">The dst.</param>
+    /// <returns>The result of the operation.</returns>
     protected static uint CarryBitsAdd(uint value1, uint value2, uint dst) {
         return value1 ^ value2 ^ dst ^ ((value1 ^ dst) & ~(value1 ^ value2));
     }
@@ -172,10 +203,24 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
     }
 
     // from https://www.vogons.org/viewtopic.php?t=55377
+    /// <summary>
+    /// Performs the overflow bits add operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="dst">The dst.</param>
+    /// <returns>The result of the operation.</returns>
     protected static uint OverflowBitsAdd(uint value1, uint value2, uint dst) {
         return (value1 ^ dst) & ~(value1 ^ value2);
     }
 
+    /// <summary>
+    /// Performs the overflow bits sub operation.
+    /// </summary>
+    /// <param name="value1">The value 1.</param>
+    /// <param name="value2">The value 2.</param>
+    /// <param name="dst">The dst.</param>
+    /// <returns>The result of the operation.</returns>
     protected static uint OverflowBitsSub(uint value1, uint value2, uint dst) {
         return (value1 ^ dst) & (value1 ^ value2);
     }

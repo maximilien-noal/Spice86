@@ -10,7 +10,13 @@ using Spice86.Views;
 
 using System.Diagnostics.CodeAnalysis;
 
+/// <summary>
+/// Represents show internal debugger behavior.
+/// </summary>
 internal class ShowInternalDebuggerBehavior : Behavior<Control> {
+    /// <summary>
+    /// Called when attached.
+    /// </summary>
     protected override void OnAttached() {
         base.OnAttached();
         if (AssociatedObject is null) {
@@ -19,6 +25,9 @@ internal class ShowInternalDebuggerBehavior : Behavior<Control> {
         AssociatedObject.PointerPressed += OnPointerPressed;
     }
 
+    /// <summary>
+    /// Called when detaching.
+    /// </summary>
     protected override void OnDetaching() {
         base.OnDetaching();
         if (AssociatedObject is null) {
@@ -26,7 +35,7 @@ internal class ShowInternalDebuggerBehavior : Behavior<Control> {
         }
         AssociatedObject.PointerPressed -= OnPointerPressed;
     }
-    
+
     private object? _debugWindowDataContext;
 
     /// <summary>

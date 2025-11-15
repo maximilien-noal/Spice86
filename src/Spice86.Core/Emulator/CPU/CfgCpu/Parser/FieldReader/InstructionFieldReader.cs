@@ -7,25 +7,48 @@ using Spice86.Shared.Emulator.Memory;
 using System.Collections.Immutable;
 using System.Linq;
 
+/// <summary>
+/// Represents instruction field reader.
+/// </summary>
 public abstract class InstructionFieldReader<T> {
+    /// <summary>
+    /// Gets memory.
+    /// </summary>
     protected IIndexable Memory { get; }
 
+    /// <summary>
+    /// Gets address source.
+    /// </summary>
     protected InstructionReaderAddressSource AddressSource { get; }
 
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="memory">The memory.</param>
+    /// <param name="addressSource">The address source.</param>
     protected InstructionFieldReader(IIndexable memory, InstructionReaderAddressSource addressSource) {
         Memory = memory;
         AddressSource = addressSource;
     }
 
+    /// <summary>
+    /// The current address.
+    /// </summary>
     protected SegmentedAddress CurrentAddress => AddressSource.CurrentAddress;
 
     protected abstract int FieldSize();
     public abstract T PeekValue();
 
+    /// <summary>
+    /// Performs the advance operation.
+    /// </summary>
     public void Advance() {
         AddressSource.IndexInInstruction += FieldSize();
     }
+    /// <summary>
+    /// Performs the recede operation.
+    /// </summary>
     public void Recede() {
         AddressSource.IndexInInstruction -= FieldSize();
     }

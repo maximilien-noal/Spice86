@@ -8,6 +8,9 @@ using System.Runtime.CompilerServices;
 /*
     Envelope generator
 */
+/// <summary>
+/// Represents opl 3 envelope.
+/// </summary>
 internal static class Opl3Envelope {
     /*
         envelope_sinfunc envelope_sin[8]
@@ -161,6 +164,10 @@ internal static class Opl3Envelope {
         return EnvelopeCalcExp((uint)(output + (envelope << 3)));
     }
 
+    /// <summary>
+    /// Performs the envelope update ksl operation.
+    /// </summary>
+    /// <param name="slot">The slot.</param>
     internal static void EnvelopeUpdateKsl(Opl3Operator slot) {
         Opl3Channel channel = slot.Channel ?? throw new InvalidOperationException("Channel not assigned.");
         short value = (short)((Opl3Tables.ReadKeyScaleLevel(channel.FNumber >> 6) << 2)
@@ -172,6 +179,10 @@ internal static class Opl3Envelope {
         slot.EffectiveKeyScaleLevel = (byte)value;
     }
 
+    /// <summary>
+    /// Performs the envelope calc operation.
+    /// </summary>
+    /// <param name="slot">The slot.</param>
     internal static void EnvelopeCalc(Opl3Operator slot) {
         Opl3Chip chip = slot.Chip ?? throw new InvalidOperationException("Chip not assigned.");
         Opl3Channel channel = slot.Channel ?? throw new InvalidOperationException("Channel not assigned.");
@@ -298,14 +309,29 @@ internal static class Opl3Envelope {
         }
     }
 
+    /// <summary>
+    /// Performs the envelope key on operation.
+    /// </summary>
+    /// <param name="slot">The slot.</param>
+    /// <param name="type">The type.</param>
     internal static void EnvelopeKeyOn(Opl3Operator slot, EnvelopeKeyType type) {
         slot.RegKeyState = (byte)(slot.RegKeyState | (byte)type);
     }
 
+    /// <summary>
+    /// Performs the envelope key off operation.
+    /// </summary>
+    /// <param name="slot">The slot.</param>
+    /// <param name="type">The type.</param>
     internal static void EnvelopeKeyOff(Opl3Operator slot, EnvelopeKeyType type) {
         slot.RegKeyState = (byte)(slot.RegKeyState & ~(byte)type);
     }
 
+    /// <summary>
+    /// Performs the generate waveform operation.
+    /// </summary>
+    /// <param name="slot">The slot.</param>
+    /// <returns>The result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static short GenerateWaveform(Opl3Operator slot) {
         int index = slot.RegWaveformSelect & 0x07;

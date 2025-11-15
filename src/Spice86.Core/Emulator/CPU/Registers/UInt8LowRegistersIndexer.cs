@@ -9,6 +9,10 @@ using Spice86.Shared.Utils;
 public class UInt8LowRegistersIndexer : RegistersIndexer<byte> {
     private readonly IUIntReaderWriter _uIntArrayReaderWriter;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="uIntArrayReaderWriter">The u int array reader writer.</param>
     public UInt8LowRegistersIndexer(IUIntReaderWriter uIntArrayReaderWriter) {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }

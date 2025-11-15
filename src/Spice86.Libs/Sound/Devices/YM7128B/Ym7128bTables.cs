@@ -28,6 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Spice86.Libs.Sound.Devices.YM7128B;
 
+/// <summary>
+/// Represents ym 7128 b tables.
+/// </summary>
 internal static class Ym7128BTables {
     private static readonly sbyte[] GainDecibelData = [
         -128,
@@ -345,23 +348,44 @@ internal static class Ym7128BTables {
     ];
 
     // YM7128B_GainDecibel_Table
+    /// <summary>
+    /// The gain decibel.
+    /// </summary>
     internal static ReadOnlySpan<sbyte> GainDecibel => GainDecibelData;
 
     // YM7128B_GainFixed_Table
+    /// <summary>
+    /// The gain fixed.
+    /// </summary>
     internal static ReadOnlySpan<short> GainFixed => GainFixedData;
 
     // YM7128B_GainFloat_Table
+    /// <summary>
+    /// The gain float.
+    /// </summary>
     internal static ReadOnlySpan<float> GainFloat => GainFloatData;
 
     // YM7128B_GainShort_Table
+    /// <summary>
+    /// The gain short.
+    /// </summary>
     internal static ReadOnlySpan<short> GainShort => GainShortData;
 
     // YM7128B_Tap_Table
+    /// <summary>
+    /// The tap.
+    /// </summary>
     internal static ReadOnlySpan<ushort> Tap => TapData;
 
     // YM7128B_OversamplerFixed_Kernel (linear phase)
+    /// <summary>
+    /// The oversampler fixed kernel.
+    /// </summary>
     internal static ReadOnlySpan<short> OversamplerFixedKernel => OversamplerFixedKernelData;
 
     // YM7128B_OversamplerFloat_Kernel (linear phase)
+    /// <summary>
+    /// The oversampler float kernel.
+    /// </summary>
     internal static ReadOnlySpan<float> OversamplerFloatKernel => OversamplerFloatKernelData;
 }

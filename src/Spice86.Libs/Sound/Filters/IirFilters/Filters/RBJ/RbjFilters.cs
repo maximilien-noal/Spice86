@@ -3,10 +3,21 @@ namespace Spice86.Libs.Sound.Filters.IirFilters.Filters.RBJ;
 using Spice86.Libs.Sound.Filters.IirFilters.Common;
 using Spice86.Libs.Sound.Filters.IirFilters.Common.State;
 
+/// <summary>
+/// Represents rbj filter base.
+/// </summary>
 public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
     where TState : struct, ISectionState {
+    /// <summary>
+    /// The one over sqrt two.
+    /// </summary>
     internal static double OneOverSqrtTwo => 1.0 / Math.Sqrt(2.0);
 
+    /// <summary>
+    /// Sets up low pass.
+    /// </summary>
+    /// <param name="cutoffFrequency">The cutoff frequency.</param>
+    /// <param name="q">The q.</param>
     protected void SetupLowPass(double cutoffFrequency, double q) {
         double w0 = 2.0 * MathEx.DoublePi * cutoffFrequency;
         double cs = Math.Cos(w0);
@@ -21,6 +32,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up high pass.
+    /// </summary>
+    /// <param name="cutoffFrequency">The cutoff frequency.</param>
+    /// <param name="q">The q.</param>
     protected void SetupHighPass(double cutoffFrequency, double q) {
         double w0 = 2.0 * MathEx.DoublePi * cutoffFrequency;
         double cs = Math.Cos(w0);
@@ -35,6 +51,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up band pass 1.
+    /// </summary>
+    /// <param name="centerFrequency">The center frequency.</param>
+    /// <param name="bandWidth">The band width.</param>
     protected void SetupBandPass1(double centerFrequency, double bandWidth) {
         double w0 = 2.0 * MathEx.DoublePi * centerFrequency;
         double cs = Math.Cos(w0);
@@ -49,6 +70,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, gain, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up band pass 2.
+    /// </summary>
+    /// <param name="centerFrequency">The center frequency.</param>
+    /// <param name="bandWidth">The band width.</param>
     protected void SetupBandPass2(double centerFrequency, double bandWidth) {
         double w0 = 2.0 * MathEx.DoublePi * centerFrequency;
         double cs = Math.Cos(w0);
@@ -62,6 +88,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, alpha, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up band stop.
+    /// </summary>
+    /// <param name="centerFrequency">The center frequency.</param>
+    /// <param name="bandWidth">The band width.</param>
     protected void SetupBandStop(double centerFrequency, double bandWidth) {
         double w0 = 2.0 * MathEx.DoublePi * centerFrequency;
         double cs = Math.Cos(w0);
@@ -76,6 +107,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up notch.
+    /// </summary>
+    /// <param name="centerFrequency">The center frequency.</param>
+    /// <param name="q">The q.</param>
     protected void SetupNotch(double centerFrequency, double q) {
         double w0 = 2.0 * MathEx.DoublePi * centerFrequency;
         double cs = Math.Cos(w0);
@@ -89,6 +125,12 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up low shelf.
+    /// </summary>
+    /// <param name="cutoffFrequency">The cutoff frequency.</param>
+    /// <param name="gainDb">The gain db.</param>
+    /// <param name="shelfSlope">The shelf slope.</param>
     protected void SetupLowShelf(double cutoffFrequency, double gainDb, double shelfSlope) {
         double aGain = Math.Pow(10.0, gainDb / 40.0);
         double w0 = 2.0 * MathEx.DoublePi * cutoffFrequency;
@@ -106,6 +148,12 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up high shelf.
+    /// </summary>
+    /// <param name="cutoffFrequency">The cutoff frequency.</param>
+    /// <param name="gainDb">The gain db.</param>
+    /// <param name="shelfSlope">The shelf slope.</param>
     protected void SetupHighShelf(double cutoffFrequency, double gainDb, double shelfSlope) {
         double aGain = Math.Pow(10.0, gainDb / 40.0);
         double w0 = 2.0 * MathEx.DoublePi * cutoffFrequency;
@@ -123,6 +171,12 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up band shelf.
+    /// </summary>
+    /// <param name="centerFrequency">The center frequency.</param>
+    /// <param name="gainDb">The gain db.</param>
+    /// <param name="bandWidth">The band width.</param>
     protected void SetupBandShelf(double centerFrequency, double gainDb, double bandWidth) {
         double aGain = Math.Pow(10.0, gainDb / 40.0);
         double w0 = 2.0 * MathEx.DoublePi * centerFrequency;
@@ -142,6 +196,11 @@ public abstract class RbjFilterBase<TState> : BiquadFilterBase<TState>
         SetCoefficients(a0, a1, a2, b0, b1, b2);
     }
 
+    /// <summary>
+    /// Sets up all pass.
+    /// </summary>
+    /// <param name="phaseFrequency">The phase frequency.</param>
+    /// <param name="q">The q.</param>
     protected void SetupAllPass(double phaseFrequency, double q) {
         double w0 = 2.0 * MathEx.DoublePi * phaseFrequency;
         double cs = Math.Cos(w0);

@@ -5,13 +5,23 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Core.Emulator.CPU.CfgCpu.Parser.FieldReader;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents instruction prefix parser.
+/// </summary>
 public class InstructionPrefixParser {
     private readonly InstructionReader _instructionReader;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="instructionReader">The instruction reader.</param>
     public InstructionPrefixParser(InstructionReader instructionReader) {
         _instructionReader = instructionReader;
     }
 
+    /// <summary>
+    /// Parses next prefix.
+    /// </summary>
     public InstructionPrefix? ParseNextPrefix() {
         InstructionField<byte> field = _instructionReader.UInt8.PeekField(true);
         byte prefixByte = field.Value;

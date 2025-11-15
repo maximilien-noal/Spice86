@@ -9,6 +9,9 @@ using Spice86.ViewModels;
 using System;
 using System.Globalization;
 
+/// <summary>
+/// Represents breakpoint color converter.
+/// </summary>
 internal class BreakpointColorConverter : IValueConverter {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) {
         const string disassemblybreakpointenabledbrush = "DisassemblyBreakpointEnabledBrush";

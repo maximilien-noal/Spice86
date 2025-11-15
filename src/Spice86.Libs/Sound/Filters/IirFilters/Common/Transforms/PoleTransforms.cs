@@ -4,9 +4,18 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
+/// <summary>
+/// Represents low pass transform.
+/// </summary>
 internal sealed class LowPassTransform {
     private readonly double _f;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="fc">The fc.</param>
+    /// <param name="digital">The digital.</param>
+    /// <param name="analog">The analog.</param>
     internal LowPassTransform(double fc, LayoutBase digital, LayoutBase analog) {
         if (!(fc < 0.5)) {
             throw new ArgumentException("The cutoff frequency needs to be below the Nyquist frequency.");
@@ -44,9 +53,18 @@ internal sealed class LowPassTransform {
     }
 }
 
+/// <summary>
+/// Represents high pass transform.
+/// </summary>
 internal sealed class HighPassTransform {
     private readonly double _f;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="fc">The fc.</param>
+    /// <param name="digital">The digital.</param>
+    /// <param name="analog">The analog.</param>
     internal HighPassTransform(double fc, LayoutBase digital, LayoutBase analog) {
         if (!(fc < 0.5)) {
             throw new ArgumentException("The cutoff frequency needs to be below the Nyquist frequency.");
@@ -84,12 +102,22 @@ internal sealed class HighPassTransform {
     }
 }
 
+/// <summary>
+/// Represents band pass transform.
+/// </summary>
 internal sealed class BandPassTransform {
     private readonly double _a2;
     private readonly double _ab2;
     private readonly double _b;
     private readonly double _b2;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="fc">The fc.</param>
+    /// <param name="fw">The fw.</param>
+    /// <param name="digital">The digital.</param>
+    /// <param name="analog">The analog.</param>
     internal BandPassTransform(double fc, double fw, LayoutBase digital, LayoutBase analog) {
         if (!(fc < 0.5)) {
             throw new ArgumentException("The cutoff frequency needs to be below the Nyquist frequency.");
@@ -172,12 +200,22 @@ internal sealed class BandPassTransform {
     }
 }
 
+/// <summary>
+/// Represents band stop transform.
+/// </summary>
 internal sealed class BandStopTransform {
     private readonly double _a;
     private readonly double _a2;
     private readonly double _b;
     private readonly double _b2;
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="fc">The fc.</param>
+    /// <param name="fw">The fw.</param>
+    /// <param name="digital">The digital.</param>
+    /// <param name="analog">The analog.</param>
     internal BandStopTransform(double fc, double fw, LayoutBase digital, LayoutBase analog) {
         if (!(fc < 0.5)) {
             throw new ArgumentException("The cutoff frequency needs to be below the Nyquist frequency.");

@@ -13,9 +13,9 @@ using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
-using Spice86.ViewModels.Messages;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
+using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.Services;
 using Spice86.ViewModels.ValueViewModels.Debugging;
 
@@ -91,6 +91,20 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
     [ObservableProperty]
     private State _state;
 
+    /// <summary>
+    /// Performs the disassembly view model operation.
+    /// </summary>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="functionsInformation">The functions information.</param>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="messenger">The messenger.</param>
+    /// <param name="textClipboard">The text clipboard.</param>
+    /// <param name="loggerService">The logger service.</param>
+    /// <param name="canCloseTab">The can close tab.</param>
     public DisassemblyViewModel(EmulatorBreakpointsManager emulatorBreakpointsManager, IMemory memory, State state, IDictionary<SegmentedAddress, FunctionInformation> functionsInformation,
         BreakpointsViewModel breakpointsViewModel, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher, IMessenger messenger, ITextClipboard textClipboard, ILoggerService loggerService,
         bool canCloseTab = false) : base(uiDispatcher, textClipboard) {
@@ -128,12 +142,12 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
                 return;
             }
             _isActive = value;
-            
+
             if (_isActive) {
                 // Subscribe to pause events when the view becomes active
                 _pauseHandler.Paused += OnPaused;
                 _pauseHandler.Resumed += OnResumed;
-                
+
                 // If already paused, update the view
                 if (_pauseHandler.IsPaused) {
                     OnPaused();
@@ -186,7 +200,7 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
                 _currentInstructionAddress = value;
                 OnPropertyChanged();
                 UpdateHeader(value);
-                
+
                 if (_isActive) {
                     UpdateCpuInstructionHighlighting();
                 }
@@ -196,10 +210,20 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
 
     IRegistersViewModel IDisassemblyViewModel.Registers => Registers;
 
+    /// <summary>
+    /// Performs the try get line by address operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public bool TryGetLineByAddress(uint address, [NotNullWhen(true)] out DebuggerLineViewModel? debuggerLine) {
         return DebuggerLines.TryGetValue(address, out debuggerLine);
     }
 
+    /// <summary>
+    /// Performs the try get line by address operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public bool TryGetLineByAddress(SegmentedAddress address, [NotNullWhen(true)] out DebuggerLineViewModel? debuggerLine) {
         return TryGetLineByAddress(address.Linear, out debuggerLine);
     }
@@ -208,7 +232,7 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
     ///     Defines a filter for the autocomplete functionality, filtering functions based on the search text
     /// </summary>
     public AutoCompleteFilterPredicate<object?> FunctionFilter => (search, item) =>
-        string.IsNullOrWhiteSpace(search) || item is FunctionInfo {Name: not null} functionInformation && functionInformation.Name.Contains(search, StringComparison.OrdinalIgnoreCase);
+        string.IsNullOrWhiteSpace(search) || item is FunctionInfo { Name: not null } functionInformation && functionInformation.Name.Contains(search, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     ///     Create the text that is displayed in the textbox when a function is selected.
@@ -262,6 +286,10 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
     }
 
     // Override OnPropertyChanged to track when the dictionary changes
+    /// <summary>
+    /// Called when property changed.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnPropertyChanged(PropertyChangedEventArgs e) {
         base.OnPropertyChanged(e);
 
@@ -298,14 +326,14 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
         if (!_isActive) {
             return;
         }
-        
+
         // Ensure we're on the UI thread
         if (!_uiDispatcher.CheckAccess()) {
             _uiDispatcher.Post(OnPaused);
 
             return;
         }
-    
+
         // Capture the current CPU instruction pointer at the moment of pausing
         SegmentedAddress currentInstructionAddress = State.IpSegmentedAddress;
         if (_logger.IsEnabled(LogEventLevel.Debug)) {

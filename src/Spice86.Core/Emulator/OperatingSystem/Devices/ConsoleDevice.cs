@@ -24,7 +24,13 @@ using System.IO;
 public class ConsoleDevice : CharacterDevice {
     private const string CON = "CON";
     private byte _readCache = 0;
+    /// <summary>
+    /// The input available.
+    /// </summary>
     public const int InputAvailable = 0x80D3;
+    /// <summary>
+    /// The no input available.
+    /// </summary>
     public const int NoInputAvailable = 0x8093;
     private readonly ILoggerService _loggerService;
     private readonly BiosDataArea _biosDataArea;
@@ -34,15 +40,45 @@ public class ConsoleDevice : CharacterDevice {
     private readonly State _state;
     private readonly Ansi _ansi = new Ansi();
     private class Ansi {
+        /// <summary>
+        /// The ansi_data_length.
+        /// </summary>
         public const int ANSI_DATA_LENGTH = 10;
+        /// <summary>
+        /// Gets or sets esc.
+        /// </summary>
         public bool Esc { get; set; }
+        /// <summary>
+        /// Gets or sets sci.
+        /// </summary>
         public bool Sci { get; set; }
+        /// <summary>
+        /// Gets or sets is enabled.
+        /// </summary>
         public bool IsEnabled { get; set; }
+        /// <summary>
+        /// Gets or sets attribute.
+        /// </summary>
         public byte Attribute { get; set; } = 0x7;
+        /// <summary>
+        /// Gets data.
+        /// </summary>
         public byte[] Data { get; } = new byte[ANSI_DATA_LENGTH];
+        /// <summary>
+        /// Gets or sets number of arg.
+        /// </summary>
         public byte NumberOfArg { get; set; }
+        /// <summary>
+        /// Gets or sets save column.
+        /// </summary>
         public sbyte SaveColumn { get; set; }
+        /// <summary>
+        /// Gets or sets save row.
+        /// </summary>
         public sbyte SaveRow { get; set; }
+        /// <summary>
+        /// Gets or sets was warned.
+        /// </summary>
         public bool WasWarned { get; set; }
     }
 
@@ -75,20 +111,44 @@ public class ConsoleDevice : CharacterDevice {
         return _currentMode.MemoryModel == MemoryModel.Text;
     }
 
+    /// <summary>
+    /// Gets or sets internal output.
+    /// </summary>
     public bool InternalOutput { get; set; }
 
+    /// <summary>
+    /// Gets or sets echo.
+    /// </summary>
     public bool Echo { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets direct output.
+    /// </summary>
     public bool DirectOutput { get; set; }
 
+    /// <summary>
+    /// The name.
+    /// </summary>
     public override string Name => CON;
 
+    /// <summary>
+    /// The can seek.
+    /// </summary>
     public override bool CanSeek => false;
 
+    /// <summary>
+    /// The can read.
+    /// </summary>
     public override bool CanRead => _biosKeybardBuffer.IsEmpty is false;
 
+    /// <summary>
+    /// The can write.
+    /// </summary>
     public override bool CanWrite => true;
 
+    /// <summary>
+    /// Performs the flush operation.
+    /// </summary>
     public override void Flush() {
         // No operation needed for console device flush
     }
@@ -97,10 +157,17 @@ public class ConsoleDevice : CharacterDevice {
         throw new NotSupportedException("Console device does not support seeking.");
     }
 
+    /// <summary>
+    /// Sets length.
+    /// </summary>
+    /// <param name="value">The value.</param>
     public override void SetLength(long value) {
         throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// The length.
+    /// </summary>
     public override long Length => throw new NotSupportedException("Console device does not have a length.");
 
     public override long Position {
@@ -109,7 +176,7 @@ public class ConsoleDevice : CharacterDevice {
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
-        if(count == 0 || offset > buffer.Length || buffer.Length == 0) {
+        if (count == 0 || offset > buffer.Length || buffer.Length == 0) {
             return 0;
         }
         ushort oldAx = _state.AX;
@@ -122,7 +189,7 @@ public class ConsoleDevice : CharacterDevice {
             }
             _readCache = 0;
         }
-        while(index < buffer.Length && readCount < count) {
+        while (index < buffer.Length && readCount < count) {
             _keyboardInt16Handler.GetKeystroke();
             byte scanCode = _state.AL;
             switch (scanCode) {
@@ -228,8 +295,8 @@ public class ConsoleDevice : CharacterDevice {
                     continue;
                 }
             }
-            if(!_ansi.Sci) {
-                switch((char)chr) {
+            if (!_ansi.Sci) {
+                switch ((char)chr) {
                     case '[':
                         _ansi.Sci = true;
                         break;
@@ -238,7 +305,7 @@ public class ConsoleDevice : CharacterDevice {
                     case 'D': // Scrolling down
                     case 'M': // Scrolling up
                     default:
-                        if(_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                        if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
                             _loggerService.Warning("ANSI: Unknown char {AnsiChar} after an Esc character", $"{chr:X2}");
                         }
                         ClearAnsi();
@@ -282,7 +349,7 @@ public class ConsoleDevice : CharacterDevice {
                                 _ansi.Attribute |= 0x08;
                                 break;
                             case 4: // Underline
-                                if(_loggerService.IsEnabled(LogEventLevel.Information)) {
+                                if (_loggerService.IsEnabled(LogEventLevel.Information)) {
                                     _loggerService.Information("ANSI: No support for underline yet");
                                 }
                                 break;
@@ -366,7 +433,7 @@ public class ConsoleDevice : CharacterDevice {
                     break;
                 case 'f':
                 case 'H': // Cursor Position
-                    if(!_ansi.WasWarned && _loggerService.IsEnabled(LogEventLevel.Warning)) {
+                    if (!_ansi.WasWarned && _loggerService.IsEnabled(LogEventLevel.Warning)) {
                         _ansi.WasWarned = true;
                         _loggerService.Warning("ANSI Warning to debugger: ANSI SEQUENCES USED");
                     }
@@ -457,7 +524,7 @@ public class ConsoleDevice : CharacterDevice {
                     break;
                 case 'h': // Set mode (if code =7 enable linewrap)
                 case 'I': // Reset mode
-                    if(_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                    if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
                         _loggerService.Warning("ANSI: set/reset mode called (not supported)");
                     }
                     ClearAnsi();
@@ -491,7 +558,7 @@ public class ConsoleDevice : CharacterDevice {
                     _vgaFunctionality.SetActivePage(page);
                     _vgaFunctionality.VerifyScroll(0, row, 0,
                         (byte)(ncols - 1), (byte)(nrows - 1),
-                        _ansi.Data[0] > 0 ? - _ansi.Data[0] : -1,
+                        _ansi.Data[0] > 0 ? -_ansi.Data[0] : -1,
                         _ansi.Attribute);
                     break;
                 case 'l': // (if code =7) disable linewrap
@@ -513,7 +580,7 @@ public class ConsoleDevice : CharacterDevice {
                 return NoInputAvailable;
             }
 
-            if(_readCache is not 0 || _biosKeybardBuffer.PeekKeyCode() is not null) {
+            if (_readCache is not 0 || _biosKeybardBuffer.PeekKeyCode() is not null) {
                 return InputAvailable;
             }
 
@@ -522,11 +589,21 @@ public class ConsoleDevice : CharacterDevice {
         }
     }
 
+    /// <summary>
+    /// Performs the try read from control channel operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public override bool TryReadFromControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
     }
 
+    /// <summary>
+    /// Performs the try write to control channel operation.
+    /// </summary>
+    /// <param name="true">The true.</param>
+    /// <returns>A boolean value indicating the result.</returns>
     public override bool TryWriteToControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
@@ -567,7 +644,7 @@ public class ConsoleDevice : CharacterDevice {
     }
 
     private void OutputWithNoAttributes(byte byteChar) {
-        if(!GetIsInTextMode()) {
+        if (!GetIsInTextMode()) {
             return;
         }
         OutputWithNoAttributes((char)byteChar);

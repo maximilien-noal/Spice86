@@ -9,10 +9,25 @@ using Spice86.Shared.Utils;
 /// Instruction set of the CPU
 /// </summary>
 public abstract class Instructions {
+    /// <summary>
+    /// The cpu.
+    /// </summary>
     protected readonly Cpu Cpu;
+    /// <summary>
+    /// The state.
+    /// </summary>
     protected readonly State State;
+    /// <summary>
+    /// The stack.
+    /// </summary>
     protected readonly Stack Stack;
+    /// <summary>
+    /// The memory.
+    /// </summary>
     protected readonly Memory.IMemory Memory;
+    /// <summary>
+    /// The modrm.
+    /// </summary>
     protected readonly ModRM ModRM;
 
     /// <summary>
@@ -20,8 +35,14 @@ public abstract class Instructions {
     /// </summary>
     protected uint MemoryAddressEsDi => MemoryUtils.ToPhysicalAddress(State.ES, State.DI);
 
+    /// <summary>
+    /// The memory address overridable ds si.
+    /// </summary>
     protected uint MemoryAddressOverridableDsSi => ModRM.GetAddress((uint)SegmentRegisterIndex.DsIndex, State.SI);
 
+    /// <summary>
+    /// The ds next uint 16 address.
+    /// </summary>
     protected uint DsNextUint16Address => ModRM.GetAddress((uint)SegmentRegisterIndex.DsIndex, Cpu.NextUint16());
 
     /// <summary>
@@ -106,10 +127,18 @@ public abstract class Instructions {
     /// </summary>
     public abstract void Cmps();
 
+    /// <summary>
+    /// Performs the advancesi operation.
+    /// </summary>
+    /// <param name="diff">The diff.</param>
     protected void AdvanceSI(short diff) {
         State.SI = (ushort)(State.SI + diff);
     }
 
+    /// <summary>
+    /// Performs the advancedi operation.
+    /// </summary>
+    /// <param name="diff">The diff.</param>
     protected void AdvanceDI(short diff) {
         State.DI = (ushort)(State.DI + diff);
     }
@@ -118,6 +147,9 @@ public abstract class Instructions {
 
     protected abstract void AdvanceDI();
 
+    /// <summary>
+    /// Performs the advancesidi operation.
+    /// </summary>
     protected void AdvanceSIDI() {
         AdvanceSI();
         AdvanceDI();
@@ -143,6 +175,11 @@ public abstract class Instructions {
     public abstract void MovAccMoffs();
     public abstract void MovMoffsAcc();
     public abstract void MovRmImm();
+    /// <summary>
+    /// Calculates compute grp 2 count.
+    /// </summary>
+    /// <param name="countSource">The count source.</param>
+    /// <returns>The result of the operation.</returns>
     protected byte ComputeGrp2Count(Grp2CountSource countSource) {
         return countSource switch {
             Grp2CountSource.One => 1,
@@ -154,6 +191,9 @@ public abstract class Instructions {
 
     public abstract void Grp2(Grp2CountSource countSource);
 
+    /// <summary>
+    /// Performs the grp 3 operation.
+    /// </summary>
     public void Grp3() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;

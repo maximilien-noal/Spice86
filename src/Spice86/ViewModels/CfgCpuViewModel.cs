@@ -21,6 +21,9 @@ using Spice86.ViewModels.Services;
 
 using System.Diagnostics;
 
+/// <summary>
+/// Represents cfg cpu view model.
+/// </summary>
 public partial class CfgCpuViewModel : ViewModelBase {
     private readonly List<NodeTableEntry> _tableNodesList = new();
     private readonly IUIDispatcher _uiDispatcher;
@@ -31,6 +34,13 @@ public partial class CfgCpuViewModel : ViewModelBase {
     // Collection of searchable nodes for AutoCompleteBox
     private readonly Dictionary<string, ICfgNode> _searchableNodes = new();
 
+    /// <summary>
+    /// Performs the cfg cpu view model operation.
+    /// </summary>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="uiDispatcher">The ui dispatcher.</param>
+    /// <param name="executionContextManager">The execution context manager.</param>
+    /// <param name="pauseHandler">The pause handler.</param>
     [ObservableProperty] private int _maxNodesToDisplay = 200;
 
     [ObservableProperty] private Graph? _graph;
@@ -50,15 +60,15 @@ public partial class CfgCpuViewModel : ViewModelBase {
     [ObservableProperty] private string? _selectedNodeEntry;
 
     [ObservableProperty] private bool _autoFollow = false;
-    
+
     [ObservableProperty] private bool _isLoading;
 
     [ObservableProperty] private string _tableFilter = string.Empty;
-    
+
     [ObservableProperty] private AvaloniaList<NodeTableEntry> _tableNodes = new();
-    
+
     [ObservableProperty] private NodeTableEntry? _selectedTableNode;
-    
+
     [ObservableProperty] private int _selectedTabIndex;
 
     public CfgCpuViewModel(Configuration configuration,
@@ -80,10 +90,16 @@ public partial class CfgCpuViewModel : ViewModelBase {
         };
     }
 
+    /// <summary>
+    /// The node filter.
+    /// </summary>
     public AutoCompleteFilterPredicate<object?> NodeFilter => (search, item) =>
         string.IsNullOrWhiteSpace(search) ||
         item is string nodeText && nodeText.Contains(search, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets node item selector.
+    /// </summary>
     public AutoCompleteSelector<object>? NodeItemSelector { get; } = (_, item) => {
         return item?.ToString() ?? "Unknown";
     };
@@ -129,7 +145,7 @@ public partial class CfgCpuViewModel : ViewModelBase {
             IsLoading = false;
         }
     }
-    
+
     [RelayCommand]
     private async Task NavigateToTableNode(NodeTableEntry? node) {
         if (node?.Node != null) {
@@ -182,7 +198,7 @@ public partial class CfgCpuViewModel : ViewModelBase {
             return null;
         });
     }
-    
+
 
     private async Task RegenerateGraphFromNodeAsync(ICfgNode startNode) {
         try {
@@ -265,19 +281,19 @@ public partial class CfgCpuViewModel : ViewModelBase {
             IsLoading = false;
         }
     }
-    
+
     private void FilterTableNodes() {
         if (string.IsNullOrWhiteSpace(TableFilter)) {
             TableNodes.Clear();
             TableNodes.AddRange(_tableNodesList);
             return;
         }
-        
+
         string filter = TableFilter;
 
         TableNodes = new AvaloniaList<NodeTableEntry>(
-            _tableNodesList.Where(n => 
-                (n.Assembly.Contains(filter, StringComparison.InvariantCultureIgnoreCase)) || 
+            _tableNodesList.Where(n =>
+                (n.Assembly.Contains(filter, StringComparison.InvariantCultureIgnoreCase)) ||
                 n.Address.Contains(filter, StringComparison.InvariantCultureIgnoreCase) ||
                 n.Type.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
         );
@@ -363,7 +379,7 @@ public partial class CfgCpuViewModel : ViewModelBase {
 
     private static (int, int) GenerateEdgeKey(ICfgNode node, ICfgNode successor)
         => (node.Id, successor.Id);
-        
+
     private NodeTableEntry CreateTableEntry(ICfgNode node) {
         string nodeType = "Instruction";
         if (node is IJumpInstruction) {
@@ -375,9 +391,9 @@ public partial class CfgCpuViewModel : ViewModelBase {
         } else if (node is SelectorNode) {
             nodeType = "Selector";
         }
-        
+
         bool isLastExecuted = node.Id == _executionContextManager.CurrentExecutionContext?.LastExecuted?.Id;
-        
+
         AvaloniaList<NodeTableEntry> predecessors = new();
         foreach (ICfgNode predecessor in node.Predecessors) {
             predecessors.Add(new NodeTableEntry {
@@ -386,7 +402,7 @@ public partial class CfgCpuViewModel : ViewModelBase {
                 Node = predecessor
             });
         }
-        
+
         AvaloniaList<NodeTableEntry> successors = new();
         foreach (ICfgNode successor in node.Successors) {
             successors.Add(new NodeTableEntry {
@@ -395,7 +411,7 @@ public partial class CfgCpuViewModel : ViewModelBase {
                 Node = successor
             });
         }
-        
+
         return new NodeTableEntry {
             Address = $"0x{node.Address}",
             Assembly = _nodeToString.ToAssemblyString(node),
@@ -408,13 +424,34 @@ public partial class CfgCpuViewModel : ViewModelBase {
     }
 
     public record NodeTableEntry {
+        /// <summary>
+        /// Gets address.
+        /// </summary>
         public string Address { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets assembly.
+        /// </summary>
         public string Assembly { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets type.
+        /// </summary>
         public string Type { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets predecessors.
+        /// </summary>
         public AvaloniaList<NodeTableEntry> Predecessors { get; init; } = new();
+        /// <summary>
+        /// Gets successors.
+        /// </summary>
         public AvaloniaList<NodeTableEntry> Successors { get; init; } = new();
 
+        /// <summary>
+        /// Gets is last executed.
+        /// </summary>
         public bool IsLastExecuted { get; init; }
+        /// <summary>
+        /// Gets node.
+        /// </summary>
         public ICfgNode? Node { get; init; }
     }
 }

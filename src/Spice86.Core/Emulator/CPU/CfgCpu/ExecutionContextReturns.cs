@@ -1,7 +1,7 @@
 ﻿namespace Spice86.Core.Emulator.CPU.CfgCpu;
 
-using Spice86.Shared.Emulator.Memory;
 using Spice86.Core.Emulator.CPU.CfgCpu.Linker;
+using Spice86.Shared.Emulator.Memory;
 
 /// <summary>
 /// Maps return address to a stack of execution contexts to restore.
@@ -13,6 +13,11 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Linker;
 public class ExecutionContextReturns {
     private readonly Dictionary<SegmentedAddress, Stack<ExecutionContext>> _executionContextReturns = new();
 
+    /// <summary>
+    /// Performs the push context to restore operation.
+    /// </summary>
+    /// <param name="expectedReturn">The expected return.</param>
+    /// <param name="contextToRestore">The context to restore.</param>
     public void PushContextToRestore(SegmentedAddress expectedReturn, ExecutionContext contextToRestore) {
         // Save current execution context
         if (!_executionContextReturns.TryGetValue(expectedReturn, out Stack<ExecutionContext>? contextsToRestoreAtAddress)) {
@@ -22,6 +27,10 @@ public class ExecutionContextReturns {
         contextsToRestoreAtAddress.Push(contextToRestore);
     }
 
+    /// <summary>
+    /// Performs the try restore context operation.
+    /// </summary>
+    /// <param name="returnAddress">The return address.</param>
     public ExecutionContext? TryRestoreContext(SegmentedAddress returnAddress) {
         if (!_executionContextReturns.TryGetValue(returnAddress, out Stack<ExecutionContext>? contextsToRestoreAtAddress)) {
             return null;

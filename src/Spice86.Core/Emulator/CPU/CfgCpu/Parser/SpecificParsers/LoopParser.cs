@@ -4,12 +4,20 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents loop parser.
+/// </summary>
 public class LoopParser(BaseInstructionParser instructionParser) : BaseInstructionParser(instructionParser) {
+    /// <summary>
+    /// Parses .
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The result of the operation.</returns>
     public CfgInstruction Parse(ParsingContext context) {
         BitWidth addressWidth = context.AddressWidthFromPrefixes;
         ushort opcode = context.OpcodeField.Value;
         InstructionField<sbyte> offsetField = _instructionReader.Int8.NextField(true);
-        if(BitIsTrue(opcode, 1)) {
+        if (BitIsTrue(opcode, 1)) {
             // Loop with no condition
             return addressWidth switch {
                 BitWidth.WORD_16 => new Loop16(context.Address, context.OpcodeField, context.Prefixes, offsetField),

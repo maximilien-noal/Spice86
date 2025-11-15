@@ -8,19 +8,30 @@ using Spice86.Shared.Utils;
 
 using System.Collections.Immutable;
 
+/// <summary>
+/// Represents mod rm computer.
+/// </summary>
 public class ModRmComputer {
     private readonly State _state;
     private readonly InstructionFieldValueRetriever _instructionFieldValueRetriever;
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <param name="instructionFieldValueRetriever">The instruction field value retriever.</param>
     public ModRmComputer(State state, InstructionFieldValueRetriever instructionFieldValueRetriever) {
         _state = state;
         _instructionFieldValueRetriever = instructionFieldValueRetriever;
         // Dummy value
-        ModRmContext = new ModRmContext(new InstructionField<byte>(0,0,0,0,ImmutableList.CreateRange(new []{(byte?)0}), true), 0, 0, 0, BitWidth.WORD_16, MemoryOffsetType.NONE, MemoryAddressType.NONE, null, null, null, null, null, null);
+        ModRmContext = new ModRmContext(new InstructionField<byte>(0, 0, 0, 0, ImmutableList.CreateRange(new[] { (byte?)0 }), true), 0, 0, 0, BitWidth.WORD_16, MemoryOffsetType.NONE, MemoryAddressType.NONE, null, null, null, null, null, null);
     }
 
+    /// <summary>
+    /// Gets or sets mod rm context.
+    /// </summary>
     public ModRmContext ModRmContext { get; set; }
 
-    
+
     /// <summary>
     /// Gets the linear address the ModRM byte can point at. Can be <c>null</c>.
     /// </summary>
@@ -33,7 +44,7 @@ public class ModRmComputer {
         }
         return GetPhysicalAddress(memoryOffset.Value);
     }
-    
+
     /// <summary>
     /// Computes a physical address from an offset and the segment register used in this modrm operation
     /// </summary>

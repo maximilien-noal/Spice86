@@ -41,10 +41,16 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
 
     private readonly IMemory _memory;
 
+    /// <summary>
+    /// Gets dual pic.
+    /// </summary>
     internal DualPic DualPic { get; }
 
     private readonly ModRM _modRM;
 
+    /// <summary>
+    /// Gets emulator breakpoints manager.
+    /// </summary>
     internal EmulatorBreakpointsManager EmulatorBreakpointsManager { get; }
     private readonly CallbackHandler _callbackHandler;
     private readonly Instructions8 _instructions8;
@@ -74,10 +80,32 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly IOPortDispatcher _ioPortDispatcher;
     private readonly PicPitCpuState _picPitCpuState;
 
+    /// <summary>
+    /// Gets execution flow recorder.
+    /// </summary>
     public ExecutionFlowRecorder ExecutionFlowRecorder { get; }
 
+    /// <summary>
+    /// Gets interrupt vector table.
+    /// </summary>
     public InterruptVectorTable InterruptVectorTable { get; }
 
+    /// <summary>
+    /// Performs the cpu operation.
+    /// </summary>
+    /// <param name="interruptVectorTable">The interrupt vector table.</param>
+    /// <param name="stack">The stack.</param>
+    /// <param name="functionHandler">The function handler.</param>
+    /// <param name="functionHandlerInExternalInterrupt">The function handler in external interrupt.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="dualPic">The dual pic.</param>
+    /// <param name="picPitCpuState">The pic pit cpu state.</param>
+    /// <param name="ioPortDispatcher">The io port dispatcher.</param>
+    /// <param name="callbackHandler">The callback handler.</param>
+    /// <param name="emulatorBreakpointsManager">The emulator breakpoints manager.</param>
+    /// <param name="loggerService">The logger service.</param>
+    /// <param name="executionFlowRecorder">The execution flow recorder.</param>
     public Cpu(InterruptVectorTable interruptVectorTable,
         Stack stack, FunctionHandler functionHandler, FunctionHandler functionHandlerInExternalInterrupt,
         IMemory memory, State state, DualPic dualPic,
@@ -143,10 +171,18 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// Performs the external interrupt operation.
+    /// </summary>
+    /// <param name="vectorNumber">The vector number.</param>
     public void ExternalInterrupt(byte vectorNumber) {
         ExternalInterruptVectorNumber = vectorNumber;
     }
 
+    /// <summary>
+    /// Performs the far ret operation.
+    /// </summary>
+    /// <param name="numberOfBytesToPop">The number of bytes to pop.</param>
     public void FarRet(ushort numberOfBytesToPop) {
         FunctionHandlerInUse.Ret(CallType.FAR16, null);
         _internalIp = Stack.Pop16();
@@ -158,18 +194,36 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// Gets function handler.
+    /// </summary>
     public FunctionHandler FunctionHandler { get; }
 
+    /// <summary>
+    /// Gets function handler in external interrupt.
+    /// </summary>
     public FunctionHandler FunctionHandlerInExternalInterrupt { get; }
 
     public FunctionHandler FunctionHandlerInUse { get; private set; }
 
+    /// <summary>
+    /// The is initial execution context.
+    /// </summary>
     public bool IsInitialExecutionContext => FunctionHandlerInUse == FunctionHandler;
 
+    /// <summary>
+    /// Gets stack.
+    /// </summary>
     public Stack Stack { get; }
 
+    /// <summary>
+    /// Gets state.
+    /// </summary>
     public State State { get; }
 
+    /// <summary>
+    /// Performs the interrupt ret operation.
+    /// </summary>
     public void InterruptRet() {
         FunctionHandlerInUse.Ret(CallType.INTERRUPT, null);
         _internalIp = Stack.Pop16();
@@ -180,6 +234,10 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// Performs the near ret operation.
+    /// </summary>
+    /// <param name="numberOfBytesToPop">The number of bytes to pop.</param>
     public void NearRet(int numberOfBytesToPop) {
         FunctionHandlerInUse.Ret(CallType.NEAR16, null);
         _internalIp = Stack.Pop16();
@@ -189,6 +247,10 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// Performs the next uint 32 operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public uint NextUint32() {
         uint res = _memory.UInt32[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -199,6 +261,10 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         return res;
     }
 
+    /// <summary>
+    /// Performs the next uint 16 operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public ushort NextUint16() {
         ushort res = _memory.UInt16[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -207,6 +273,10 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         return res;
     }
 
+    /// <summary>
+    /// Performs the next uint 8 operation.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public byte NextUint8() {
         byte res = _memory.UInt8[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -713,11 +783,11 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
                 _instructions16Or32.Cwd();
                 break;
             case 0x9A: {
-                ushort ip = NextUint16();
-                ushort cs = NextUint16();
-                FarCall(State.CS, _internalIp, cs, ip);
-                break;
-            }
+                    ushort ip = NextUint16();
+                    ushort cs = NextUint16();
+                    FarCall(State.CS, _internalIp, cs, ip);
+                    break;
+                }
             // Do nothing, this is to wait for the FPU which is not implemented
             case 0x9B:
                 // WAIT FPU
@@ -892,52 +962,52 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
                 HandleInvalidOpcode(opcode);
                 break;
             case 0xD9: {
-                _modRM.Read();
-                uint groupIndex = _modRM.RegisterIndex;
-                switch (groupIndex) {
-                    case 0x7: {
-                        // FNSTCW
-                        // Set the control word to the value expected after init since FPU is not supported.
-                        _modRM.SetRm16(0x37F);
+                    _modRM.Read();
+                    uint groupIndex = _modRM.RegisterIndex;
+                    switch (groupIndex) {
+                        case 0x7: {
+                                // FNSTCW
+                                // Set the control word to the value expected after init since FPU is not supported.
+                                _modRM.SetRm16(0x37F);
 
-                        break;
+                                break;
+                            }
+                        default: throw new InvalidGroupIndexException(State, groupIndex);
                     }
-                    default: throw new InvalidGroupIndexException(State, groupIndex);
+                    break;
                 }
-                break;
-            }
             case 0xDA:
                 // FPU stuff
                 HandleInvalidOpcode(opcode);
                 break;
             case 0xDB: {
-                byte opCodeNextByte = NextUint8();
-                if (opCodeNextByte != 0xE3) {
-                    ushort fullOpCode = (ushort)(opcode << 8 | opCodeNextByte);
-                    HandleInvalidOpcode(fullOpCode);
+                    byte opCodeNextByte = NextUint8();
+                    if (opCodeNextByte != 0xE3) {
+                        ushort fullOpCode = (ushort)(opcode << 8 | opCodeNextByte);
+                        HandleInvalidOpcode(fullOpCode);
+                    }
+                    // FNINIT
+                    // Do nothing, no FPU emulation, but this is used to detect FPU
+                    break;
                 }
-                // FNINIT
-                // Do nothing, no FPU emulation, but this is used to detect FPU
-                break;
-            }
             case 0xDC:
                 // FPU stuff
                 HandleInvalidOpcode(opcode);
                 break;
             case 0xDD: {
-                _modRM.Read();
-                uint groupIndex = _modRM.RegisterIndex;
-                switch (groupIndex) {
-                    case 0x7:
-                        // FNSTSW
-                        // Set non zero, means no FPU installed when called after FNINIT.
-                        _modRM.SetRm16(0xFF);
-                        break;
-                    default:
-                        throw new InvalidGroupIndexException(State, groupIndex);
+                    _modRM.Read();
+                    uint groupIndex = _modRM.RegisterIndex;
+                    switch (groupIndex) {
+                        case 0x7:
+                            // FNSTSW
+                            // Set non zero, means no FPU installed when called after FNINIT.
+                            _modRM.SetRm16(0xFF);
+                            break;
+                        default:
+                            throw new InvalidGroupIndexException(State, groupIndex);
+                    }
+                    break;
                 }
-                break;
-            }
             case 0xDE:
             case 0xDF:
                 // FPU stuff
@@ -945,40 +1015,40 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
                 break;
             case 0xE0:
             case 0xE1: {
-                // zeroFlag==true => LOOPZ
-                // zeroFlag==false =>  LOOPNZ
-                bool zeroFlag = (opcode & 0x1) == 1;
-                sbyte address = (sbyte)NextUint8();
-                bool done = AddressSize switch {
-                    16 => --State.CX == 0,
-                    32 => --State.ECX == 0,
-                    _ => throw new InvalidOperationException($"Invalid address size: {AddressSize}")
-                };
-                if (!done && State.ZeroFlag == zeroFlag) {
-                    ushort targetIp = (ushort)(_internalIp + address);
-                    ExecutionFlowRecorder.RegisterJump(State.CS, State.IP, State.CS, targetIp);
-                    _internalIp = targetIp;
-                }
+                    // zeroFlag==true => LOOPZ
+                    // zeroFlag==false =>  LOOPNZ
+                    bool zeroFlag = (opcode & 0x1) == 1;
+                    sbyte address = (sbyte)NextUint8();
+                    bool done = AddressSize switch {
+                        16 => --State.CX == 0,
+                        32 => --State.ECX == 0,
+                        _ => throw new InvalidOperationException($"Invalid address size: {AddressSize}")
+                    };
+                    if (!done && State.ZeroFlag == zeroFlag) {
+                        ushort targetIp = (ushort)(_internalIp + address);
+                        ExecutionFlowRecorder.RegisterJump(State.CS, State.IP, State.CS, targetIp);
+                        _internalIp = targetIp;
+                    }
 
-                break;
-            }
+                    break;
+                }
             case 0xE2: {
-                // LOOP
-                sbyte address = (sbyte)NextUint8();
-                bool done = AddressSize switch {
-                    16 => --State.CX == 0,
-                    32 => --State.ECX == 0,
-                    _ => throw new InvalidOperationException($"Invalid address size: {AddressSize}")
-                };
+                    // LOOP
+                    sbyte address = (sbyte)NextUint8();
+                    bool done = AddressSize switch {
+                        16 => --State.CX == 0,
+                        32 => --State.ECX == 0,
+                        _ => throw new InvalidOperationException($"Invalid address size: {AddressSize}")
+                    };
 
-                if (!done) {
-                    ushort targetIp = (ushort)(_internalIp + address);
-                    ExecutionFlowRecorder.RegisterJump(State.CS, State.IP, State.CS, targetIp);
-                    _internalIp = targetIp;
+                    if (!done) {
+                        ushort targetIp = (ushort)(_internalIp + address);
+                        ExecutionFlowRecorder.RegisterJump(State.CS, State.IP, State.CS, targetIp);
+                        _internalIp = targetIp;
+                    }
+
+                    break;
                 }
-
-                break;
-            }
             case 0xE3: // JCXZ, JECXZ
                 Jcc(TestJumpConditionCXZ());
                 break;
@@ -995,29 +1065,29 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
                 _instructions16Or32.OutImm8();
                 break;
             case 0xE8: {
-                // CALL NEAR
-                short offset = (short)NextUint16();
-                ushort nextInstruction = _internalIp;
-                ushort callAddress = (ushort)(nextInstruction + offset);
-                NearCall(nextInstruction, callAddress);
-                break;
-            }
+                    // CALL NEAR
+                    short offset = (short)NextUint16();
+                    ushort nextInstruction = _internalIp;
+                    ushort callAddress = (ushort)(nextInstruction + offset);
+                    NearCall(nextInstruction, callAddress);
+                    break;
+                }
             case 0xE9: {
-                short offset = (short)NextUint16();
-                JumpNear((ushort)(_internalIp + offset));
-                break;
-            }
+                    short offset = (short)NextUint16();
+                    JumpNear((ushort)(_internalIp + offset));
+                    break;
+                }
             case 0xEA: {
-                ushort ip = NextUint16();
-                ushort cs = NextUint16();
-                JumpFar(cs, ip);
-                break;
-            }
+                    ushort ip = NextUint16();
+                    ushort cs = NextUint16();
+                    JumpFar(cs, ip);
+                    break;
+                }
             case 0xEB: {
-                sbyte offset = (sbyte)NextUint8();
-                JumpNear((ushort)(_internalIp + offset));
-                break;
-            }
+                    sbyte offset = (sbyte)NextUint8();
+                    JumpNear((ushort)(_internalIp + offset));
+                    break;
+                }
             case 0xEC:
                 _instructions8.InDx();
                 break;
@@ -1124,7 +1194,7 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
             State.InterruptShadowing = false;
             return;
         }
-        
+
         if (!State.InterruptFlag) {
             return;
         }
@@ -1250,14 +1320,27 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         }
     }
 
+    /// <summary>
+    /// Performs the jump far operation.
+    /// </summary>
+    /// <param name="cs">The cs.</param>
+    /// <param name="ip">The ip.</param>
     public void JumpFar(ushort cs, ushort ip) {
         HandleJump(cs, ip);
     }
 
+    /// <summary>
+    /// Performs the jump near operation.
+    /// </summary>
+    /// <param name="ip">The ip.</param>
     public void JumpNear(ushort ip) {
         HandleJump(State.CS, ip);
     }
 
+    /// <summary>
+    /// Performs the near call with return ip next instruction operation.
+    /// </summary>
+    /// <param name="callIP">The callip.</param>
     public void NearCallWithReturnIpNextInstruction(ushort callIP) {
         NearCall(_internalIp, callIP);
     }
@@ -1267,14 +1350,29 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         HandleCall(CallType.NEAR16, State.CS, returnIP, State.CS, callIP);
     }
 
+    /// <summary>
+    /// Performs the in 8 operation.
+    /// </summary>
+    /// <param name="port">The port.</param>
+    /// <returns>The result of the operation.</returns>
     public byte In8(ushort port) {
         return _ioPortDispatcher.ReadByte(port);
     }
 
+    /// <summary>
+    /// Performs the in 16 operation.
+    /// </summary>
+    /// <param name="port">The port.</param>
+    /// <returns>The result of the operation.</returns>
     public ushort In16(ushort port) {
         return _ioPortDispatcher.ReadWord(port);
     }
 
+    /// <summary>
+    /// Performs the in 32 operation.
+    /// </summary>
+    /// <param name="port">The port.</param>
+    /// <returns>The result of the operation.</returns>
     public uint In32(ushort port) {
         return _ioPortDispatcher.ReadDWord(port);
     }
@@ -1370,6 +1468,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         FunctionHandlerInUse.Call(CallType.MACHINE, State.IpSegmentedAddress, null, null);
     }
 
+    /// <summary>
+    /// Performs the signal end operation.
+    /// </summary>
     public void SignalEnd() {
         FunctionHandlerInUse.Ret(CallType.MACHINE, null);
     }

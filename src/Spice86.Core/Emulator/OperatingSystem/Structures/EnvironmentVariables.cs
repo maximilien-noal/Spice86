@@ -8,6 +8,9 @@ using System.Text;
 public sealed class EnvironmentVariables : IDictionary<string, string> {
     private readonly Dictionary<string, string> variables = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Initializes a new instance of the class.
+    /// </summary>
     internal EnvironmentVariables() {
     }
 

@@ -26,10 +26,25 @@ public class RegistersHolder {
         UInt8HighLow = new(high, low);
     }
 
+    /// <summary>
+    /// Gets u int 8 low.
+    /// </summary>
     public UInt8LowRegistersIndexer UInt8Low { get; }
+    /// <summary>
+    /// Gets u int 8 high.
+    /// </summary>
     public UInt8HighRegistersIndexer UInt8High { get; }
+    /// <summary>
+    /// Gets u int 8 high low.
+    /// </summary>
     public UInt8HighLowRegistersIndexer UInt8HighLow { get; }
+    /// <summary>
+    /// Gets u int 16.
+    /// </summary>
     public UInt16RegistersIndexer UInt16 { get; }
+    /// <summary>
+    /// Gets u int 32.
+    /// </summary>
     public UInt32RegistersIndexer UInt32 { get; }
 
     /// <inheritdoc />
