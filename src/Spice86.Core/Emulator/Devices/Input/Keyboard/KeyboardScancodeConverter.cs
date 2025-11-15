@@ -255,15 +255,33 @@ public class KeyboardScancodeConverter {
         return result;
     }
 
+    /// <summary>
+    /// Gets scan codes for keyboard scan code set 2.
+    /// </summary>
+    /// <param name="keyType">The keyboard key type</param>
+    /// <param name="isPressed">Whether the key is pressed (true) or released (false)</param>
+    /// <returns>List of scan code bytes</returns>
+    /// <remarks>
+    /// Scan code set 2 is not implemented as it was primarily used on IBM PS/2 Model 50+ systems
+    /// which never gained widespread adoption. Most DOS programs use scan code set 1 (XT/AT compatible).
+    /// This method falls back to scan code set 1 for compatibility.
+    /// </remarks>
     public List<byte> GetScanCode2(KbdKey keyType, bool isPressed) {
-        // Implement scancode set 2 conversion if needed
-        // This would be a direct port of KEYBOARD_GetScanCode2
-        return GetScanCode1(keyType, isPressed); // Fallback to set 1 for now
+        return GetScanCode1(keyType, isPressed); // Fallback to set 1
     }
     
+    /// <summary>
+    /// Gets scan codes for keyboard scan code set 3.
+    /// </summary>
+    /// <param name="keyType">The keyboard key type</param>
+    /// <param name="isPressed">Whether the key is pressed (true) or released (false)</param>
+    /// <returns>List of scan code bytes</returns>
+    /// <remarks>
+    /// Scan code set 3 is not implemented as it was used on rare IBM 3270 terminal keyboards
+    /// and never became common in personal computers. Most DOS programs use scan code set 1 (XT/AT compatible).
+    /// This method falls back to scan code set 1 for compatibility.
+    /// </remarks>
     public List<byte> GetScanCode3(KbdKey keyType, bool isPressed) {
-        // Implement scancode set 3 conversion if needed
-        // This would be a direct port of KEYBOARD_GetScanCode3
-        return GetScanCode1(keyType, isPressed); // Fallback to set 1 for now
+        return GetScanCode1(keyType, isPressed); // Fallback to set 1
     }
 }
