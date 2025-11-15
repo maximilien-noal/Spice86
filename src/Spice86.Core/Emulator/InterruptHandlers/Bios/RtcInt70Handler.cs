@@ -23,7 +23,7 @@ using Spice86.Shared.Interfaces;
 /// - Decrements the wait counter for INT 15h, AH=83h
 /// - Sets the user flag when the wait expires
 /// - Disables the periodic interrupt when the wait completes
-/// - Invokes INT 4Ah for alarm interrupts (user callback)
+/// - Detects alarm interrupts (INT 4Ah callback not implemented)
 /// </para>
 /// <para>
 /// Based on the IBM BIOS RTC_INT procedure which handles both periodic
@@ -123,8 +123,8 @@ public sealed class RtcInt70Handler : InterruptHandler {
 
         uint timeout = _biosDataArea.UserWaitTimeout;
         
-        if (timeout <= InterruptIntervalMicroseconds) {
-            // Wait has expired
+        if (timeout < InterruptIntervalMicroseconds) {
+            // Wait has expired - subtracting the interval would cause underflow
             CompleteWait();
         } else {
             // Decrement and store the new timeout
@@ -154,8 +154,8 @@ public sealed class RtcInt70Handler : InterruptHandler {
 
         // Set the user flag to 0x80 to indicate completion
         SegmentedAddress userFlagAddress = _biosDataArea.UserWaitCompleteFlag;
-        if (userFlagAddress.Segment != 0 || userFlagAddress.Offset != 0) {
-            // Only set the flag if a valid address was provided
+        if (!(userFlagAddress.Segment == 0 && userFlagAddress.Offset == 0)) {
+            // Only set the flag if not a null pointer (0000:0000)
             Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = 0x80;
             
             if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
