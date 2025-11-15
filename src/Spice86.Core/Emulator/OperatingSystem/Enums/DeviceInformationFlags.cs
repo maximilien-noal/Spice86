@@ -12,7 +12,7 @@ namespace Spice86.Core.Emulator.OperatingSystem.Enums;
 /// </remarks>
 [Flags]
 public enum DeviceInformationFlags : ushort {
-    #region Character Device Flags (when bit 7 is set)
+    // Character Device Flags (when bit 7 is set)
 
     /// <summary>
     /// Bit 0: Console input device (stdin).
@@ -69,9 +69,7 @@ public enum DeviceInformationFlags : ushort {
     /// </summary>
     IsCharacterDevice = 0x0080,
 
-    #endregion
-
-    #region File/Block Device Flags (when bit 7 is clear)
+    // File/Block Device Flags (when bit 7 is clear)
 
     /// <summary>
     /// Bits 0-5: Drive number for files/block devices (when bit 7 is clear).
@@ -88,9 +86,7 @@ public enum DeviceInformationFlags : ushort {
 
     // Bit 7 is clear for files/block devices
 
-    #endregion
-
-    #region Common Flags (bits 8-15)
+    // Common Flags (bits 8-15)
 
     /// <summary>
     /// Bit 11: Network drive/remote file.
@@ -121,9 +117,7 @@ public enum DeviceInformationFlags : ushort {
     /// </summary>
     ExtendedCharacterDeviceFlag = 0x8000,
 
-    #endregion
-
-    #region Convenience Combinations
+    // Convenience Combinations
 
     /// <summary>
     /// Standard input device (stdin): character device + console input.
@@ -148,7 +142,5 @@ public enum DeviceInformationFlags : ushort {
     /// <summary>
     /// Clock device: character device + clock device.
     /// </summary>
-    Clock = IsCharacterDevice | ClockDevice,
-
-    #endregion
+    Clock = IsCharacterDevice | ClockDevice
 }

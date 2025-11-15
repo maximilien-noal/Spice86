@@ -30,7 +30,7 @@ public class IoctlIntegrationTests {
         Failure = 0xFF
     }
 
-    #region Character Device IOCTL Tests (Functions 0x00-0x07)
+    // Character Device IOCTL Tests (Functions 0x00-0x07)
 
     /// <summary>
     /// Tests IOCTL function 0x00 (Get Device Information) for standard input (handle 0).
@@ -172,9 +172,7 @@ public class IoctlIntegrationTests {
             "invalid handle should return error with carry flag set");
     }
 
-    #endregion
-
-    #region Block Device IOCTL Tests (Functions 0x08-0x0E)
+    // Block Device IOCTL Tests (Functions 0x08-0x0E)
 
     /// <summary>
     /// Tests IOCTL function 0x08 (Check if Block Device is Removable) for drive C:.
@@ -261,9 +259,7 @@ public class IoctlIntegrationTests {
             "Get Logical Drive Map should succeed");
     }
 
-    #endregion
-
-    #region Generic Block Device Request Tests (Function 0x0D)
+    // Generic Block Device Request Tests (Function 0x0D)
 
     /// <summary>
     /// Tests IOCTL function 0x0D, subfunction 0x60 (Get Device Parameters).
@@ -349,9 +345,7 @@ public class IoctlIntegrationTests {
             "Get Volume Info should succeed");
     }
 
-    #endregion
-
-    #region Test Infrastructure
+    // Test Infrastructure
 
     /// <summary>
     /// Runs an IOCTL test program through the emulator.
@@ -408,6 +402,4 @@ public class IoctlIntegrationTests {
             }
         }
     }
-
-    #endregion
 }
