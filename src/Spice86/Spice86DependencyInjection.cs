@@ -371,17 +371,14 @@ public class Spice86DependencyInjection : IDisposable {
         ICyclesLimiter cyclesLimiter = CycleLimiterFactory.Create(configuration);
         ICyclesBudgeter cyclesBudgeter = configuration.CyclesBudgeter ?? CreateDefaultCyclesBudgeter(cyclesLimiter);
 
-        // Create CpuPerformanceMeasurer first so it can be shared between PerformanceViewModel and EmulationLoop.
         PerformanceMeasurer cpuPerformanceMeasurer = new(new PerformanceMeasureOptions {
             CheckInterval = 512,
             MinValueDelta = 3000,
             MaxIntervalMilliseconds = 10
         });
 
-        // Create UI dispatcher (needed for both GUI and headless modes)
         UIDispatcher uiDispatcher = new UIDispatcher(Dispatcher.UIThread);
 
-        // Prepare UI components (only needed in GUI mode)
         HostStorageProvider? hostStorageProvider = null;
         TextClipboard? textClipboard = null;
         MainWindowViewModel? mainWindowViewModel = null;
@@ -398,22 +395,16 @@ public class Spice86DependencyInjection : IDisposable {
                 mainWindow.StorageProvider, configuration, emulatorStateSerializer, dumpContext);
             textClipboard = new TextClipboard(mainWindow.Clipboard);
             
-            // Create PerformanceViewModel with the shared CpuPerformanceMeasurer (created above at line 373-378).
-            // This is needed because there is a circular dependency between PerformanceViewModel and EmulationLoop.CpuPerformanceMeasurer.
             performanceViewModel = new PerformanceViewModel(state, pauseHandler, uiDispatcher, cpuPerformanceMeasurer);
             
-            // Create ExceptionHandler
             exceptionHandler = new MainWindowExceptionHandler(pauseHandler);
             
-            // Create MainWindowViewModel (it creates InputEventQueue internally)
             mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher, hostStorageProvider, textClipboard, configuration,
                 loggerService, pauseHandler, performanceViewModel, exceptionHandler, cyclesLimiter);
             
-            // Get InputEventQueue from MainWindowViewModel
             inputEventQueue = mainWindowViewModel.InputEventQueue;
             
-            // Create EmulationLoop with InputEventQueue from MainWindowViewModel and shared CpuPerformanceMeasurer
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
                 emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue, cpuPerformanceMeasurer);

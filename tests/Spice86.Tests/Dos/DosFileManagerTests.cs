@@ -164,7 +164,7 @@ public class DosFileManagerTests {
         using InputEventQueue inputEventQueue = new InputEventQueue(headlessGui, headlessGui);
         Intel8042Controller keyboardController = new Intel8042Controller(
             state, ioPortDispatcher, a20Gate, dualPic,
-            configuration.FailOnUnhandledPort, pauseHandler, loggerService, dualPic.EventQueue, inputEventQueue);
+            configuration.FailOnUnhandledPort, pauseHandler, loggerService, inputEventQueue);
         
         BiosKeyboardBuffer biosKeyboardBuffer = new BiosKeyboardBuffer(memory, biosDataArea);
         BiosKeyboardInt9Handler biosKeyboardInt9Handler =
