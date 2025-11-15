@@ -4,7 +4,6 @@ using Serilog.Events;
 
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.ExternalInput;
-using Spice86.Core.Emulator.Devices.Timer;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
@@ -198,9 +197,9 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private int _waitingBytesFromAux = 0;
     private int _waitingBytesFromKbd = 0;
 
-    // Sub-ms delay state driven by Timer one-shots
+    // Sub-ms delay state driven by PIC event timer
     private bool _delayActive = false;
-    private int _delayToken = 0; // invalidates prior scheduled delay expiry callbacks
+    private bool _delayExpired = false;
 
     // Executing command, do not notify devices about readiness for accepting frame
     private bool _shouldSkipDeviceNotify = false;
@@ -231,7 +230,9 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private readonly A20Gate _a20Gate;
     private readonly DualPic _dualPic;
     private readonly State _cpuState;
-    private readonly PitPicEventQueue _eventQueue;
+    
+    // Handler reference for delay timer
+    private readonly PicEventHandler _delayHandler;
 
     public PS2Keyboard KeyboardDevice { get; }
 
@@ -241,14 +242,16 @@ public class Intel8042Controller : DefaultIOPortHandler {
     public Intel8042Controller(State state, IOPortDispatcher ioPortDispatcher,
         A20Gate a20Gate, DualPic dualPic, bool failOnUnhandledPort,
         IPauseHandler pauseHandler, ILoggerService loggerService,
-        PitPicEventQueue eventQueue, IGuiKeyboardEvents? gui = null)
+        IGui? gui = null)
         : base(state, failOnUnhandledPort, loggerService) {
         _a20Gate = a20Gate;
         _dualPic = dualPic;
         _cpuState = state;
-        _eventQueue = eventQueue;
+        
+        // Initialize handler reference
+        _delayHandler = DelayExpireHandler;
 
-        KeyboardDevice = new PS2Keyboard(this, state, loggerService, eventQueue, gui);
+        KeyboardDevice = new PS2Keyboard(this, state, loggerService, dualPic, gui);
 
         InitPortHandlers(ioPortDispatcher);
         FlushBuffer();
@@ -420,18 +423,22 @@ public class Intel8042Controller : DefaultIOPortHandler {
     }
 
     private void RestartDelayTimer(double timeMs = PortDelayMs) {
+        // DOSBox Staging pattern: remove existing event, then add new one
+        if (_delayActive) {
+            _dualPic.RemoveEvents(_delayHandler);
+        }
+        _dualPic.AddEvent(_delayHandler, timeMs);
         _delayActive = true;
-        int token = ++_delayToken;
-        _eventQueue.AddEvent("i8042-delay-expire", timeMs, () => {
-            if (token != _delayToken) {
-                return;
-            }
-            _delayActive = false;
-            MaybeTransferBuffer();
-        });
+        _delayExpired = false;
+    }
+    
+    private void DelayExpireHandler(uint _) {
+        _delayActive = false;
+        _delayExpired = true;
+        MaybeTransferBuffer();
     }
 
-    private bool IsDelayExpired() => !_delayActive;
+    private bool IsDelayExpired() => _delayExpired;
 
     private void MaybeTransferBuffer() {
         if (_status.IsDataNew || _bufferNumUsed == 0) {
