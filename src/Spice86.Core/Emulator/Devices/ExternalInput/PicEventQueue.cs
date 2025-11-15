@@ -11,7 +11,7 @@ using Spice86.Shared.Interfaces;
 /// <remarks>
 ///     Pools entries to avoid allocations and relies on the shared <see cref="PicPitCpuState" /> for cycle accounting.
 /// </remarks>
-internal sealed class PicEventQueue {
+public sealed class PicEventQueue {
     private const int PicQueueSize = 8192; // Larger value from DosBox-X. Staging uses 512.
     private readonly PicPitCpuState _cpuState;
     private readonly PicEntry[] _entryPool = new PicEntry[PicQueueSize];
