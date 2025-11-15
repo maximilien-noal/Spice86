@@ -535,7 +535,8 @@ public class Spice86DependencyInjection : IDisposable {
             loggerService.Information("Program executor created...");
         }
 
-        McpServer mcpServer = new(memory, state, functionCatalogue, pauseHandler, loggerService);
+        CfgCpu? cfgCpuForMcp = configuration.CfgCpu ? cfgCpu : null;
+        McpServer mcpServer = new(memory, state, functionCatalogue, cfgCpuForMcp, pauseHandler, loggerService);
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("MCP server created...");

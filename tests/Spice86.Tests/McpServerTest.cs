@@ -25,7 +25,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         string request = """{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-06-18"},"id":1}""";
 
@@ -50,7 +50,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         string request = """{"jsonrpc":"2.0","method":"tools/list","id":2}""";
 
@@ -83,7 +83,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         // Set some register values
         spice86.Machine.CpuState.EAX = 0x12345678;
@@ -122,7 +122,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         // Write some test data to memory
         byte[] testData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
@@ -158,7 +158,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         // Add some test functions
         FunctionInformation func1 = functionCatalogue.GetOrCreateFunctionInformation(new SegmentedAddress(0x1000, 0x0000), "TestFunction1");
@@ -206,7 +206,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         string request = "invalid json";
 
@@ -229,7 +229,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         string request = """{"jsonrpc":"2.0","method":"unknown_method","id":99}""";
 
@@ -252,7 +252,7 @@ public class McpServerTest {
         Spice86Creator creator = new Spice86Creator("add", false);
         Spice86DependencyInjection spice86 = creator.Create();
         FunctionCatalogue functionCatalogue = new FunctionCatalogue();
-        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, spice86.Machine.PauseHandler, new LoggerService());
+        McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, null, spice86.Machine.PauseHandler, new LoggerService());
         
         string request = """{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_memory","arguments":{"address":0,"length":10000}},"id":6}""";
 

@@ -3,6 +3,7 @@ namespace Spice86.Core.Emulator.Mcp;
 using ModelContextProtocol.Protocol;
 
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.CPU.CfgCpu;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
@@ -14,7 +15,7 @@ using System.Text.Json.Nodes;
 
 /// <summary>
 /// In-process Model Context Protocol (MCP) server for inspecting emulator state.
-/// This server exposes tools to query CPU registers, memory contents, and function definitions.
+/// This server exposes tools to query CPU registers, memory contents, function definitions, and CFG CPU state.
 /// Uses ModelContextProtocol.Core SDK for protocol types while avoiding Microsoft.Extensions.DependencyInjection.
 /// Automatically pauses the emulator before inspection to ensure thread-safe access to state.
 /// </summary>
@@ -22,6 +23,7 @@ public sealed class McpServer : IMcpServer {
     private readonly IMemory _memory;
     private readonly State _state;
     private readonly FunctionCatalogue _functionCatalogue;
+    private readonly CfgCpu? _cfgCpu;
     private readonly IPauseHandler _pauseHandler;
     private readonly ILoggerService _loggerService;
     private readonly Tool[] _tools;
@@ -32,19 +34,21 @@ public sealed class McpServer : IMcpServer {
     /// <param name="memory">The memory bus to inspect.</param>
     /// <param name="state">The CPU state to inspect.</param>
     /// <param name="functionCatalogue">The function catalogue to query.</param>
+    /// <param name="cfgCpu">The CFG CPU instance (optional, null if not using CFG CPU).</param>
     /// <param name="pauseHandler">The pause handler for safe state inspection.</param>
     /// <param name="loggerService">The logger service for diagnostics.</param>
-    public McpServer(IMemory memory, State state, FunctionCatalogue functionCatalogue, IPauseHandler pauseHandler, ILoggerService loggerService) {
+    public McpServer(IMemory memory, State state, FunctionCatalogue functionCatalogue, CfgCpu? cfgCpu, IPauseHandler pauseHandler, ILoggerService loggerService) {
         _memory = memory;
         _state = state;
         _functionCatalogue = functionCatalogue;
+        _cfgCpu = cfgCpu;
         _pauseHandler = pauseHandler;
         _loggerService = loggerService;
         _tools = CreateTools();
     }
 
     private Tool[] CreateTools() {
-        return new Tool[] {
+        Tool[] baseTools = new Tool[] {
             new Tool {
                 Name = "read_cpu_registers",
                 Description = "Read the current values of CPU registers (general purpose, segment, instruction pointer, and flags)",
@@ -61,6 +65,20 @@ public sealed class McpServer : IMcpServer {
                 InputSchema = ConvertToJsonElement(CreateFunctionListInputSchema())
             }
         };
+        
+        // Add CFG CPU tool only if CFG CPU is available
+        if (_cfgCpu != null) {
+            Tool[] allTools = new Tool[baseTools.Length + 1];
+            baseTools.CopyTo(allTools, 0);
+            allTools[baseTools.Length] = new Tool {
+                Name = "read_cfg_cpu_graph",
+                Description = "Read Control Flow Graph CPU statistics and execution context information",
+                InputSchema = ConvertToJsonElement(CreateEmptyInputSchema())
+            };
+            return allTools;
+        }
+        
+        return baseTools;
     }
 
     private static JsonElement ConvertToJsonElement(object schema) {
@@ -173,6 +191,9 @@ public sealed class McpServer : IMcpServer {
                 case "list_functions":
                     result = ListFunctions(argumentsElement);
                     break;
+                case "read_cfg_cpu_graph":
+                    result = ReadCfgCpuGraph();
+                    break;
                 default:
                     throw new InvalidOperationException($"Unknown tool: {toolName}");
             }
@@ -283,6 +304,32 @@ public sealed class McpServer : IMcpServer {
         return new FunctionListResponse {
             Functions = functions,
             TotalCount = _functionCatalogue.FunctionInformations.Count
+        };
+    }
+
+    private CfgCpuGraphResponse ReadCfgCpuGraph() {
+        if (_cfgCpu == null) {
+            throw new InvalidOperationException("CFG CPU is not enabled. Use --CfgCpu to enable Control Flow Graph CPU.");
+        }
+
+        ExecutionContextManager contextManager = _cfgCpu.ExecutionContextManager;
+        Spice86.Core.Emulator.CPU.CfgCpu.Linker.ExecutionContext currentContext = contextManager.CurrentExecutionContext;
+
+        // Count total entry points across all contexts
+        int totalEntryPoints = contextManager.ExecutionContextEntryPoints
+            .Sum(kvp => kvp.Value.Count);
+
+        // Get entry point addresses
+        string[] entryPointAddresses = contextManager.ExecutionContextEntryPoints
+            .Select(kvp => kvp.Key.ToString())
+            .ToArray();
+
+        return new CfgCpuGraphResponse {
+            CurrentContextDepth = currentContext.Depth,
+            CurrentContextEntryPoint = currentContext.EntryPoint.ToString(),
+            TotalEntryPoints = totalEntryPoints,
+            EntryPointAddresses = entryPointAddresses,
+            LastExecutedAddress = currentContext.LastExecuted?.Address.ToString() ?? "None"
         };
     }
 
