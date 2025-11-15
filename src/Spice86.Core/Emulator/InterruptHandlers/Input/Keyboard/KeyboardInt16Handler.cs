@@ -38,18 +38,6 @@ public class KeyboardInt16Handler : InterruptHandler {
         _biosKeyboardBuffer = biosKeyboardBuffer;
         AddAction(0x01, () => GetKeystrokeStatus(true));
         AddAction(0x02, GetShiftFlags);
-        AddAction(0x1D, () => Unsupported(0x1D));
-    }
-
-    private void Unsupported(int operation) {
-        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-            LoggerService.Warning(
-                "{ClassName} INT {Int:X2} {operation}: Unhandled/undocumented keyboard interrupt called, will ignore",
-                nameof(KeyboardInt16Handler), VectorNumber, operation);
-        }
-
-        //If games that use those unsupported interrupts misbehave or crash, check if certain flags/registers have to be set
-        //properly, e.g., AX = 0 and/or setting the carry flag accordingly.
     }
 
     /// <inheritdoc/>
@@ -141,7 +129,6 @@ public class KeyboardInt16Handler : InterruptHandler {
     /// Returns in the AX register the pending key code.
     /// </summary>
     /// <remarks>AH is the scan code, AL is the ASCII character code</remarks>
-    /// <remarks>Returns <c>0</c> if no key is available. Should not happen for emulated programs, see ASM above.</remarks>
     public void GetKeystroke() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
             LoggerService.Verbose("READ KEY STROKE");
@@ -149,9 +136,9 @@ public class KeyboardInt16Handler : InterruptHandler {
         if (TryGetPendingKeyCode(out ushort? keyCode)) {
             _biosKeyboardBuffer.DequeueKeyCode();
             State.AX = keyCode.Value;
-        } else {
-            State.AX = 0; // No key available
         }
+        // Note: Without EmulationLoopRecall, we can't block waiting for keyboard input
+        // The buffer will be filled by INT 9H when keyboard events arrive
     }
 
     public void GetShiftFlags() {
