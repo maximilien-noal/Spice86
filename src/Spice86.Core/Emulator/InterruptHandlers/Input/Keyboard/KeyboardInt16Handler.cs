@@ -126,9 +126,13 @@ public class KeyboardInt16Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// Returns in the AX register the pending key code.
+    /// Returns in the AX register the pending key code if available.
     /// </summary>
-    /// <remarks>AH is the scan code, AL is the ASCII character code</remarks>
+    /// <remarks>
+    /// AH is the scan code, AL is the ASCII character code.
+    /// If no key is available, AX is left unchanged (the emulated program should call this function repeatedly or check availability first with function 01h or 11h).
+    /// Without EmulationLoopRecall, we cannot block waiting for keyboard input. The buffer will be filled by INT 9H when keyboard events arrive.
+    /// </remarks>
     public void GetKeystroke() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
             LoggerService.Verbose("READ KEY STROKE");
@@ -136,12 +140,8 @@ public class KeyboardInt16Handler : InterruptHandler {
         if (TryGetPendingKeyCode(out ushort? keyCode)) {
             _biosKeyboardBuffer.DequeueKeyCode();
             State.AX = keyCode.Value;
-        } else {
-            // Return 0 if no key is available (BIOS standard behavior)
-            State.AX = 0;
         }
-        // Note: Without EmulationLoopRecall, we can't block waiting for keyboard input
-        // The buffer will be filled by INT 9H when keyboard events arrive
+        // Note: AX is intentionally left unchanged if no key is available to avoid bugs in emulated programs
     }
 
     public void GetShiftFlags() {
