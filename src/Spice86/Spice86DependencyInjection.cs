@@ -390,34 +390,35 @@ public class Spice86DependencyInjection : IDisposable {
         EmulationLoop emulationLoop;
         
         if (mainWindow != null) {
-            // Create MainWindowViewModel with placeholder dependencies first (needed for InputEventQueue)
-            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
-                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
-                loggerService, pauseHandler, null!, null!, null!);
-            _gui = mainWindowViewModel;
+            // Create temporary InputEventQueue placeholder (will be replaced after MainWindowViewModel is created)
+            inputEventQueue = new InputEventQueue(new HeadlessGui(), new HeadlessGui());
             
-            // Create InputEventQueue with GUI event sources
-            inputEventQueue = new InputEventQueue(
-                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
-                _gui as IGuiMouseEvents ?? new HeadlessGui());
-            
-            // Create EmulationLoop with InputEventQueue
+            // Create EmulationLoop with placeholder InputEventQueue
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
                 emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
             
-            // Create remaining dependencies
+            // Create remaining dependencies needed for MainWindowViewModel
             performanceViewModel = new PerformanceViewModel(
                 state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
-            mainWindow.PerformanceViewModel = performanceViewModel;
             
             exceptionHandler = configuration.HeadlessMode switch {
                 null => new MainWindowExceptionHandler(pauseHandler),
                 _ => new HeadlessModeExceptionHandler(uiDispatcher!)
             };
             
-            // Update MainWindowViewModel in-place with full dependencies (InputEventQueue remains wired to same instance)
-            mainWindowViewModel.SetDependencies(performanceViewModel, exceptionHandler, emulationLoop);
+            // Create MainWindowViewModel with all required dependencies
+            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
+                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
+                loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
+            mainWindow.PerformanceViewModel = performanceViewModel;
+            _gui = mainWindowViewModel;
+            
+            // Create proper InputEventQueue with GUI event sources and dispose the temporary one
+            inputEventQueue.Dispose();
+            inputEventQueue = new InputEventQueue(
+                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
+                _gui as IGuiMouseEvents ?? new HeadlessGui());
         } else {
             _gui = new HeadlessGui();
             inputEventQueue = new InputEventQueue(

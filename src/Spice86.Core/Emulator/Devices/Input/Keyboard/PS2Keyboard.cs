@@ -186,9 +186,9 @@ public class PS2Keyboard : IDisposable {
         _bufferStartIdx = (_bufferStartIdx + 1) % BufferSize;
     }
 
-    private void BufferAdd(List<byte> scanCode) {
+    private void BufferAdd(List<byte>? scanCode) {
         // Ignore unsupported keys, drop everything if buffer overflowed
-        if (scanCode == null || scanCode.Count == 0 || _bufferOverflowed) {
+        if (scanCode is null or { Count: 0 } || _bufferOverflowed) {
             return;
         }
 
