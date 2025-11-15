@@ -390,39 +390,31 @@ public class Spice86DependencyInjection : IDisposable {
         InputEventQueue? inputEventQueue = null;
         
         if (mainWindow != null) {
-            // Create MainWindowViewModel first (it creates InputEventQueue internally)
-            // We need to create a temporary MainWindowViewModel to get InputEventQueue,
-            // then recreate it with EmulationLoop after we create EmulationLoop
-            MainWindowViewModel tempViewModel = new MainWindowViewModel(sharedMouseData,
-                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
-                loggerService, pauseHandler, null!, null!, null!);
-            
-            // Get InputEventQueue from temporary MainWindowViewModel
-            inputEventQueue = tempViewModel.InputEventQueue;
-            
-            // Create EmulationLoop with InputEventQueue
-            emulationLoop = new(functionHandler,
-                cpuForEmulationLoop, state, picPitCpuState, dualPic,
-                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
-            
-            // Create final dependencies
-            performanceViewModel = new PerformanceViewModel(
-                state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
-            
+            // Create ExceptionHandler first
             exceptionHandler = configuration.HeadlessMode switch {
                 null => new MainWindowExceptionHandler(pauseHandler),
                 _ => new HeadlessModeExceptionHandler(uiDispatcher!)
             };
             
-            // Create final MainWindowViewModel with all dependencies
+            // Create PerformanceViewModel with null for CpuPerformanceMeasurer (will be available after EmulationLoop is created)
+            // This is needed because we have a circular dependency: MainWindowViewModel -> PerformanceViewModel -> CpuPerformanceMeasurer -> EmulationLoop -> InputEventQueue -> MainWindowViewModel
+            performanceViewModel = new PerformanceViewModel(state, pauseHandler, uiDispatcher!, null!);
+            
+            // Create MainWindowViewModel (it creates InputEventQueue internally)
             mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
-                loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
+                loggerService, pauseHandler, performanceViewModel, exceptionHandler, cyclesLimiter);
+            
+            // Get InputEventQueue from MainWindowViewModel
+            inputEventQueue = mainWindowViewModel.InputEventQueue;
+            
+            // Create EmulationLoop with InputEventQueue from MainWindowViewModel
+            emulationLoop = new(functionHandler,
+                cpuForEmulationLoop, state, picPitCpuState, dualPic,
+                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
+            
             mainWindow.PerformanceViewModel = performanceViewModel;
             _gui = mainWindowViewModel;
-            
-            // Dispose temporary ViewModel (it has its own InputEventQueue that we're not using)
-            tempViewModel.Dispose();
         } else {
             _gui = new HeadlessGui();
             inputEventQueue = new InputEventQueue(_gui, _gui);
