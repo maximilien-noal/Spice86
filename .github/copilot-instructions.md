@@ -172,6 +172,9 @@ Variants: `MemoryBasedDataStructureWithCsBaseAddress`, `MemoryBasedDataStructure
 - **Documentation**: XML comments required (`<GenerateDocumentationFile>true</GenerateDocumentationFile>`)
 
 ### Testing Patterns
+- **Prefer ASM-based tests over unit tests** for testing the emulator
+  - Unit tests are acceptable for interrupt handlers that don't override `WriteAssemblyInRam` and deal with few dependencies
+  - Use assembly-based integration tests for comprehensive emulator validation
 - Use FluentAssertions for assertions: `result.Should().Be(expected)`
 - Mock with NSubstitute: `Substitute.For<IInterface>()`
 - Theory tests for CPU configurations: `[Theory] [MemberData(nameof(GetCfgCpuConfigurations))]`
