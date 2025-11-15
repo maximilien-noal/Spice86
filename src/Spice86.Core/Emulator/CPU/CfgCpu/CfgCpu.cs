@@ -27,18 +27,18 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
 
     public CfgCpu(IMemory memory, State state, IOPortDispatcher ioPortDispatcher, CallbackHandler callbackHandler,
         DualPic dualPic, PicPitCpuState picPitCpuState, EmulatorBreakpointsManager emulatorBreakpointsManager,
-        FunctionCatalogue functionCatalogue, 
+        FunctionCatalogue functionCatalogue,
         bool useCodeOverride, ILoggerService loggerService) {
         _loggerService = loggerService;
         _state = state;
         _dualPic = dualPic;
         _picPitCpuState = picPitCpuState;
-        
+
         CfgNodeFeeder = new(memory, state, emulatorBreakpointsManager, _replacerRegistry);
         _executionContextManager = new(memory, state, CfgNodeFeeder, _replacerRegistry, functionCatalogue, useCodeOverride, loggerService);
         _instructionExecutionHelper = new(state, memory, ioPortDispatcher, callbackHandler, emulatorBreakpointsManager.InterruptBreakPoints, _executionContextManager, loggerService);
     }
-    
+
     /// <summary>
     /// Handles at high level parsing, linking and book keeping of nodes from the graph.
     /// </summary>
@@ -54,7 +54,7 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     public FunctionHandler FunctionHandlerInUse => ExecutionContextManager.CurrentExecutionContext.FunctionHandler;
     public bool IsInitialExecutionContext => ExecutionContextManager.CurrentExecutionContext.Depth == 0;
     private ExecutionContext CurrentExecutionContext => _executionContextManager.CurrentExecutionContext;
-    
+
     /// <inheritdoc />
     public void ExecuteNext() {
         ICfgNode toExecute = CfgNodeFeeder.GetLinkedCfgNodeToExecute(CurrentExecutionContext);
@@ -64,13 +64,13 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
             _loggerService.LoggerPropertyBag.CsIp = toExecute.Address;
             toExecute.Execute(_instructionExecutionHelper);
         } catch (CpuException e) {
-            if(toExecute is CfgInstruction cfgInstruction) {
+            if (toExecute is CfgInstruction cfgInstruction) {
                 _instructionExecutionHelper.HandleCpuException(cfgInstruction, e);
             }
         }
 
         ICfgNode? nextToExecute = _instructionExecutionHelper.NextNode;
-        
+
         _state.IncCycles();
         if (_picPitCpuState.Cycles > 0) {
             _picPitCpuState.Cycles--;
