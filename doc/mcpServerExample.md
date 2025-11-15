@@ -1,10 +1,41 @@
-# MCP Server Usage Example
+# MCP Server Usage Examples
 
-This document provides a practical example of using the Spice86 MCP server to inspect emulator state.
+This document provides practical examples of using the Spice86 MCP server to inspect emulator state.
 
-## Basic Usage
+## Stdio Transport Usage (Standard MCP)
 
-The MCP server is automatically created when you instantiate `Spice86DependencyInjection`. Here's a complete example:
+The MCP server uses stdio transport, the standard communication method for MCP servers. Enable it with the `--McpServer` flag:
+
+```bash
+dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true
+```
+
+When enabled, the server:
+- Reads JSON-RPC requests from **stdin** (newline-delimited)
+- Writes JSON-RPC responses to **stdout** (newline-delimited)
+- Runs in a background task until Spice86 exits
+
+External tools and AI models can communicate with the emulator by sending JSON-RPC requests to stdin and reading responses from stdout.
+
+### Example: External Tool Communication
+
+```bash
+# Start Spice86 with MCP server enabled
+dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true &
+
+# Send an initialize request
+echo '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-06-18"},"id":1}' | dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true
+
+# Send a tools/list request
+echo '{"jsonrpc":"2.0","method":"tools/list","id":2}' | dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true
+
+# Send a read_cpu_registers request
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_cpu_registers","arguments":{}},"id":3}' | dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true
+```
+
+## In-Process API Usage (Testing/Debugging)
+
+For testing and debugging, you can also use the MCP server in-process via the `HandleRequest` API:
 
 ```csharp
 using Spice86;

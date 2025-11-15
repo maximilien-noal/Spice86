@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Spice86 MCP (Model Context Protocol) Server is an in-process server that exposes emulator state inspection capabilities to AI models and applications. MCP is a standardized protocol introduced by Anthropic that enables AI models to interact with external tools and resources in a consistent way.
+The Spice86 MCP (Model Context Protocol) Server exposes emulator state inspection capabilities to AI models and applications via standard I/O (stdio) transport. MCP is a standardized protocol introduced by Anthropic that enables AI models to interact with external tools and resources in a consistent way.
+
+The server uses stdio transport (reading JSON-RPC requests from stdin, writing responses to stdout), which is the standard transport mechanism for MCP servers. This enables external tools and AI models to communicate with the emulator through standard input/output streams.
 
 ## Features
 
@@ -238,6 +240,22 @@ The MCP server implementation follows these key principles:
 
 ## Integration
 
+### Enabling the MCP Server
+
+To enable the MCP server with stdio transport, use the `--McpServer` command-line flag:
+
+```bash
+dotnet run --project src/Spice86 -- --Exe program.exe --McpServer true
+```
+
+When enabled, the MCP server:
+1. Starts automatically with Spice86
+2. Reads JSON-RPC requests from **stdin**
+3. Writes JSON-RPC responses to **stdout**
+4. Stops automatically when Spice86 exits
+
+### Architecture
+
 The MCP server is instantiated in `Spice86DependencyInjection.cs` and receives:
 - `IMemory` - for memory inspection
 - `State` - for CPU register inspection  
@@ -245,6 +263,8 @@ The MCP server is instantiated in `Spice86DependencyInjection.cs` and receives:
 - `CfgCpu` (nullable) - for CFG graph inspection (only when `--CfgCpu` is enabled)
 - `IPauseHandler` - for automatic pause/resume during inspection
 - `ILoggerService` - for diagnostic logging
+
+The stdio transport layer (`McpStdioTransport`) runs in a background task and handles the newline-delimited JSON-RPC protocol communication.
 
 ### Thread-Safe State Inspection
 

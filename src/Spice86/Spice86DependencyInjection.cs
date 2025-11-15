@@ -68,6 +68,7 @@ public class Spice86DependencyInjection : IDisposable {
     /// </summary>
     public IMcpServer McpServer { get; }
     
+    private readonly McpStdioTransport? _mcpStdioTransport;
     private readonly IGui _gui;
     private bool _disposed;
     private bool _machineDisposedAfterRun;
@@ -542,6 +543,17 @@ public class Spice86DependencyInjection : IDisposable {
             loggerService.Information("MCP server created...");
         }
 
+        // Initialize stdio transport if MCP server is enabled
+        McpStdioTransport? mcpStdioTransport = null;
+        if (configuration.McpServer) {
+            mcpStdioTransport = new McpStdioTransport(mcpServer, loggerService);
+            mcpStdioTransport.Start();
+            
+            if (loggerService.IsEnabled(LogEventLevel.Information)) {
+                loggerService.Information("MCP stdio transport started...");
+            }
+        }
+
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
             loggerService.Information("BIOS and DOS interrupt handlers created...");
         }
@@ -549,6 +561,7 @@ public class Spice86DependencyInjection : IDisposable {
         Machine = machine;
         ProgramExecutor = programExecutor;
         McpServer = mcpServer;
+        _mcpStdioTransport = mcpStdioTransport;
         ProgramExecutor.EmulationStopped += OnProgramExecutorEmulationStopped;
 
         if (mainWindow != null && uiDispatcher != null &&
@@ -687,6 +700,10 @@ public class Spice86DependencyInjection : IDisposable {
         if (!_disposed) {
             if (disposing) {
                 ProgramExecutor.EmulationStopped -= OnProgramExecutorEmulationStopped;
+                
+                // Stop MCP stdio transport if it was started
+                _mcpStdioTransport?.Dispose();
+                
                 ProgramExecutor.Dispose();
                 DisposeMachineAfterRun();
 
