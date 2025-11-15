@@ -124,7 +124,6 @@ Variants: `MemoryBasedDataStructureWithCsBaseAddress`, `MemoryBasedDataStructure
 - See `doc/mcpServerReadme.md` for detailed documentation
 
 ### Code Style (enforced by `.editorconfig`)
-- **ALWAYS run `dotnet format` at the end of your work** - or at least consult `.editorconfig` and `CONTRIBUTING.md` file first
 - **No `var` keyword**: Use explicit types instead (enforced by `.editorconfig`)
   ```csharp
   // Wrong
