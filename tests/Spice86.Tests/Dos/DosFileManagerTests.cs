@@ -160,8 +160,8 @@ public class DosFileManagerTests {
             functionHandlerProvider, stack, state, a20Gate, biosDataArea, dualPic, ioPortDispatcher,
             initializeResetVector: false, loggerService);
         
-        HeadlessGui headlessGui = new HeadlessGui();
-        InputEventQueue inputEventQueue = new InputEventQueue(headlessGui, headlessGui);
+        using HeadlessGui headlessGui = new HeadlessGui();
+        using InputEventQueue inputEventQueue = new InputEventQueue(headlessGui, headlessGui);
         Intel8042Controller keyboardController = new Intel8042Controller(
             state, ioPortDispatcher, a20Gate, dualPic,
             configuration.FailOnUnhandledPort, pauseHandler, loggerService, dualPic.EventQueue, inputEventQueue);
