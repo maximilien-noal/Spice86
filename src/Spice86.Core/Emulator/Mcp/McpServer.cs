@@ -59,8 +59,11 @@ public sealed class McpServer : IMcpServer {
     }
 
     private static JsonElement ConvertToJsonElement(object schema) {
-        string json = JsonSerializer.Serialize(schema);
-        JsonDocument document = JsonDocument.Parse(json);
+        JsonSerializerOptions options = new JsonSerializerOptions {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        string json = JsonSerializer.Serialize(schema, options);
+        using JsonDocument document = JsonDocument.Parse(json);
         return document.RootElement.Clone();
     }
 
@@ -267,32 +270,41 @@ public sealed class McpServer : IMcpServer {
         };
     }
 
-    private static object CreateEmptyInputSchema() {
-        return new {
-            type = "object",
-            properties = new { },
-            required = Array.Empty<string>()
+    private static EmptyInputSchema CreateEmptyInputSchema() {
+        return new EmptyInputSchema {
+            Type = "object",
+            Properties = new { },
+            Required = Array.Empty<string>()
         };
     }
 
-    private static object CreateMemoryReadInputSchema() {
-        return new {
-            type = "object",
-            properties = new {
-                address = new { type = "integer", description = "The starting memory address (linear address)" },
-                length = new { type = "integer", description = "The number of bytes to read (max 4096)" }
+    private static MemoryReadInputSchema CreateMemoryReadInputSchema() {
+        return new MemoryReadInputSchema {
+            Type = "object",
+            Properties = new MemoryReadInputProperties {
+                Address = new JsonSchemaProperty {
+                    Type = "integer",
+                    Description = "The starting memory address (linear address)"
+                },
+                Length = new JsonSchemaProperty {
+                    Type = "integer",
+                    Description = "The number of bytes to read (max 4096)"
+                }
             },
-            required = new string[] { "address", "length" }
+            Required = new string[] { "address", "length" }
         };
     }
 
-    private static object CreateFunctionListInputSchema() {
-        return new {
-            type = "object",
-            properties = new {
-                limit = new { type = "integer", description = "Maximum number of functions to return (default 100)" }
+    private static FunctionListInputSchema CreateFunctionListInputSchema() {
+        return new FunctionListInputSchema {
+            Type = "object",
+            Properties = new FunctionListInputProperties {
+                Limit = new JsonSchemaProperty {
+                    Type = "integer",
+                    Description = "Maximum number of functions to return (default 100)"
+                }
             },
-            required = Array.Empty<string>()
+            Required = Array.Empty<string>()
         };
     }
 

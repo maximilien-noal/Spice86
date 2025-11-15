@@ -131,3 +131,53 @@ public sealed record FunctionInfo {
     /// </summary>
     public required bool HasOverride { get; init; }
 }
+
+/// <summary>
+/// JSON schema property descriptor.
+/// </summary>
+internal sealed record JsonSchemaProperty {
+    public required string Type { get; init; }
+    public required string Description { get; init; }
+}
+
+/// <summary>
+/// Empty input schema for tools with no parameters.
+/// </summary>
+internal sealed record EmptyInputSchema {
+    public required string Type { get; init; }
+    public required object Properties { get; init; }
+    public required string[] Required { get; init; }
+}
+
+/// <summary>
+/// Input schema properties for memory read operation.
+/// </summary>
+internal sealed record MemoryReadInputProperties {
+    public required JsonSchemaProperty Address { get; init; }
+    public required JsonSchemaProperty Length { get; init; }
+}
+
+/// <summary>
+/// Input schema for memory read operation.
+/// </summary>
+internal sealed record MemoryReadInputSchema {
+    public required string Type { get; init; }
+    public required MemoryReadInputProperties Properties { get; init; }
+    public required string[] Required { get; init; }
+}
+
+/// <summary>
+/// Input schema properties for function list operation.
+/// </summary>
+internal sealed record FunctionListInputProperties {
+    public required JsonSchemaProperty Limit { get; init; }
+}
+
+/// <summary>
+/// Input schema for function list operation.
+/// </summary>
+internal sealed record FunctionListInputSchema {
+    public required string Type { get; init; }
+    public required FunctionListInputProperties Properties { get; init; }
+    public required string[] Required { get; init; }
+}

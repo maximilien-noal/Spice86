@@ -153,7 +153,7 @@ Lists known functions from the function catalogue, ordered by call count (most f
 
 The MCP server implementation follows these key principles:
 
-1. **No External Dependencies**: Uses only standard .NET libraries (System.Text.Json) for JSON-RPC message handling
+1. **External Dependency**: Uses the `ModelContextProtocol.Core` NuGet package for protocol types (e.g., `Tool`, `InitializeResult`, `ListToolsResult`) and standard .NET libraries (System.Text.Json) for JSON-RPC message handling
 2. **No Microsoft DI**: Follows Spice86's manual dependency injection pattern
 3. **In-Process**: Runs in the same process as the emulator for minimal latency
 4. **JSON-RPC 2.0**: Implements the MCP protocol over JSON-RPC 2.0
@@ -162,7 +162,7 @@ The MCP server implementation follows these key principles:
 
 - **`IMcpServer`**: Interface defining the MCP server contract
 - **`McpServer`**: Implementation of the MCP server with tool handlers
-- **`McpTool`**: Record type describing available tools
+- **`Tool`**: Type (from `ModelContextProtocol.Protocol`) describing available tools
 
 ## Integration
 

@@ -221,7 +221,7 @@ Console.ReadLine();
 
 ## Notes
 
-- The MCP server is **thread-safe** and can be called from any thread
+- The MCP server is **not thread-safe**; all calls must be made from a single thread, or external synchronization is required if accessed concurrently
 - Requests are **synchronous** - the server processes one request at a time
 - The server does **not** modify emulator state - it's read-only by design
 - All responses follow **JSON-RPC 2.0** format with proper error handling
