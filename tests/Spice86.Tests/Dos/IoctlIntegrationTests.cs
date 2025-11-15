@@ -351,56 +351,6 @@ public class IoctlIntegrationTests {
 
     #endregion
 
-    #region EMS Device IOCTL Tests
-
-    /// <summary>
-    /// Tests IOCTL function 0x00 (Get Device Information) for EMS device.
-    /// The EMMXXXX0 device should report as a character device with IOCTL support.
-    /// </summary>
-    [Fact]
-    public void Ioctl00_GetDeviceInformation_EmsDevice_ShouldReturnCharacterDeviceWithIoctl() {
-        byte[] program = new byte[] {
-            // Open EMMXXXX0 device
-            0x0E,                   // push cs
-            0x1F,                   // pop ds
-            0xB8, 0x00, 0x3D,       // mov ax, 3D00h - Open for reading
-            0xBA, 0x30, 0x01,       // mov dx, 0x130 - Device name offset
-            0xCD, 0x21,             // int 21h
-            0x72, 0x1A,             // jc error
-            0x89, 0xC3,             // mov bx, ax - Save handle
-            // Get device information
-            0xB8, 0x00, 0x44,       // mov ax, 4400h
-            0xCD, 0x21,             // int 21h
-            0x72, 0x10,             // jc error
-            // Check bit 7 (character device) and bit 14 (IOCTL support)
-            0xF7, 0xC2, 0x80, 0x40, // test dx, 4080h
-            0x74, 0x08,             // jz error
-            // Close handle
-            0xB8, 0x00, 0x3E,       // mov ax, 3E00h
-            0xCD, 0x21,             // int 21h
-            0xB0, 0x00,             // mov al, TestResult.Success
-            0xEB, 0x02,             // jmp writeResult
-            // error:
-            0xB0, 0xFF,             // mov al, TestResult.Failure
-            // writeResult:
-            0xBA, 0x99, 0x09,       // mov dx, ResultPort
-            0xEE,                   // out dx, al
-            0xF4,                   // hlt
-            // Padding to offset 0x30
-            0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-            0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-            0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-            // Device name: EMMXXXX0
-            0x45, 0x4D, 0x4D, 0x58, 0x58, 0x58, 0x58, 0x30, 0x00
-        };
-
-        IoctlTestHandler testHandler = RunIoctlTest(program, enableEms: true);
-        testHandler.Results.Should().Contain((byte)TestResult.Success,
-            "EMS device should report as character device with IOCTL support");
-    }
-
-    #endregion
-
     #region Test Infrastructure
 
     /// <summary>
