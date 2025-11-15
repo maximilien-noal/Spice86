@@ -82,8 +82,6 @@ public sealed class DualPic : IDisposable {
     /// </summary>
     public PicEventQueue EventQueue => _eventQueue;
 
-
-
     private readonly Intel8259Pic _primaryPic;
     private readonly Intel8259Pic _secondaryPic;
     private readonly IoReadHandler[] _readHandlers = new IoReadHandler[HandlerCount];
