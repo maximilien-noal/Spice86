@@ -2,8 +2,9 @@ namespace Spice86.Core.Emulator.Devices.Input.Keyboard;
 
 using Serilog.Events;
 using Spice86.Core.Emulator.CPU;
-using Spice86.Core.Emulator.Devices.Timer;
+using Spice86.Core.Emulator.Devices.ExternalInput;
 using Spice86.Shared.Emulator.Keyboard;
+using Spice86.Shared.Interfaces;
 using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;
@@ -15,7 +16,11 @@ public class PS2Keyboard {
     private readonly ILoggerService _loggerService;
     private readonly KeyboardScancodeConverter _scancodeConverter = new();
     private readonly State _cpuState;
-    private readonly DeviceScheduler _scheduler;
+    private readonly PicEventQueue _eventQueue;
+    
+    // Handler references for PIC event management
+    private readonly PicEventHandler _service1msHandler;
+    private readonly PicEventHandler _ledsAllOnExpireHandler;
 
     // Internal keyboard scancode buffer - mirrors DOSBox implementation
     private const int BufferSize = 8; // in scancodes
@@ -110,24 +115,28 @@ public class PS2Keyboard {
     /// <param name="controller">The keyboard controller.</param>
     /// <param name="cpuState">The CPU state for cycle-based timing.</param>
     /// <param name="loggerService">The logger service implementation.</param>
-    /// <param name="scheduler">The device scheduler to register periodic callbacks.</param>
-    /// <param name="guiKeyboardEvents">Optional GUI keyboard events interface.</param>
+    /// <param name="eventQueue">The PIC event queue for scheduling keyboard events.</param>
+    /// <param name="gui">Optional GUI interface for keyboard events.</param>
     public PS2Keyboard(Intel8042Controller controller, State cpuState,
-        ILoggerService loggerService, DeviceScheduler scheduler,
-        IGuiKeyboardEvents? guiKeyboardEvents = null) {
+        ILoggerService loggerService, PicEventQueue eventQueue,
+        IGuiKeyboardEvents? gui = null) {
         _controller = controller;
         _cpuState = cpuState;
         _loggerService = loggerService;
-        _scheduler = scheduler;
+        _eventQueue = eventQueue;
+        
+        // Initialize handler references
+        _service1msHandler = Service1msHandler;
+        _ledsAllOnExpireHandler = LedsAllOnExpireHandler;
 
-        // 1ms periodic service (typematic + LED timeout)
-        _scheduler.RegisterPeriodicCallback("kbd-typematic-led", 1000.0, Service1ms);
+        // Schedule first 1ms periodic service (typematic + LED timeout)
+        _eventQueue.AddEvent(_service1msHandler, 0.001);
 
         KeyboardReset(isStartup: true);
 
-        if (guiKeyboardEvents is not null) {
-            guiKeyboardEvents.KeyDown += OnKeyEvent;
-            guiKeyboardEvents.KeyUp += OnKeyEvent;
+        if (gui is not null) {
+            gui.KeyDown += OnKeyEvent;
+            gui.KeyUp += OnKeyEvent;
         }
     }
 
@@ -194,7 +203,7 @@ public class PS2Keyboard {
     // 1ms service loop (typematic + LED timeout)
     // ***************************************************************************
 
-    private void Service1ms() {
+    private void Service1msHandler(uint _) {
         // typematic logic mirrors DOSBox typematic_tick
         if (_repeat.WaitMs > 0) {
             _repeat.WaitMs--;
@@ -214,13 +223,17 @@ public class PS2Keyboard {
             }
         }
 
-        // LED timeout
-        if (_ledsAllOn && _ledTimeoutMs > 0) {
-            _ledTimeoutMs--;
-            if (_ledTimeoutMs == 0) {
-                LedsAllOnExpire();
-            }
-        }
+        // LED timeout - managed by separate event, not here anymore
+        // (moved to dedicated handler as per DOSBox Staging pattern)
+
+        // Reschedule next service (1ms = 0.001 ticks)
+        _eventQueue.AddEvent(_service1msHandler, 0.001);
+    }
+    
+    private void LedsAllOnExpireHandler(uint _) {
+        _ledsAllOn = false;
+        _ledTimeoutMs = 0;
+        MaybeNotifyLedState();
     }
 
     // ***************************************************************************
@@ -340,12 +353,15 @@ public class PS2Keyboard {
 
         _isScanning = true;
 
-        // Flash all the LEDs for 666 ms
-        _ledTimeoutMs = 0;
+        // Flash all the LEDs - DOSBox Staging pattern
+        _eventQueue.RemoveEvents(_ledsAllOnExpireHandler);
         _ledState = 0;
         _ledsAllOn = !isStartup;
         if (_ledsAllOn) {
-            _ledTimeoutMs = 666;
+            // To commemorate how evil the whole keyboard subsystem is,
+            // let's set blink expiration time to 666 milliseconds
+            const double expireTimeMs = 666.0;
+            _eventQueue.AddEvent(_ledsAllOnExpireHandler, expireTimeMs);
         }
         MaybeNotifyLedState();
     }

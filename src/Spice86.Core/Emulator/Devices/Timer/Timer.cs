@@ -19,14 +19,17 @@ public class Timer : DefaultIOPortHandler, ITimeMultiplier {
     private readonly Pit8254Counter[] _counters = new Pit8254Counter[3];
     private readonly DualPic _dualPic;
     private readonly CounterConfiguratorFactory _counterConfiguratorFactory;
+    private readonly PicEventQueue? _picEventQueue;
 
     private double _timeMultiplier = 1.0;
 
     public Timer(Configuration configuration, State state, IOPortDispatcher ioPortDispatcher,
-        CounterConfiguratorFactory counterConfiguratorFactory, ILoggerService loggerService, DualPic dualPic)
+        CounterConfiguratorFactory counterConfiguratorFactory, ILoggerService loggerService, DualPic dualPic,
+        PicEventQueue? picEventQueue = null)
         : base(state, configuration.FailOnUnhandledPort, loggerService) {
         _dualPic = dualPic;
         _counterConfiguratorFactory = counterConfiguratorFactory;
+        _picEventQueue = picEventQueue;
 
         for (int i = 0; i < _counters.Length; i++) {
             _counters[i] = new Pit8254Counter(_loggerService, i, counterConfiguratorFactory.InstantiateCounterActivator());
