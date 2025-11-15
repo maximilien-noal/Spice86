@@ -370,45 +370,59 @@ public class Spice86DependencyInjection : IDisposable {
         ICyclesLimiter cyclesLimiter = CycleLimiterFactory.Create(configuration);
         ICyclesBudgeter cyclesBudgeter = configuration.CyclesBudgeter ?? CreateDefaultCyclesBudgeter(cyclesLimiter);
 
-        EmulationLoop emulationLoop = new(functionHandler,
-            cpuForEmulationLoop, state, picPitCpuState, dualPic,
-            emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter);
-
-        if (loggerService.IsEnabled(LogEventLevel.Information)) {
-            loggerService.Information("Emulator state serializer created...");
-        }
-
         MainWindowViewModel? mainWindowViewModel = null;
         UIDispatcher? uiDispatcher = null;
         HostStorageProvider? hostStorageProvider = null;
         TextClipboard? textClipboard = null;
 
+        // Create GUI first so we can wire it to InputEventQueue
         if (mainWindow != null) {
             uiDispatcher = new UIDispatcher(Dispatcher.UIThread);
             hostStorageProvider = new HostStorageProvider(
                 mainWindow.StorageProvider, configuration, emulatorStateSerializer, dumpContext);
             textClipboard = new TextClipboard(mainWindow.Clipboard);
-
-            PerformanceViewModel performanceViewModel = new(
-                state, pauseHandler, uiDispatcher, emulationLoop.CpuPerformanceMeasurer);
-
-            mainWindow.PerformanceViewModel = performanceViewModel;
-
-            IExceptionHandler exceptionHandler = configuration.HeadlessMode switch {
-                null => new MainWindowExceptionHandler(pauseHandler),
-                _ => new HeadlessModeExceptionHandler(uiDispatcher)
-            };
-
-            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
+            _gui = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher, hostStorageProvider, textClipboard, configuration,
-                loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
-            _gui = mainWindowViewModel;
+                loggerService, pauseHandler, null!, null!, null!); // Will set these after EmulationLoop created
         } else {
             _gui = new HeadlessGui();
         }
 
+        // Create InputEventQueue with GUI wired in
         InputEventQueue inputEventQueue = new InputEventQueue(
             _gui as IGuiKeyboardEvents, _gui as IGuiMouseEvents);
+
+        EmulationLoop emulationLoop = new(functionHandler,
+            cpuForEmulationLoop, state, picPitCpuState, dualPic,
+            emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
+
+        // Now wire up the remaining MainWindowViewModel dependencies
+        if (mainWindow != null && mainWindowViewModel == null) {
+            mainWindowViewModel = (MainWindowViewModel)_gui;
+            PerformanceViewModel performanceViewModel = new(
+                state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
+            mainWindow.PerformanceViewModel = performanceViewModel;
+            
+            IExceptionHandler exceptionHandler = configuration.HeadlessMode switch {
+                null => new MainWindowExceptionHandler(pauseHandler),
+                _ => new HeadlessModeExceptionHandler(uiDispatcher!)
+            };
+            
+            // Update the view model with the missing dependencies
+            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
+                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
+                loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
+            _gui = mainWindowViewModel;
+            
+            // Re-wire InputEventQueue since we recreated the view model
+            if (_gui is IGuiKeyboardEvents keyboardEvents) {
+                inputEventQueue = new InputEventQueue(keyboardEvents, _gui as IGuiMouseEvents);
+            }
+        }
+
+        if (loggerService.IsEnabled(LogEventLevel.Information)) {
+            loggerService.Information("Emulator state serializer created...");
+        }
 
         Intel8042Controller keyboardController = new(
             state, ioPortDispatcher, a20Gate, dualPic,

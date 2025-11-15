@@ -61,6 +61,8 @@ public class EmulationLoop : ICyclesLimiter {
         set => _cyclesLimiter.TargetCpuCyclesPerMs = value;
     }
 
+    private readonly InputEventQueue? _inputEventQueue;
+
     /// <summary>
     /// Initializes a new instance.
     /// </summary>
@@ -74,10 +76,12 @@ public class EmulationLoop : ICyclesLimiter {
     /// <param name="dualPic">Programmable interrupt controller driving hardware IRQ delivery.</param>
     /// <param name="cyclesLimiter">Limits the number of executed instructions per slice</param>
     /// <param name="cyclesBudgeter">Budgets how many cycles are available per slice</param>
+    /// <param name="inputEventQueue">Optional queue for processing keyboard and mouse events from the UI thread.</param>
     public EmulationLoop(FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
         PicPitCpuState picPitCpuState, DualPic dualPic,
         EmulatorBreakpointsManager emulatorBreakpointsManager,
-        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter) {
+        IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter,
+        InputEventQueue? inputEventQueue = null) {
         _loggerService = loggerService;
         _cpu = cpu;
         _functionHandler = functionHandler;
@@ -89,6 +93,7 @@ public class EmulationLoop : ICyclesLimiter {
         _cyclesLimiter = cyclesLimiter;
         _sliceDurationTicks = Math.Max(1, Stopwatch.Frequency / 1000);
         _cyclesBudgeter = cyclesBudgeter;
+        _inputEventQueue = inputEventQueue;
         _pauseHandler.Paused += OnPauseStateChanged;
         _pauseHandler.Resumed += OnPauseStateChanged;
         _sliceStopwatch.Start();
@@ -162,6 +167,10 @@ public class EmulationLoop : ICyclesLimiter {
     /// <returns>True when the next slice should begin immediately, otherwise false.</returns>
     private bool RunSlice() {
         _pauseHandler.WaitIfPaused();
+        
+        // Process pending input events from the UI thread before the emulation slice
+        _inputEventQueue?.ProcessAllPendingInputEvents();
+        
         InitializeSliceTimer();
         long sliceStartTicks = _sliceStopwatch.ElapsedTicks;
         long sliceStartCycles = _cpuState.Cycles;

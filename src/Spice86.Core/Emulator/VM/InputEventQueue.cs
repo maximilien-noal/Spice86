@@ -7,16 +7,16 @@ using Spice86.Shared.Emulator.Mouse;
 using Spice86.Shared.Interfaces;
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 /// <summary>
-/// Implements a queue for handling and processing keyboard and mouse events. <br/>
+/// Implements a thread-safe queue for handling and processing keyboard and mouse events. <br/>
 /// Used by the emulation thread to avoid the UI thread modifying keyboard state via events,
 /// while the emulator thread is reading the <see cref="Intel8042Controller"/> at the same time. <br/>
 /// Same deal for the Mouse events. If Joystick support is implemented, joystick UI events will also pass through here.
 /// </summary>
-public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents {
-    private readonly Queue<Action> _eventQueue = new();
+public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable {
+    private readonly ConcurrentQueue<Action> _eventQueue = new();
     private readonly IGuiMouseEvents? _mouseEvents;
     private readonly IGuiKeyboardEvents? _keyboardEvents;
 
@@ -60,9 +60,24 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents {
     /// <summary>
     /// Processes all pending input events in the event queue.
     /// </summary>
-    internal void ProcessAllPendingInputEvents() {
+    public void ProcessAllPendingInputEvents() {
         while (_eventQueue.TryDequeue(out Action? top)) {
             top.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Unsubscribes from event sources to prevent memory leaks.
+    /// </summary>
+    public void Dispose() {
+        if (_keyboardEvents is not null) {
+            _keyboardEvents.KeyDown -= OnKeyDown;
+            _keyboardEvents.KeyUp -= OnKeyUp;
+        }
+        if (_mouseEvents is not null) {
+            _mouseEvents.MouseMoved -= OnMouseMoved;
+            _mouseEvents.MouseButtonDown -= OnMouseButtonDown;
+            _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
         }
     }
 

@@ -10,12 +10,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 [DebuggerDisplay("PS2Keyboard Set={_codeSet} Scanning={_isScanning} Buf={_bufferNumUsed}/{BufferSize} Overflowed={_bufferOverflowed} Repeat={_repeat.Key} WaitMs={_repeat.WaitMs}")]
-public class PS2Keyboard {
+public class PS2Keyboard : IDisposable {
     private readonly Intel8042Controller _controller;
     private readonly ILoggerService _loggerService;
     private readonly KeyboardScancodeConverter _scancodeConverter = new();
     private readonly State _cpuState;
     private readonly PicEventQueue _eventQueue;
+    private readonly IGuiKeyboardEvents? _gui;
     
     // Handler references for PIC event management
     private readonly PicEventHandler _service1msHandler;
@@ -135,9 +136,20 @@ public class PS2Keyboard {
 
         KeyboardReset(isStartup: true);
 
-        if (gui is not null) {
-            gui.KeyDown += OnKeyEvent;
-            gui.KeyUp += OnKeyEvent;
+        _gui = gui;
+        if (_gui is not null) {
+            _gui.KeyDown += OnKeyEvent;
+            _gui.KeyUp += OnKeyEvent;
+        }
+    }
+
+    /// <summary>
+    /// Unsubscribes from GUI events to prevent memory leaks.
+    /// </summary>
+    public void Dispose() {
+        if (_gui is not null) {
+            _gui.KeyDown -= OnKeyEvent;
+            _gui.KeyUp -= OnKeyEvent;
         }
     }
 
