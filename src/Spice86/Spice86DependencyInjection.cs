@@ -370,57 +370,63 @@ public class Spice86DependencyInjection : IDisposable {
         ICyclesLimiter cyclesLimiter = CycleLimiterFactory.Create(configuration);
         ICyclesBudgeter cyclesBudgeter = configuration.CyclesBudgeter ?? CreateDefaultCyclesBudgeter(cyclesLimiter);
 
-        MainWindowViewModel? mainWindowViewModel = null;
-        UIDispatcher? uiDispatcher = null;
+        // Create CpuPerformanceMeasurer first so it can be shared between PerformanceViewModel and EmulationLoop.
+        PerformanceMeasurer cpuPerformanceMeasurer = new(new PerformanceMeasureOptions {
+            CheckInterval = 512,
+            MinValueDelta = 3000,
+            MaxIntervalMilliseconds = 10
+        });
+
+        // Create UI dispatcher (needed for both GUI and headless modes)
+        UIDispatcher uiDispatcher = new UIDispatcher(Dispatcher.UIThread);
+
+        // Prepare UI components (only needed in GUI mode)
         HostStorageProvider? hostStorageProvider = null;
         TextClipboard? textClipboard = null;
-        PerformanceViewModel? performanceViewModel = null;
-        IExceptionHandler? exceptionHandler = null;
+        MainWindowViewModel? mainWindowViewModel = null;
 
-        // Prepare UI components if not headless
+        // Declare variables needed for both GUI and headless modes
+        EmulationLoop emulationLoop;
+        InputEventQueue? inputEventQueue = null;
+        IExceptionHandler exceptionHandler;
+        PerformanceViewModel? performanceViewModel = null;
+        
         if (mainWindow != null) {
-            uiDispatcher = new UIDispatcher(Dispatcher.UIThread);
+            // GUI mode: create actual UI components
             hostStorageProvider = new HostStorageProvider(
                 mainWindow.StorageProvider, configuration, emulatorStateSerializer, dumpContext);
             textClipboard = new TextClipboard(mainWindow.Clipboard);
-        }
-
-        // Create GUI components
-        EmulationLoop emulationLoop;
-        InputEventQueue? inputEventQueue = null;
-        
-        if (mainWindow != null) {
-            // Create ExceptionHandler first
-            exceptionHandler = configuration.HeadlessMode switch {
-                null => new MainWindowExceptionHandler(pauseHandler),
-                _ => new HeadlessModeExceptionHandler(uiDispatcher!)
-            };
             
-            // Create PerformanceViewModel with null for CpuPerformanceMeasurer (will be available after EmulationLoop is created)
-            // This is needed because we have a circular dependency: MainWindowViewModel -> PerformanceViewModel -> CpuPerformanceMeasurer -> EmulationLoop -> InputEventQueue -> MainWindowViewModel
-            performanceViewModel = new PerformanceViewModel(state, pauseHandler, uiDispatcher!, null!);
+            // Create PerformanceViewModel with the shared CpuPerformanceMeasurer (created above at line 373-378).
+            // This is needed because there is a circular dependency between PerformanceViewModel and EmulationLoop.CpuPerformanceMeasurer.
+            performanceViewModel = new PerformanceViewModel(state, pauseHandler, uiDispatcher, cpuPerformanceMeasurer);
+            
+            // Create ExceptionHandler
+            exceptionHandler = new MainWindowExceptionHandler(pauseHandler);
             
             // Create MainWindowViewModel (it creates InputEventQueue internally)
             mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
-                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
+                pitTimer, uiDispatcher, hostStorageProvider, textClipboard, configuration,
                 loggerService, pauseHandler, performanceViewModel, exceptionHandler, cyclesLimiter);
             
             // Get InputEventQueue from MainWindowViewModel
             inputEventQueue = mainWindowViewModel.InputEventQueue;
             
-            // Create EmulationLoop with InputEventQueue from MainWindowViewModel
+            // Create EmulationLoop with InputEventQueue from MainWindowViewModel and shared CpuPerformanceMeasurer
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
-                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
+                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue, cpuPerformanceMeasurer);
             
             mainWindow.PerformanceViewModel = performanceViewModel;
             _gui = mainWindowViewModel;
         } else {
+            // Headless mode
+            exceptionHandler = new HeadlessModeExceptionHandler(uiDispatcher);
             _gui = new HeadlessGui();
             inputEventQueue = new InputEventQueue(_gui, _gui);
             emulationLoop = new(functionHandler,
                 cpuForEmulationLoop, state, picPitCpuState, dualPic,
-                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
+                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue, cpuPerformanceMeasurer);
         }
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {

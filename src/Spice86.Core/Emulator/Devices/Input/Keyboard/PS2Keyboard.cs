@@ -259,9 +259,9 @@ public class PS2Keyboard : IDisposable {
         }
     }
 
-    private void TypematicUpdateSet3(KbdKey keyType, List<byte> scanCode, bool isPressed) {
+    private void TypematicUpdateSet3(KbdKey keyType, List<byte>? scanCode, bool isPressed) {
         // Ignore keys not supported in set 3
-        if (scanCode == null || scanCode.Count == 0) {
+        if (scanCode is null or { Count: 0 }) {
             return;
         }
 

@@ -77,11 +77,12 @@ public class EmulationLoop : ICyclesLimiter {
     /// <param name="cyclesLimiter">Limits the number of executed instructions per slice</param>
     /// <param name="cyclesBudgeter">Budgets how many cycles are available per slice</param>
     /// <param name="inputEventQueue">Optional queue for processing keyboard and mouse events from the UI thread.</param>
+    /// <param name="cpuPerformanceMeasurer">Optional performance measurer shared with PerformanceViewModel.</param>
     public EmulationLoop(FunctionHandler functionHandler, IInstructionExecutor cpu, State cpuState,
         PicPitCpuState picPitCpuState, DualPic dualPic,
         EmulatorBreakpointsManager emulatorBreakpointsManager,
         IPauseHandler pauseHandler, ILoggerService loggerService, ICyclesLimiter cyclesLimiter, ICyclesBudgeter cyclesBudgeter,
-        InputEventQueue? inputEventQueue = null) {
+        InputEventQueue? inputEventQueue = null, PerformanceMeasurer? cpuPerformanceMeasurer = null) {
         _loggerService = loggerService;
         _cpu = cpu;
         _functionHandler = functionHandler;
@@ -94,6 +95,11 @@ public class EmulationLoop : ICyclesLimiter {
         _sliceDurationTicks = Math.Max(1, Stopwatch.Frequency / 1000);
         _cyclesBudgeter = cyclesBudgeter;
         _inputEventQueue = inputEventQueue;
+        _performanceMeasurer = cpuPerformanceMeasurer ?? new PerformanceMeasurer(new PerformanceMeasureOptions {
+            CheckInterval = 512,
+            MinValueDelta = 3000,
+            MaxIntervalMilliseconds = 10
+        });
         _pauseHandler.Paused += OnPauseStateChanged;
         _pauseHandler.Resumed += OnPauseStateChanged;
         _sliceStopwatch.Start();
