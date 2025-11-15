@@ -6,6 +6,9 @@
 //
 // Remarks:
 //     The names follow the W3C codes: https://www.w3.org/TR/uievents-code/
+/// <summary>
+/// Defines physical key values.
+/// </summary>
 public enum PhysicalKey {
     //
     // Summary:

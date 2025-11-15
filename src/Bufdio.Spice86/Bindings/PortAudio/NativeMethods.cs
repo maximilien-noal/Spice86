@@ -61,6 +61,10 @@ internal static partial class NativeMethods {
         }
     }
 
+    /// <summary>
+    /// Gets port audio lib name.
+    /// </summary>
+    /// <returns>The result of the operation.</returns>
     public static string GetPortAudioLibName() {
         if (PlatformInfo.IsWindows) {
             return "libportaudio.dll";

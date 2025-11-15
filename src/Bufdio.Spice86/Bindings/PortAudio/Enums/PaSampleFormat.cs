@@ -1,5 +1,8 @@
 namespace Bufdio.Spice86.Bindings.PortAudio.Enums;
 
+/// <summary>
+/// Defines pa sample format values.
+/// </summary>
 internal enum PaSampleFormat : long {
     paFloat32 = 0x00000001,
     paInt32 = 0x00000002,

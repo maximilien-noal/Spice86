@@ -240,6 +240,11 @@ public static partial class ConvertUtils {
         return $"{ToHex16(ToAbsoluteSegment(physical))}:{ToHex16(ToAbsoluteOffset(physical))}";
     }
 
+    /// <summary>
+    /// Converts to bin 32.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The result of the operation.</returns>
     public static string ToBin32(uint value) {
         return $"0b{value:B}";
     }

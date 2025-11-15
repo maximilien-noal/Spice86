@@ -8,6 +8,9 @@ using System.Text.Json.Serialization;
 /// An address that is represented with a real mode segment and an offset.
 /// </summary>
 public readonly record struct SegmentedAddress : IComparable<SegmentedAddress> {
+    /// <summary>
+    /// The zero.
+    /// </summary>
     public static SegmentedAddress ZERO = new(0, 0);
 
     /// <summary>

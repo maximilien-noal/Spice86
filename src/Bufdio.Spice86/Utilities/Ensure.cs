@@ -3,6 +3,9 @@
 using System;
 using System.Diagnostics;
 
+/// <summary>
+/// Represents ensure.
+/// </summary>
 [DebuggerStepThrough]
 internal static class Ensure
 {

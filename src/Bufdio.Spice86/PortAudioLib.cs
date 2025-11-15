@@ -16,6 +16,9 @@ using System.Collections.Generic;
 public sealed class PortAudioLib : IDisposable {
     private bool _disposed;
 
+    /// <summary>
+    /// Represents constants.
+    /// </summary>
     internal static class Constants {
         /// <summary>
         /// 32-bit floats

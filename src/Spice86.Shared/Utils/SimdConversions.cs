@@ -360,6 +360,9 @@ public static class SimdConversions {
         ScaleInPlace_Scalar(data[vectorized..], scale);
     }
 
+    /// <summary>
+    /// Defines intrinsic backend values.
+    /// </summary>
     internal enum IntrinsicBackend {
         /// <summary>
         ///     Use the scalar implementation without SIMD acceleration.

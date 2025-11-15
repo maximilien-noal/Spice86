@@ -1,5 +1,8 @@
 namespace Bufdio.Spice86.Bindings.PortAudio.Enums;
 
+/// <summary>
+/// Defines pa stream flags values.
+/// </summary>
 internal enum PaStreamFlags : long {
     paNoFlag = 0,
     paClipOff = 0x00000001,

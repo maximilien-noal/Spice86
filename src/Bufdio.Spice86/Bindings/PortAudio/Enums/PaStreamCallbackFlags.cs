@@ -1,5 +1,8 @@
 namespace Bufdio.Spice86.Bindings.PortAudio.Enums;
 
+/// <summary>
+/// Defines pa stream callback flags values.
+/// </summary>
 internal enum PaStreamCallbackFlags : long {
     paInputUnderflow = 0x00000001,
     paInputOverflow = 0x00000002,
