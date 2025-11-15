@@ -35,9 +35,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     private readonly IHostStorageProvider _hostStorageProvider;
     private readonly IPauseHandler _pauseHandler;
     private readonly ITimeMultiplier _pit;
-    private readonly ICyclesLimiter _cyclesLimiter;
-    private readonly PerformanceViewModel _performanceViewModel;
-    private readonly IExceptionHandler _exceptionHandler;
+    private ICyclesLimiter _cyclesLimiter = null!;
+    private PerformanceViewModel _performanceViewModel = null!;
+    private IExceptionHandler _exceptionHandler = null!;
 
     private int? _targetCyclesPerMs;
 
@@ -89,22 +89,34 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         ITimeMultiplier pit, IUIDispatcher uiDispatcher,
         IHostStorageProvider hostStorageProvider, ITextClipboard textClipboard,
         Configuration configuration, ILoggerService loggerService,
-        IPauseHandler pauseHandler, PerformanceViewModel performanceViewModel,
-        IExceptionHandler exceptionHandler, ICyclesLimiter cyclesLimiter)
+        IPauseHandler pauseHandler, PerformanceViewModel? performanceViewModel,
+        IExceptionHandler? exceptionHandler, ICyclesLimiter? cyclesLimiter)
         : base(uiDispatcher, textClipboard) {
         _sharedMouseData = sharedMouseData;
         _pit = pit;
-        _performanceViewModel = performanceViewModel;
-        _exceptionHandler = exceptionHandler;
         Configuration = configuration;
         _loggerService = loggerService;
         _hostStorageProvider = hostStorageProvider;
-        _cyclesLimiter = cyclesLimiter;
-        TargetCyclesPerMs = _cyclesLimiter.TargetCpuCyclesPerMs;
         _pauseHandler = pauseHandler;
         _pauseHandler.Paused += OnPaused;
         _pauseHandler.Resumed += OnResumed;
         TimeMultiplier = Configuration.TimeMultiplier;
+        
+        // Set dependencies if provided, otherwise they'll be set via SetDependencies later
+        if (performanceViewModel is not null && exceptionHandler is not null && cyclesLimiter is not null) {
+            SetDependencies(performanceViewModel, exceptionHandler, cyclesLimiter);
+        }
+    }
+    
+    /// <summary>
+    /// Sets the dependencies that may not be available during initial construction due to circular dependencies.
+    /// This must be called before the MainWindowViewModel is fully used.
+    /// </summary>
+    public void SetDependencies(PerformanceViewModel performanceViewModel, IExceptionHandler exceptionHandler, ICyclesLimiter cyclesLimiter) {
+        _performanceViewModel = performanceViewModel;
+        _exceptionHandler = exceptionHandler;
+        _cyclesLimiter = cyclesLimiter;
+        TargetCyclesPerMs = _cyclesLimiter.TargetCpuCyclesPerMs;
         _targetCyclesPerMs = _cyclesLimiter.TargetCpuCyclesPerMs;
         ShowCyclesLimitingUI = _cyclesLimiter.TargetCpuCyclesPerMs is not 0;
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromSeconds(1.0 / 30.0),

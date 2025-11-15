@@ -385,29 +385,28 @@ public class Spice86DependencyInjection : IDisposable {
             textClipboard = new TextClipboard(mainWindow.Clipboard);
         }
 
-        // Create GUI first (needed for InputEventQueue construction)
+        // Create GUI and InputEventQueue with proper dependency order
+        InputEventQueue inputEventQueue;
+        EmulationLoop emulationLoop;
+        
         if (mainWindow != null) {
-            // Create a temporary MainWindowViewModel - will be replaced after actual EmulationLoop creation
-            MainWindowViewModel tempViewModel = new MainWindowViewModel(sharedMouseData,
+            // Create MainWindowViewModel with placeholder dependencies first (needed for InputEventQueue)
+            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
                 pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
                 loggerService, pauseHandler, null!, null!, null!);
-            mainWindowViewModel = tempViewModel;
             _gui = mainWindowViewModel;
-        } else {
-            _gui = new HeadlessGui();
-        }
-
-        // Create InputEventQueue with GUI event sources
-        InputEventQueue inputEventQueue = new InputEventQueue(
-            _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
-            _gui as IGuiMouseEvents ?? new HeadlessGui());
-
-        EmulationLoop emulationLoop = new(functionHandler,
-            cpuForEmulationLoop, state, picPitCpuState, dualPic,
-            emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
-
-        // Now complete the GUI with all dependencies ready
-        if (mainWindow != null) {
+            
+            // Create InputEventQueue with GUI event sources
+            inputEventQueue = new InputEventQueue(
+                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
+                _gui as IGuiMouseEvents ?? new HeadlessGui());
+            
+            // Create EmulationLoop with InputEventQueue
+            emulationLoop = new(functionHandler,
+                cpuForEmulationLoop, state, picPitCpuState, dualPic,
+                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
+            
+            // Create remaining dependencies
             performanceViewModel = new PerformanceViewModel(
                 state, pauseHandler, uiDispatcher!, emulationLoop.CpuPerformanceMeasurer);
             mainWindow.PerformanceViewModel = performanceViewModel;
@@ -417,11 +416,16 @@ public class Spice86DependencyInjection : IDisposable {
                 _ => new HeadlessModeExceptionHandler(uiDispatcher!)
             };
             
-            // Recreate MainWindowViewModel with all dependencies now available
-            mainWindowViewModel = new MainWindowViewModel(sharedMouseData,
-                pitTimer, uiDispatcher!, hostStorageProvider!, textClipboard!, configuration,
-                loggerService, pauseHandler, performanceViewModel, exceptionHandler, emulationLoop);
-            _gui = mainWindowViewModel;
+            // Update MainWindowViewModel in-place with full dependencies (InputEventQueue remains wired to same instance)
+            mainWindowViewModel.SetDependencies(performanceViewModel, exceptionHandler, emulationLoop);
+        } else {
+            _gui = new HeadlessGui();
+            inputEventQueue = new InputEventQueue(
+                _gui as IGuiKeyboardEvents ?? new HeadlessGui(),
+                _gui as IGuiMouseEvents ?? new HeadlessGui());
+            emulationLoop = new(functionHandler,
+                cpuForEmulationLoop, state, picPitCpuState, dualPic,
+                emulatorBreakpointsManager, pauseHandler, loggerService, cyclesLimiter, cyclesBudgeter, inputEventQueue);
         }
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
