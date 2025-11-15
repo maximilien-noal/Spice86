@@ -48,12 +48,8 @@ public class PS2Keyboard : IDisposable {
 
     // State of keyboard LEDs, as requested via keyboard controller
     private byte _ledState = 0;
-    // If true, all LEDs are on due to keyboard reset
+    // If true, all LEDs are on due to keyboard reset (managed by separate PIC event handler)
     private bool _ledsAllOn = false;
-    // LED timeout tracking (ms)
-#pragma warning disable CS0414 // Field is assigned but its value is never used
-    private int _ledTimeoutMs = 0;
-#pragma warning restore CS0414
     // If false, keyboard does not push keycodes to the controller
     private bool _isScanning = true;
 
@@ -243,7 +239,6 @@ public class PS2Keyboard : IDisposable {
     
     private void LedsAllOnExpireHandler(uint _) {
         _ledsAllOn = false;
-        _ledTimeoutMs = 0;
         MaybeNotifyLedState();
     }
 
@@ -292,7 +287,6 @@ public class PS2Keyboard : IDisposable {
 
     private void LedsAllOnExpire() {
         _ledsAllOn = false;
-        _ledTimeoutMs = 0;
         MaybeNotifyLedState();
     }
 

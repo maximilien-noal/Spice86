@@ -58,11 +58,44 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
         _eventQueue.Enqueue(() => KeyDown?.Invoke(sender, e));
 
     /// <summary>
+    /// Gets whether there are any pending input events in the queue.
+    /// </summary>
+    public bool HasPendingEvents => !_eventQueue.IsEmpty;
+
+    /// <summary>
     /// Processes all pending input events in the event queue.
     /// </summary>
     public void ProcessAllPendingInputEvents() {
         while (_eventQueue.TryDequeue(out Action? top)) {
             top.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Subscribes to GUI events after construction (for cases where GUI is created after InputEventQueue).
+    /// </summary>
+    public void SubscribeToGuiEvents(IGuiKeyboardEvents? keyboardEvents, IGuiMouseEvents? mouseEvents) {
+        if (keyboardEvents is not null && _keyboardEvents != keyboardEvents) {
+            // Unsubscribe from old events if any
+            if (_keyboardEvents is not null) {
+                _keyboardEvents.KeyDown -= OnKeyDown;
+                _keyboardEvents.KeyUp -= OnKeyUp;
+            }
+            // Subscribe to new events
+            keyboardEvents.KeyDown += OnKeyDown;
+            keyboardEvents.KeyUp += OnKeyUp;
+        }
+        if (mouseEvents is not null && _mouseEvents != mouseEvents) {
+            // Unsubscribe from old events if any
+            if (_mouseEvents is not null) {
+                _mouseEvents.MouseMoved -= OnMouseMoved;
+                _mouseEvents.MouseButtonDown -= OnMouseButtonDown;
+                _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
+            }
+            // Subscribe to new events
+            mouseEvents.MouseMoved += OnMouseMoved;
+            mouseEvents.MouseButtonDown += OnMouseButtonDown;
+            mouseEvents.MouseButtonUp += OnMouseButtonUp;
         }
     }
 

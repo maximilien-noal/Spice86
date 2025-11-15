@@ -188,8 +188,10 @@ public class EmulationLoop : ICyclesLimiter {
                 _cpu.ExecuteNext();
                 
                 // Process pending input events from the UI thread after each CPU instruction
-                // This ensures responsive keyboard/mouse input handling
-                _inputEventQueue?.ProcessAllPendingInputEvents();
+                // Only process if there are events to avoid unnecessary overhead
+                if (_inputEventQueue is not null && _inputEventQueue.HasPendingEvents) {
+                    _inputEventQueue.ProcessAllPendingInputEvents();
+                }
             }
         }
 

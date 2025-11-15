@@ -136,6 +136,9 @@ public class KeyboardInt16Handler : InterruptHandler {
         if (TryGetPendingKeyCode(out ushort? keyCode)) {
             _biosKeyboardBuffer.DequeueKeyCode();
             State.AX = keyCode.Value;
+        } else {
+            // Return 0 if no key is available (BIOS standard behavior)
+            State.AX = 0;
         }
         // Note: Without EmulationLoopRecall, we can't block waiting for keyboard input
         // The buffer will be filled by INT 9H when keyboard events arrive
