@@ -1,5 +1,7 @@
 namespace Spice86.Core.Emulator.Mcp;
 
+using ModelContextProtocol.Protocol;
+
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
@@ -12,13 +14,14 @@ using System.Text.Json.Nodes;
 /// <summary>
 /// In-process Model Context Protocol (MCP) server for inspecting emulator state.
 /// This server exposes tools to query CPU registers, memory contents, and function definitions.
-/// Follows MCP protocol specification without using Microsoft.Extensions.DependencyInjection.
+/// Uses ModelContextProtocol.Core SDK for protocol types while avoiding Microsoft.Extensions.DependencyInjection.
 /// </summary>
 public sealed class McpServer : IMcpServer {
     private readonly IMemory _memory;
     private readonly State _state;
     private readonly FunctionCatalogue _functionCatalogue;
     private readonly ILoggerService _loggerService;
+    private readonly Tool[] _tools;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="McpServer"/> class.
@@ -32,6 +35,33 @@ public sealed class McpServer : IMcpServer {
         _state = state;
         _functionCatalogue = functionCatalogue;
         _loggerService = loggerService;
+        _tools = CreateTools();
+    }
+
+    private Tool[] CreateTools() {
+        return new Tool[] {
+            new Tool {
+                Name = "read_cpu_registers",
+                Description = "Read the current values of CPU registers (general purpose, segment, instruction pointer, and flags)",
+                InputSchema = ConvertToJsonElement(CreateEmptyInputSchema())
+            },
+            new Tool {
+                Name = "read_memory",
+                Description = "Read a range of bytes from emulator memory",
+                InputSchema = ConvertToJsonElement(CreateMemoryReadInputSchema())
+            },
+            new Tool {
+                Name = "list_functions",
+                Description = "List all known functions in the function catalogue",
+                InputSchema = ConvertToJsonElement(CreateFunctionListInputSchema())
+            }
+        };
+    }
+
+    private static JsonElement ConvertToJsonElement(object schema) {
+        string json = JsonSerializer.Serialize(schema);
+        JsonDocument document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
     }
 
     /// <inheritdoc />
@@ -72,35 +102,19 @@ public sealed class McpServer : IMcpServer {
     }
 
     /// <inheritdoc />
-    public McpTool[] GetAvailableTools() {
-        return new McpTool[] {
-            new McpTool {
-                Name = "read_cpu_registers",
-                Description = "Read the current values of CPU registers (general purpose, segment, instruction pointer, and flags)",
-                InputSchema = CreateEmptyInputSchema()
-            },
-            new McpTool {
-                Name = "read_memory",
-                Description = "Read a range of bytes from emulator memory",
-                InputSchema = CreateMemoryReadInputSchema()
-            },
-            new McpTool {
-                Name = "list_functions",
-                Description = "List all known functions in the function catalogue",
-                InputSchema = CreateFunctionListInputSchema()
-            }
-        };
+    public Tool[] GetAvailableTools() {
+        return _tools;
     }
 
     private string HandleInitialize(JsonElement? id) {
-        InitializeResponse response = new InitializeResponse {
+        InitializeResult response = new InitializeResult {
             ProtocolVersion = "2025-06-18",
-            ServerInfo = new ServerInfo {
+            ServerInfo = new Implementation {
                 Name = "Spice86 MCP Server",
                 Version = "1.0.0"
             },
             Capabilities = new ServerCapabilities {
-                Tools = new ToolsCapability()
+                Tools = new()
             }
         };
 
@@ -108,15 +122,10 @@ public sealed class McpServer : IMcpServer {
     }
 
     private string HandleToolsList(JsonElement? id) {
-        McpTool[] tools = GetAvailableTools();
-        ToolInfo[] toolInfos = tools.Select(t => new ToolInfo {
-            Name = t.Name,
-            Description = t.Description,
-            InputSchema = t.InputSchema
-        }).ToArray();
+        Tool[] tools = GetAvailableTools();
 
-        ToolsListResponse response = new ToolsListResponse {
-            Tools = toolInfos
+        ListToolsResult response = new ListToolsResult {
+            Tools = tools
         };
 
         return CreateSuccessResponse(id, response);
@@ -355,50 +364,4 @@ public sealed class McpServer : IMcpServer {
 
         return response.ToJsonString();
     }
-}
-
-/// <summary>
-/// Initialize response structure.
-/// </summary>
-internal sealed record InitializeResponse {
-    public required string ProtocolVersion { get; init; }
-    public required ServerInfo ServerInfo { get; init; }
-    public required ServerCapabilities Capabilities { get; init; }
-}
-
-/// <summary>
-/// Server information structure.
-/// </summary>
-internal sealed record ServerInfo {
-    public required string Name { get; init; }
-    public required string Version { get; init; }
-}
-
-/// <summary>
-/// Server capabilities structure.
-/// </summary>
-internal sealed record ServerCapabilities {
-    public required ToolsCapability Tools { get; init; }
-}
-
-/// <summary>
-/// Tools capability marker.
-/// </summary>
-internal sealed record ToolsCapability {
-}
-
-/// <summary>
-/// Tools list response structure.
-/// </summary>
-internal sealed record ToolsListResponse {
-    public required ToolInfo[] Tools { get; init; }
-}
-
-/// <summary>
-/// Tool information structure.
-/// </summary>
-internal sealed record ToolInfo {
-    public required string Name { get; init; }
-    public required string Description { get; init; }
-    public required object InputSchema { get; init; }
 }

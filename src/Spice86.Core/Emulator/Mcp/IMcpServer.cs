@@ -1,8 +1,11 @@
 namespace Spice86.Core.Emulator.Mcp;
 
+using ModelContextProtocol.Protocol;
+
 /// <summary>
 /// Interface for in-process Model Context Protocol (MCP) server.
 /// MCP is a standardized protocol that enables AI models and applications to interact with emulator state and tools.
+/// Uses ModelContextProtocol.Core SDK types for protocol compliance.
 /// </summary>
 public interface IMcpServer {
     /// <summary>
@@ -14,7 +17,8 @@ public interface IMcpServer {
 
     /// <summary>
     /// Gets the list of available tools that this MCP server exposes.
+    /// Uses SDK Tool type for protocol compliance.
     /// </summary>
-    /// <returns>Array of tool descriptions.</returns>
-    McpTool[] GetAvailableTools();
+    /// <returns>Array of tool descriptions using SDK Tool type.</returns>
+    Tool[] GetAvailableTools();
 }
