@@ -145,7 +145,7 @@ public sealed class RtcInt70Handler : InterruptHandler {
 
         // Set the user flag by ORing with 0x80 (DOSBox pattern)
         SegmentedAddress userFlagAddress = _biosDataArea.UserWaitCompleteFlag;
-        if (!(userFlagAddress.Segment == 0 && userFlagAddress.Offset == 0)) {
+        if (userFlagAddress != SegmentedAddress.ZERO) {
             // Only set the flag if not a null pointer (0000:0000)
             byte currentValue = Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset];
             Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = (byte)(currentValue | 0x80);
