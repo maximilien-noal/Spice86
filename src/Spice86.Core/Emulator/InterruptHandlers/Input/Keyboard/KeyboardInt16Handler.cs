@@ -129,9 +129,15 @@ public class KeyboardInt16Handler : InterruptHandler {
     /// Returns in the AX register the pending key code if available.
     /// </summary>
     /// <remarks>
-    /// AH is the scan code, AL is the ASCII character code.
-    /// If no key is available, AX is left unchanged (the emulated program should call this function repeatedly or check availability first with function 01h or 11h).
+    /// <para>AH is the scan code, AL is the ASCII character code.</para>
+    /// <para>
+    /// <b>Behavior note:</b> If no key is available, AX is <b>left unchanged</b>. This differs from some legacy implementations which set AX to 0 when no key is available.
+    /// This behavior is intentional to avoid bugs in emulated programs that expect AX to remain unchanged if no key is present.
+    /// The emulated program should call this function repeatedly or check availability first with function 01h or 11h.
+    /// </para>
+    /// <para>
     /// Without EmulationLoopRecall, we cannot block waiting for keyboard input. The buffer will be filled by INT 9H when keyboard events arrive.
+    /// </para>
     /// </remarks>
     public void GetKeystroke() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {

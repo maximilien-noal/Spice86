@@ -84,6 +84,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
         /// Bit 1: Input buffer status.
         /// </summary>
         InputBufferFull = 0x02,
+
         /// <summary>
         /// Bit 2: System flag.
         /// </summary>

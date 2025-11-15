@@ -68,8 +68,6 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
         }
     }
 
-
-
     /// <summary>
     /// Unsubscribes from event sources to prevent memory leaks.
     /// </summary>
