@@ -44,6 +44,7 @@ using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Core.Emulator.VM.CpuSpeedLimit;
 using Spice86.Core.Emulator.VM.CycleBudget;
 using Spice86.Logging;
+using Spice86.Shared.Diagnostics;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Emulator.VM.Breakpoint.Serializable;
 using Spice86.Shared.Interfaces;
