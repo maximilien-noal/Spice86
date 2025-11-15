@@ -275,12 +275,12 @@ public class DosInt21Handler : InterruptHandler {
     /// </summary>
     private void GetLeadByteTable() {
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("GET LEAD BYTE TABLE, AL={AL:X2}", State.AL);
+            LoggerService.Verbose("INT 21h AH=63h - Get DBCS Lead Byte Table, AL={AL:X2}", State.AL);
         }
 
         if (State.AL == 0) {
             // Return pointer to DBCS table
-            if (_dosTables.DoubleByteCharacterSet is not null) {
+            if (_dosTables?.DoubleByteCharacterSet is not null) {
                 uint dbcsAddress = _dosTables.DoubleByteCharacterSet.BaseAddress;
                 ushort segment = MemoryUtils.ToSegment(dbcsAddress);
                 ushort offset = (ushort)(dbcsAddress & 0xF);
@@ -288,22 +288,21 @@ public class DosInt21Handler : InterruptHandler {
                 State.DS = segment;
                 State.SI = offset;
                 State.AL = 0;
-                State.CarryFlag = false; // Undocumented but DOSBox does this
+                State.CarryFlag = false; // Undocumented behavior: DOSBox clears carry flag on success
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-                    LoggerService.Verbose("Returning DBCS table at {Segment:X4}:{Offset:X4}", segment, offset);
+                    LoggerService.Verbose("Returning DBCS table pointer at {Segment:X4}:{Offset:X4}", segment, offset);
                 }
             } else {
                 // DBCS not initialized, return error
                 State.AL = 0xFF;
                 if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-                    LoggerService.Warning("DBCS table not initialized");
+                    LoggerService.Warning("DBCS table not initialized - returning error");
                 }
             }
         } else {
-            // Invalid subfunction
+            // Invalid subfunction - return error without modifying carry flag (per DOSBox)
             State.AL = 0xFF;
-            // Doesn't officially touch carry flag per DOSBox comment
         }
     }
 

@@ -15,18 +15,20 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 public class DosDoubleByteCharacterSet : MemoryBasedDataStructure {
     /// <summary>
     /// Size of the DBCS table in bytes.
+    /// In DOSBox, DOS_GetMemory(12) allocates 12 paragraphs (192 bytes total).
+    /// The actual DBCS table data is much smaller, but this reserves sufficient space.
     /// </summary>
-    public const int DbcsTableSize = 12; // Size in bytes (matches DOS_GetMemory(12) in pages where page=16 bytes)
+    public const int DbcsTableSize = 192; // 12 paragraphs * 16 bytes per paragraph
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DosDoubleByteCharacterSet"/> class.
+    /// The table is initialized as empty (value 0), indicating no DBCS ranges are active.
     /// </summary>
     /// <param name="byteReaderWriter">The memory reader/writer interface.</param>
     /// <param name="baseAddress">The base address of the DBCS table in memory.</param>
     public DosDoubleByteCharacterSet(IByteReaderWriter byteReaderWriter, uint baseAddress)
         : base(byteReaderWriter, baseAddress) {
-        // Initialize with empty table (all zeros)
-        // mem_writed(RealToPhysical(dos.tables.dbcs),0); in DOSBox
+        // Initialize with empty table (all zeros) - matches DOSBox: mem_writed(RealToPhysical(dos.tables.dbcs), 0)
         UInt32[0x00] = 0;
     }
 

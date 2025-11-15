@@ -19,13 +19,14 @@ public class CurrentDirectoryStructure : MemoryBasedDataStructure {
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CurrentDirectoryStructure"/> class.
+    /// The CDS is initialized with "C:\" as the default current directory path.
     /// </summary>
     /// <param name="byteReaderWriter">The memory reader/writer interface.</param>
     /// <param name="baseAddress">The base address of the CDS structure in memory.</param>
     public CurrentDirectoryStructure(IByteReaderWriter byteReaderWriter, uint baseAddress)
         : base(byteReaderWriter, baseAddress) {
-        // Initialize with "C:\" - this is what DOSBox does
-        // 0x005c3a43 = 'C', ':', '\', 0x00 in little-endian
+        // Initialize with "C:\" - matches DOSBox behavior
+        // 0x005c3a43 in little-endian = 0x43 ('C'), 0x3A (':'), 0x5C ('\'), 0x00 (null terminator)
         UInt32[0x00] = 0x005c3a43;
     }
 
