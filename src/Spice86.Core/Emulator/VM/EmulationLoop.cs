@@ -168,9 +168,6 @@ public class EmulationLoop : ICyclesLimiter {
     private bool RunSlice() {
         _pauseHandler.WaitIfPaused();
         
-        // Process pending input events from the UI thread before the emulation slice
-        _inputEventQueue?.ProcessAllPendingInputEvents();
-        
         InitializeSliceTimer();
         long sliceStartTicks = _sliceStopwatch.ElapsedTicks;
         long sliceStartCycles = _cpuState.Cycles;
@@ -189,6 +186,10 @@ public class EmulationLoop : ICyclesLimiter {
                     _emulatorBreakpointsManager.TriggerBreakpoints();
                 }
                 _cpu.ExecuteNext();
+                
+                // Process pending input events from the UI thread after each CPU instruction
+                // This ensures responsive keyboard/mouse input handling
+                _inputEventQueue?.ProcessAllPendingInputEvents();
             }
         }
 
