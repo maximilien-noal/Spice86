@@ -43,12 +43,12 @@ public class DosDeviceHeader : MemoryBasedDataStructure {
     /// </summary>
     /// <param name="byteReaderWriter">The memory bus.</param>
     /// <param name="baseAddress">The base address of the structure in memory.</param>
+    /// <remarks>
+    /// The NextDevicePointer should be explicitly initialized by the caller when creating new headers.
+    /// This avoids virtual calls in the constructor and allows proper initialization for existing headers.
+    /// </remarks>
     public DosDeviceHeader(IByteReaderWriter byteReaderWriter, uint baseAddress)
         : base(byteReaderWriter, baseAddress) {
-        // Initialize with end-of-chain marker
-        if (SegmentedAddress16[0x00] == new SegmentedAddress(0, 0)) {
-            SegmentedAddress16[0x00] = new SegmentedAddress(0xFFFF, 0xFFFF);
-        }
     }
 
     /// <summary>

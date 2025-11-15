@@ -128,10 +128,5 @@ public enum GenericIoctlCategory : byte {
     /// Disk drive (block device).
     /// This is the category used for block device operations.
     /// </summary>
-    DiskDrive = 0x08,
-
-    /// <summary>
-    /// Printer (LPT) ports.
-    /// </summary>
-    Printer = 0x05
+    DiskDrive = 0x08
 }
