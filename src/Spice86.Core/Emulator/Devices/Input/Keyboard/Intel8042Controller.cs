@@ -199,8 +199,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private int _waitingBytesFromKbd = 0;
 
     // Sub-ms delay state driven by PIC event timer
-    private bool _delayActive = false;
-    private bool _delayExpired = false;
+    private bool _isDelayRunning = false;
 
     // Executing command, do not notify devices about readiness for accepting frame
     private bool _shouldSkipDeviceNotify = false;
@@ -231,7 +230,6 @@ public class Intel8042Controller : DefaultIOPortHandler {
     private readonly A20Gate _a20Gate;
     private readonly DualPic _dualPic;
     private readonly State _cpuState;
-    private readonly PicEventQueue _eventQueue;
     
     // Handler reference for delay timer
     private readonly PicEventHandler _delayHandler;
@@ -244,17 +242,16 @@ public class Intel8042Controller : DefaultIOPortHandler {
     public Intel8042Controller(State state, IOPortDispatcher ioPortDispatcher,
         A20Gate a20Gate, DualPic dualPic, bool failOnUnhandledPort,
         IPauseHandler pauseHandler, ILoggerService loggerService,
-        PicEventQueue eventQueue, IGuiKeyboardEvents? gui = null)
+        IGuiKeyboardEvents? gui = null)
         : base(state, failOnUnhandledPort, loggerService) {
         _a20Gate = a20Gate;
         _dualPic = dualPic;
         _cpuState = state;
-        _eventQueue = eventQueue;
         
         // Initialize handler reference
         _delayHandler = DelayExpireHandler;
 
-        KeyboardDevice = new PS2Keyboard(this, state, loggerService, eventQueue, gui);
+        KeyboardDevice = new PS2Keyboard(this, state, loggerService, dualPic, gui);
 
         InitPortHandlers(ioPortDispatcher);
         FlushBuffer();
@@ -401,17 +398,17 @@ public class Intel8042Controller : DefaultIOPortHandler {
         _bufferStartIdx = 0;
         _bufferNumUsed = 0;
 
-        bool shouldNotifyAux = !_shouldSkipDeviceNotify && !IsReadyForAuxFrame();
-        bool shouldNotifyKbd = !_shouldSkipDeviceNotify && !IsReadyForKbdFrame();
+        bool shouldNotifyAux = !_shouldSkipDeviceNotify && !IsReadyForAuxFrame;
+        bool shouldNotifyKbd = !_shouldSkipDeviceNotify && !IsReadyForKbdFrame;
 
         _waitingBytesFromAux = 0;
         _waitingBytesFromKbd = 0;
 
-        if (shouldNotifyAux && IsReadyForAuxFrame()) {
+        if (shouldNotifyAux && IsReadyForAuxFrame) {
             // TODO: Mouse notify-ready when implemented
         }
 
-        if (shouldNotifyKbd && IsReadyForKbdFrame()) {
+        if (shouldNotifyKbd && IsReadyForKbdFrame) {
             KeyboardDevice.NotifyReadyForFrame();
         }
     }
@@ -427,21 +424,21 @@ public class Intel8042Controller : DefaultIOPortHandler {
 
     private void RestartDelayTimer(double timeMs = PortDelayMs) {
         // DOSBox Staging pattern: remove existing event, then add new one
-        if (_delayActive) {
-            _eventQueue.RemoveEvents(_delayHandler);
+        if (_isDelayRunning) {
+            _dualPic.RemoveEvents(_delayHandler);
         }
-        _eventQueue.AddEvent(_delayHandler, timeMs);
-        _delayActive = true;
-        _delayExpired = false;
+        _dualPic.AddEvent(_delayHandler, timeMs);
+        _isDelayRunning = true;
+        IsDelayExpired = false;
     }
     
     private void DelayExpireHandler(uint _) {
-        _delayActive = false;
-        _delayExpired = true;
+        _isDelayRunning = false;
+        IsDelayExpired = true;
         MaybeTransferBuffer();
     }
 
-    private bool IsDelayExpired() => _delayExpired;
+    private bool IsDelayExpired { get; set; } = true;
 
     private void MaybeTransferBuffer() {
         if (_status.IsDataNew || _bufferNumUsed == 0) {
@@ -452,7 +449,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
 
         // If not set to skip the delay, do not send byte until timer expires
         int idx = _bufferStartIdx;
-        if (!IsDelayExpired() && !_buffer[idx].SkipDelay) {
+        if (!IsDelayExpired && !_buffer[idx].SkipDelay) {
             return;
         }
 
@@ -824,10 +821,10 @@ public class Intel8042Controller : DefaultIOPortHandler {
                 if (_isDiagnosticDump && _bufferNumUsed == 0) {
                     // Diagnostic dump finished
                     _isDiagnosticDump = false;
-                    if (IsReadyForAuxFrame()) {
+                    if (IsReadyForAuxFrame) {
                         // TODO: mouse notify-ready
                     }
-                    if (IsReadyForKbdFrame()) {
+                    if (IsReadyForKbdFrame) {
                         KeyboardDevice.NotifyReadyForFrame();
                     }
                 }
@@ -839,7 +836,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
                     if (_waitingBytesFromAux > 0) {
                         --_waitingBytesFromAux;
                     }
-                    if (IsReadyForAuxFrame()) {
+                    if (IsReadyForAuxFrame) {
                         // TODO: mouse notify-ready
                     }
                 }
@@ -848,7 +845,7 @@ public class Intel8042Controller : DefaultIOPortHandler {
                     if (_waitingBytesFromKbd > 0) {
                         --_waitingBytesFromKbd;
                     }
-                    if (IsReadyForKbdFrame()) {
+                    if (IsReadyForKbdFrame) {
                         KeyboardDevice.NotifyReadyForFrame();
                     }
                 }
@@ -883,18 +880,18 @@ public class Intel8042Controller : DefaultIOPortHandler {
                     KeyboardCommand command = _currentCommand;
                     _currentCommand = KeyboardCommand.None;
 
-                    bool shouldNotifyAux = !IsReadyForAuxFrame();
-                    bool shouldNotifyKbd = !IsReadyForKbdFrame();
+                    bool shouldNotifyAux = !IsReadyForAuxFrame;
+                    bool shouldNotifyKbd = !IsReadyForKbdFrame;
 
                     _shouldSkipDeviceNotify = true;
                     FlushBuffer();
                     ExecuteCommand(command, value);
                     _shouldSkipDeviceNotify = false;
 
-                    if (shouldNotifyAux && IsReadyForAuxFrame()) {
+                    if (shouldNotifyAux && IsReadyForAuxFrame) {
                         // TODO: mouse notify-ready
                     }
-                    if (shouldNotifyKbd && IsReadyForKbdFrame()) {
+                    if (shouldNotifyKbd && IsReadyForKbdFrame) {
                         KeyboardDevice.NotifyReadyForFrame();
                     }
                 } else {
@@ -911,8 +908,8 @@ public class Intel8042Controller : DefaultIOPortHandler {
             case KeyboardPorts.Command: // port 0x64
                 _shouldSkipDeviceNotify = true;
 
-                bool shouldNotifyAux2 = !IsReadyForAuxFrame();
-                bool shouldNotifyKbd2 = !IsReadyForKbdFrame();
+                bool shouldNotifyAux2 = !IsReadyForAuxFrame;
+                bool shouldNotifyKbd2 = !IsReadyForKbdFrame;
 
                 if (_isDiagnosticDump) {
                     _isDiagnosticDump = false;
@@ -931,10 +928,10 @@ public class Intel8042Controller : DefaultIOPortHandler {
 
                 _shouldSkipDeviceNotify = false;
 
-                if (shouldNotifyAux2 && IsReadyForAuxFrame()) {
+                if (shouldNotifyAux2 && IsReadyForAuxFrame) {
                     // TODO: mouse notify-ready
                 }
-                if (shouldNotifyKbd2 && IsReadyForKbdFrame()) {
+                if (shouldNotifyKbd2 && IsReadyForKbdFrame) {
                     KeyboardDevice.NotifyReadyForFrame();
                 }
                 break;
@@ -1019,17 +1016,13 @@ public class Intel8042Controller : DefaultIOPortHandler {
     /// Checks if the controller is ready to accept auxiliary frames.
     /// </summary>
     /// <returns>True if ready for auxiliary frames.</returns>
-    internal bool IsReadyForAuxFrame() {
-        return _waitingBytesFromAux == 0 && !_config.DisableAuxPort && !_isDiagnosticDump;
-    }
+    internal bool IsReadyForAuxFrame => _waitingBytesFromAux == 0 && !_config.DisableAuxPort && !_isDiagnosticDump;
 
     /// <summary>
     /// Checks if the controller is ready to accept keyboard frames.
     /// </summary>
     /// <returns>True if ready for keyboard frames.</returns>
-    internal bool IsReadyForKbdFrame() {
-        return _waitingBytesFromKbd == 0 && !_config.DisableKbdPort && !_isDiagnosticDump;
-    }
+    internal bool IsReadyForKbdFrame => _waitingBytesFromKbd == 0 && !_config.DisableKbdPort && !_isDiagnosticDump;
 
     // Encapsulates the 8042 status register for easier debugging.
     [DebuggerDisplay("{DebuggerDisplay,nq}")]

@@ -195,7 +195,7 @@ public class EmulationLoop : ICyclesLimiter {
                 
                 // Process pending input events from the UI thread after each CPU instruction
                 // Only process if there are events to avoid unnecessary overhead
-                if (_inputEventQueue is not null && _inputEventQueue.HasPendingEvents) {
+                if (_inputEventQueue?.HasPendingEvents is true) {
                     _inputEventQueue.ProcessAllPendingInputEvents();
                 }
             }
