@@ -217,7 +217,11 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
                     _loggerService.Error("CMOS: Update-ended interrupt not supported (bit 4 set in Register B).");
                 }
                 if (_cmosRegisters.Timer.Enabled && !prevEnabled) {
+                    // Periodic interrupt was just enabled - schedule the first event
                     ScheduleNextPeriodic();
+                } else if (!_cmosRegisters.Timer.Enabled && prevEnabled) {
+                    // Periodic interrupt was just disabled - cancel pending events
+                    _dualPic.RemoveEvents(OnPeriodicInterruptFired);
                 }
                 return;
 
@@ -377,8 +381,8 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
     }
 
     /// <summary>
-    /// Schedules the next periodic interrupt event.
-    /// Aligns the trigger time to a multiple of the period to maintain consistent timing.
+    /// Schedules the next periodic interrupt event using the PIC event queue.
+    /// This ensures interrupts fire at deterministic CPU cycle positions.
     /// </summary>
     private void ScheduleNextPeriodic() {
         if (_cmosRegisters.Timer.Delay <= 0) {
@@ -387,6 +391,13 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         double nowMs = GetElapsedMilliseconds();
         double rem = nowMs % _cmosRegisters.Timer.Delay;
         _nextPeriodicTriggerMs = nowMs + (_cmosRegisters.Timer.Delay - rem);
+        
+        // Schedule the periodic interrupt event via PIC event queue
+        // The delay is the time until next interrupt in milliseconds
+        double delayMs = _nextPeriodicTriggerMs - nowMs;
+        if (delayMs > 0) {
+            _dualPic.AddEvent(OnPeriodicInterruptFired, delayMs);
+        }
     }
 
     /// <summary>
@@ -421,6 +432,40 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
                 _nextPeriodicTriggerMs += _cmosRegisters.Timer.Delay;
             }
             _dualPic.ProcessInterruptRequest(8);
+        }
+    }
+
+    /// <summary>
+    /// Event handler called by PIC event queue when a periodic interrupt fires.
+    /// Sets the interrupt flags and triggers IRQ 8, then schedules the next interrupt.
+    /// </summary>
+    /// <param name="value">Unused event value parameter</param>
+    private void OnPeriodicInterruptFired(uint value) {
+        // Pause-aware: do not fire if paused
+        if (_isPaused) {
+            return;
+        }
+        
+        if (!_cmosRegisters.Timer.Enabled || _cmosRegisters.Timer.Delay <= 0) {
+            return;
+        }
+        
+        double nowMs = GetElapsedMilliseconds();
+        _cmosRegisters.Last.Timer = nowMs;
+        
+        // 0xC0 = IRQF (bit 7) + PF (bit 6) - both flags must be set
+        // Contraption Zack (music) relies on both flags being set in Status Register C
+        _cmosRegisters[CmosRegisterAddresses.StatusRegisterC] |= 0xC0;
+        _cmosRegisters.Timer.Acknowledged = false;
+        
+        // Trigger IRQ 8 (RTC interrupt)
+        _dualPic.ProcessInterruptRequest(8);
+        
+        // Schedule the next periodic interrupt
+        _nextPeriodicTriggerMs += _cmosRegisters.Timer.Delay;
+        double delayMs = _nextPeriodicTriggerMs - nowMs;
+        if (delayMs > 0) {
+            _dualPic.AddEvent(OnPeriodicInterruptFired, delayMs);
         }
     }
 
