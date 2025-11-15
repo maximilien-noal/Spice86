@@ -161,11 +161,11 @@ public class McpServerTest {
         McpServer server = new(spice86.Machine.Memory, spice86.Machine.CpuState, functionCatalogue, new LoggerService());
         
         // Add some test functions
-        var func1 = functionCatalogue.GetOrCreateFunctionInformation(new SegmentedAddress(0x1000, 0x0000), "TestFunction1");
+        FunctionInformation func1 = functionCatalogue.GetOrCreateFunctionInformation(new SegmentedAddress(0x1000, 0x0000), "TestFunction1");
         func1.Enter(null);
         func1.Enter(null);
         
-        var func2 = functionCatalogue.GetOrCreateFunctionInformation(new SegmentedAddress(0x2000, 0x0100), "TestFunction2");
+        FunctionInformation func2 = functionCatalogue.GetOrCreateFunctionInformation(new SegmentedAddress(0x2000, 0x0100), "TestFunction2");
         func2.Enter(null);
         
         string request = """{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_functions","arguments":{"limit":10}},"id":5}""";

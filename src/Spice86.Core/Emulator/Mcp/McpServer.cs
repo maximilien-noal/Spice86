@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 /// <summary>
 /// In-process Model Context Protocol (MCP) server for inspecting emulator state.
 /// This server exposes tools to query CPU registers, memory contents, and function definitions.
+/// Follows MCP protocol specification without using Microsoft.Extensions.DependencyInjection.
 /// </summary>
 public sealed class McpServer : IMcpServer {
     private readonly IMemory _memory;
@@ -35,133 +36,137 @@ public sealed class McpServer : IMcpServer {
 
     /// <inheritdoc />
     public string HandleRequest(string requestJson) {
+        JsonDocument document;
         try {
-            JsonNode? requestNode = JsonNode.Parse(requestJson);
-            if (requestNode == null) {
-                return CreateErrorResponse(null, -32700, "Parse error: Invalid JSON");
-            }
-
-            string? method = requestNode["method"]?.GetValue<string>();
-            JsonNode? id = requestNode["id"];
-
-            if (string.IsNullOrEmpty(method)) {
-                return CreateErrorResponse(id, -32600, "Invalid Request: Missing method");
-            }
-
-            return method switch {
-                "initialize" => HandleInitialize(id),
-                "tools/list" => HandleToolsList(id),
-                "tools/call" => HandleToolCall(requestNode, id),
-                _ => CreateErrorResponse(id, -32601, $"Method not found: {method}")
-            };
+            document = JsonDocument.Parse(requestJson);
         } catch (JsonException ex) {
             _loggerService.Error(ex, "JSON parsing error in MCP request");
-            return CreateErrorResponse(null, -32700, "Parse error: " + ex.Message);
-        } catch (Exception ex) {
-            _loggerService.Error(ex, "Unexpected error handling MCP request");
-            return CreateErrorResponse(null, -32603, "Internal error: " + ex.Message);
+            return CreateErrorResponse(null, -32700, $"Parse error: {ex.Message}");
+        }
+
+        using (document) {
+            JsonElement root = document.RootElement;
+
+            if (!root.TryGetProperty("method", out JsonElement methodElement)) {
+                return CreateErrorResponse(null, -32600, "Invalid Request: Missing method");
+            }
+
+            string? method = methodElement.GetString();
+            if (string.IsNullOrEmpty(method)) {
+                return CreateErrorResponse(null, -32600, "Invalid Request: Missing method");
+            }
+
+            JsonElement? idElement = root.TryGetProperty("id", out JsonElement id) ? id : null;
+
+            switch (method) {
+                case "initialize":
+                    return HandleInitialize(idElement);
+                case "tools/list":
+                    return HandleToolsList(idElement);
+                case "tools/call":
+                    return HandleToolCall(root, idElement);
+                default:
+                    return CreateErrorResponse(idElement, -32601, $"Method not found: {method}");
+            }
         }
     }
 
     /// <inheritdoc />
     public McpTool[] GetAvailableTools() {
-        return new[] {
+        return new McpTool[] {
             new McpTool {
                 Name = "read_cpu_registers",
                 Description = "Read the current values of CPU registers (general purpose, segment, instruction pointer, and flags)",
-                InputSchema = new {
-                    type = "object",
-                    properties = new { },
-                    required = Array.Empty<string>()
-                }
+                InputSchema = CreateEmptyInputSchema()
             },
             new McpTool {
                 Name = "read_memory",
                 Description = "Read a range of bytes from emulator memory",
-                InputSchema = new {
-                    type = "object",
-                    properties = new {
-                        address = new { type = "integer", description = "The starting memory address (linear address)" },
-                        length = new { type = "integer", description = "The number of bytes to read (max 4096)" }
-                    },
-                    required = new[] { "address", "length" }
-                }
+                InputSchema = CreateMemoryReadInputSchema()
             },
             new McpTool {
                 Name = "list_functions",
                 Description = "List all known functions in the function catalogue",
-                InputSchema = new {
-                    type = "object",
-                    properties = new {
-                        limit = new { type = "integer", description = "Maximum number of functions to return (default 100)" }
-                    },
-                    required = Array.Empty<string>()
-                }
+                InputSchema = CreateFunctionListInputSchema()
             }
         };
     }
 
-    private string HandleInitialize(JsonNode? id) {
-        var result = new {
-            protocolVersion = "2025-06-18",
-            serverInfo = new {
-                name = "Spice86 MCP Server",
-                version = "1.0.0"
+    private string HandleInitialize(JsonElement? id) {
+        InitializeResponse response = new InitializeResponse {
+            ProtocolVersion = "2025-06-18",
+            ServerInfo = new ServerInfo {
+                Name = "Spice86 MCP Server",
+                Version = "1.0.0"
             },
-            capabilities = new {
-                tools = new { }
+            Capabilities = new ServerCapabilities {
+                Tools = new ToolsCapability()
             }
         };
 
-        return CreateSuccessResponse(id, result);
+        return CreateSuccessResponse(id, response);
     }
 
-    private string HandleToolsList(JsonNode? id) {
+    private string HandleToolsList(JsonElement? id) {
         McpTool[] tools = GetAvailableTools();
-        var toolsJson = tools.Select(t => new {
-            name = t.Name,
-            description = t.Description,
-            inputSchema = t.InputSchema
+        ToolInfo[] toolInfos = tools.Select(t => new ToolInfo {
+            Name = t.Name,
+            Description = t.Description,
+            InputSchema = t.InputSchema
         }).ToArray();
 
-        var result = new {
-            tools = toolsJson
+        ToolsListResponse response = new ToolsListResponse {
+            Tools = toolInfos
         };
 
-        return CreateSuccessResponse(id, result);
+        return CreateSuccessResponse(id, response);
     }
 
-    private string HandleToolCall(JsonNode requestNode, JsonNode? id) {
-        JsonNode? paramsNode = requestNode["params"];
-        if (paramsNode == null) {
+    private string HandleToolCall(JsonElement root, JsonElement? id) {
+        if (!root.TryGetProperty("params", out JsonElement paramsElement)) {
             return CreateErrorResponse(id, -32602, "Invalid params: Missing params");
         }
 
-        string? toolName = paramsNode["name"]?.GetValue<string>();
+        if (!paramsElement.TryGetProperty("name", out JsonElement nameElement)) {
+            return CreateErrorResponse(id, -32602, "Invalid params: Missing tool name");
+        }
+
+        string? toolName = nameElement.GetString();
         if (string.IsNullOrEmpty(toolName)) {
             return CreateErrorResponse(id, -32602, "Invalid params: Missing tool name");
         }
 
-        JsonNode? arguments = paramsNode["arguments"];
+        JsonElement? argumentsElement = paramsElement.TryGetProperty("arguments", out JsonElement args) ? args : null;
 
         try {
-            object result = toolName switch {
-                "read_cpu_registers" => ReadCpuRegisters(),
-                "read_memory" => ReadMemory(arguments),
-                "list_functions" => ListFunctions(arguments),
-                _ => throw new InvalidOperationException($"Unknown tool: {toolName}")
-            };
+            object result;
+            switch (toolName) {
+                case "read_cpu_registers":
+                    result = ReadCpuRegisters();
+                    break;
+                case "read_memory":
+                    result = ReadMemory(argumentsElement);
+                    break;
+                case "list_functions":
+                    result = ListFunctions(argumentsElement);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unknown tool: {toolName}");
+            }
 
             return CreateToolCallResponse(id, result);
-        } catch (Exception ex) {
+        } catch (ArgumentException ex) {
+            _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
+            return CreateErrorResponse(id, -32602, $"Invalid params: {ex.Message}");
+        } catch (InvalidOperationException ex) {
             _loggerService.Error(ex, "Error executing tool {ToolName}", toolName);
             return CreateErrorResponse(id, -32603, $"Tool execution error: {ex.Message}");
         }
     }
 
-    private object ReadCpuRegisters() {
-        return new {
-            generalPurpose = new {
+    private CpuRegistersResponse ReadCpuRegisters() {
+        return new CpuRegistersResponse {
+            GeneralPurpose = new GeneralPurposeRegisters {
                 EAX = _state.EAX,
                 EBX = _state.EBX,
                 ECX = _state.ECX,
@@ -171,7 +176,7 @@ public sealed class McpServer : IMcpServer {
                 ESP = _state.ESP,
                 EBP = _state.EBP
             },
-            segments = new {
+            Segments = new SegmentRegisters {
                 CS = _state.CS,
                 DS = _state.DS,
                 ES = _state.ES,
@@ -179,10 +184,10 @@ public sealed class McpServer : IMcpServer {
                 GS = _state.GS,
                 SS = _state.SS
             },
-            instructionPointer = new {
+            InstructionPointer = new InstructionPointer {
                 IP = _state.IP
             },
-            flags = new {
+            Flags = new CpuFlags {
                 CarryFlag = _state.CarryFlag,
                 ParityFlag = _state.ParityFlag,
                 AuxiliaryFlag = _state.AuxiliaryFlag,
@@ -195,84 +200,205 @@ public sealed class McpServer : IMcpServer {
         };
     }
 
-    private object ReadMemory(JsonNode? arguments) {
-        if (arguments == null) {
+    private MemoryReadResponse ReadMemory(JsonElement? arguments) {
+        if (arguments == null || !arguments.HasValue) {
             throw new ArgumentException("Missing arguments for read_memory");
         }
 
-        uint address = arguments["address"]?.GetValue<uint>() ?? throw new ArgumentException("Missing address parameter");
-        int length = arguments["length"]?.GetValue<int>() ?? throw new ArgumentException("Missing length parameter");
+        JsonElement argsValue = arguments.Value;
+
+        if (!argsValue.TryGetProperty("address", out JsonElement addressElement)) {
+            throw new ArgumentException("Missing address parameter");
+        }
+
+        if (!argsValue.TryGetProperty("length", out JsonElement lengthElement)) {
+            throw new ArgumentException("Missing length parameter");
+        }
+
+        uint address = addressElement.GetUInt32();
+        int length = lengthElement.GetInt32();
 
         if (length <= 0 || length > 4096) {
-            throw new ArgumentException("Length must be between 1 and 4096");
+            throw new InvalidOperationException("Length must be between 1 and 4096");
         }
 
         byte[] data = _memory.ReadRam((uint)length, address);
         
-        return new {
-            address = address,
-            length = length,
-            data = Convert.ToHexString(data)
+        return new MemoryReadResponse {
+            Address = address,
+            Length = length,
+            Data = Convert.ToHexString(data)
         };
     }
 
-    private object ListFunctions(JsonNode? arguments) {
-        int limit = arguments?["limit"]?.GetValue<int>() ?? 100;
+    private FunctionListResponse ListFunctions(JsonElement? arguments) {
+        int limit = 100;
         
-        var functions = _functionCatalogue.FunctionInformations.Values
+        if (arguments != null && arguments.HasValue) {
+            JsonElement argsValue = arguments.Value;
+            if (argsValue.TryGetProperty("limit", out JsonElement limitElement)) {
+                limit = limitElement.GetInt32();
+            }
+        }
+        
+        FunctionInfo[] functions = _functionCatalogue.FunctionInformations.Values
             .OrderByDescending(f => f.CalledCount)
             .Take(limit)
-            .Select(f => new {
-                address = f.Address.ToString(),
-                name = f.Name,
-                calledCount = f.CalledCount,
-                hasOverride = f.HasOverride
+            .Select(f => new FunctionInfo {
+                Address = f.Address.ToString(),
+                Name = f.Name,
+                CalledCount = f.CalledCount,
+                HasOverride = f.HasOverride
             })
             .ToArray();
 
+        return new FunctionListResponse {
+            Functions = functions,
+            TotalCount = _functionCatalogue.FunctionInformations.Count
+        };
+    }
+
+    private static object CreateEmptyInputSchema() {
         return new {
-            functions = functions,
-            totalCount = _functionCatalogue.FunctionInformations.Count
+            type = "object",
+            properties = new { },
+            required = Array.Empty<string>()
         };
     }
 
-    private static string CreateSuccessResponse(JsonNode? id, object result) {
-        var response = new {
-            jsonrpc = "2.0",
-            id = id?.GetValue<object>(),
-            result = result
+    private static object CreateMemoryReadInputSchema() {
+        return new {
+            type = "object",
+            properties = new {
+                address = new { type = "integer", description = "The starting memory address (linear address)" },
+                length = new { type = "integer", description = "The number of bytes to read (max 4096)" }
+            },
+            required = new string[] { "address", "length" }
         };
-
-        return JsonSerializer.Serialize(response);
     }
 
-    private static string CreateToolCallResponse(JsonNode? id, object toolResult) {
-        var response = new {
-            jsonrpc = "2.0",
-            id = id?.GetValue<object>(),
-            result = new {
-                content = new[] {
-                    new {
-                        type = "text",
-                        text = JsonSerializer.Serialize(toolResult, new JsonSerializerOptions { WriteIndented = true })
-                    }
-                }
-            }
+    private static object CreateFunctionListInputSchema() {
+        return new {
+            type = "object",
+            properties = new {
+                limit = new { type = "integer", description = "Maximum number of functions to return (default 100)" }
+            },
+            required = Array.Empty<string>()
         };
-
-        return JsonSerializer.Serialize(response);
     }
 
-    private static string CreateErrorResponse(JsonNode? id, int code, string message) {
-        var response = new {
-            jsonrpc = "2.0",
-            id = id?.GetValue<object>(),
-            error = new {
-                code = code,
-                message = message
-            }
+    private static string CreateSuccessResponse(JsonElement? id, object result) {
+        JsonSerializerOptions options = new JsonSerializerOptions {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        string serializedResult = JsonSerializer.Serialize(result, options);
+        JsonNode? resultNode = JsonNode.Parse(serializedResult);
+        
+        JsonObject response = new JsonObject {
+            ["jsonrpc"] = "2.0",
+            ["result"] = resultNode
         };
 
-        return JsonSerializer.Serialize(response);
+        if (id.HasValue) {
+            response["id"] = JsonValue.Create(id.Value);
+        }
+
+        return response.ToJsonString();
     }
+
+    private static string CreateToolCallResponse(JsonElement? id, object toolResult) {
+        JsonSerializerOptions options = new JsonSerializerOptions {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        string serializedResult = JsonSerializer.Serialize(toolResult, options);
+        
+        JsonObject content = new JsonObject {
+            ["type"] = "text",
+            ["text"] = serializedResult
+        };
+
+        JsonArray contentArray = new JsonArray {
+            content
+        };
+
+        JsonObject resultObj = new JsonObject {
+            ["content"] = contentArray
+        };
+
+        JsonObject response = new JsonObject {
+            ["jsonrpc"] = "2.0",
+            ["result"] = resultObj
+        };
+
+        if (id.HasValue) {
+            response["id"] = JsonValue.Create(id.Value);
+        }
+
+        return response.ToJsonString();
+    }
+
+    private static string CreateErrorResponse(JsonElement? id, int code, string message) {
+        JsonObject error = new JsonObject {
+            ["code"] = code,
+            ["message"] = message
+        };
+
+        JsonObject response = new JsonObject {
+            ["jsonrpc"] = "2.0",
+            ["error"] = error
+        };
+
+        if (id.HasValue) {
+            response["id"] = JsonValue.Create(id.Value);
+        }
+
+        return response.ToJsonString();
+    }
+}
+
+/// <summary>
+/// Initialize response structure.
+/// </summary>
+internal sealed record InitializeResponse {
+    public required string ProtocolVersion { get; init; }
+    public required ServerInfo ServerInfo { get; init; }
+    public required ServerCapabilities Capabilities { get; init; }
+}
+
+/// <summary>
+/// Server information structure.
+/// </summary>
+internal sealed record ServerInfo {
+    public required string Name { get; init; }
+    public required string Version { get; init; }
+}
+
+/// <summary>
+/// Server capabilities structure.
+/// </summary>
+internal sealed record ServerCapabilities {
+    public required ToolsCapability Tools { get; init; }
+}
+
+/// <summary>
+/// Tools capability marker.
+/// </summary>
+internal sealed record ToolsCapability {
+}
+
+/// <summary>
+/// Tools list response structure.
+/// </summary>
+internal sealed record ToolsListResponse {
+    public required ToolInfo[] Tools { get; init; }
+}
+
+/// <summary>
+/// Tool information structure.
+/// </summary>
+internal sealed record ToolInfo {
+    public required string Name { get; init; }
+    public required string Description { get; init; }
+    public required object InputSchema { get; init; }
 }
