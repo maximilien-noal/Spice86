@@ -107,8 +107,8 @@ public sealed class RtcInt70Handler : InterruptHandler {
     /// <summary>
     /// Handles the periodic interrupt by decrementing the wait counter.
     /// <para>
-    /// The periodic interrupt fires at the rate specified in Status Register A
-    /// (typically 1024 Hz, or ~976 microseconds per interrupt).
+    /// The periodic interrupt fires at approximately 1024 Hz (976.56 μs per interrupt).
+    /// DOSBox uses 997 μs as the decrement value for better accuracy.
     /// </para>
     /// </summary>
     private void HandlePeriodicInterrupt() {
@@ -117,18 +117,16 @@ public sealed class RtcInt70Handler : InterruptHandler {
             return;
         }
 
-        // Decrement the wait counter by the interrupt interval (976 microseconds for 1024 Hz)
-        // The counter is stored as a 32-bit value in microseconds
-        const uint InterruptIntervalMicroseconds = 976; // 1000000 / 1024 ≈ 976
-
-        uint timeout = _biosDataArea.UserWaitTimeout;
+        // Decrement the wait counter (DOSBox uses 997 microseconds per interrupt)
+        const uint InterruptIntervalMicroseconds = 997;
+        uint count = _biosDataArea.UserWaitTimeout;
         
-        if (timeout < InterruptIntervalMicroseconds) {
-            // Wait has expired - subtracting the interval would cause underflow
-            CompleteWait();
+        if (count > InterruptIntervalMicroseconds) {
+            // Still waiting - decrement the counter
+            _biosDataArea.UserWaitTimeout = count - InterruptIntervalMicroseconds;
         } else {
-            // Decrement and store the new timeout
-            _biosDataArea.UserWaitTimeout = timeout - InterruptIntervalMicroseconds;
+            // Wait has expired
+            CompleteWait();
         }
     }
 
@@ -141,28 +139,28 @@ public sealed class RtcInt70Handler : InterruptHandler {
             LoggerService.Verbose("RTC wait completed");
         }
 
-        // Disable periodic interrupt (clear bit 6 of Status Register B)
-        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
-        byte statusB = _ioPortDispatcher.ReadByte(CmosPorts.Data);
-        byte newStatusB = (byte)(statusB & ~0x40);
-        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
-        _ioPortDispatcher.WriteByte(CmosPorts.Data, newStatusB);
-
-        // Clear the wait flag
-        _biosDataArea.RtcWaitFlag = 0;
+        // Clear the wait counter and flag
         _biosDataArea.UserWaitTimeout = 0;
+        _biosDataArea.RtcWaitFlag = 0;
 
-        // Set the user flag to 0x80 to indicate completion
+        // Set the user flag by ORing with 0x80 (DOSBox pattern)
         SegmentedAddress userFlagAddress = _biosDataArea.UserWaitCompleteFlag;
         if (!(userFlagAddress.Segment == 0 && userFlagAddress.Offset == 0)) {
             // Only set the flag if not a null pointer (0000:0000)
-            Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = 0x80;
+            byte currentValue = Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset];
+            Memory.UInt8[userFlagAddress.Segment, userFlagAddress.Offset] = (byte)(currentValue | 0x80);
             
             if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-                LoggerService.Verbose("Set user wait flag at {Segment:X4}:{Offset:X4} to 0x80",
-                    userFlagAddress.Segment, userFlagAddress.Offset);
+                LoggerService.Verbose("Set user wait flag at {Segment:X4}:{Offset:X4} to 0x{Value:X2}",
+                    userFlagAddress.Segment, userFlagAddress.Offset, currentValue | 0x80);
             }
         }
+
+        // Disable periodic interrupt (clear bit 6 of Status Register B)
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
+        byte statusB = _ioPortDispatcher.ReadByte(CmosPorts.Data);
+        _ioPortDispatcher.WriteByte(CmosPorts.Address, CmosRegisterAddresses.StatusRegisterB);
+        _ioPortDispatcher.WriteByte(CmosPorts.Data, (byte)(statusB & ~0x40));
     }
 
     /// <summary>
