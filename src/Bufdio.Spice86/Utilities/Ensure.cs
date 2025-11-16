@@ -14,7 +14,7 @@ internal static class Ensure {
     /// <typeparam name="TException">The type of exception to throw if the condition is false.</typeparam>
     /// <param name="condition">The condition to check.</param>
     /// <param name="message">An optional error message to include in the exception.</param>
-    /// <exception cref="Exception">Thrown when the condition is false.</exception>
+    /// <exception>Throws an exception of type <typeparamref name="TException"/> when the condition is false.</exception>
     public static void That<TException>(bool condition, string? message = null) where TException : Exception {
         if (!condition) {
             throw string.IsNullOrWhiteSpace(message)
