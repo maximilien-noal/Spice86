@@ -154,6 +154,9 @@ public class VideoFunctionalityInfo : MemoryBasedDataStructure {
         UInt8[0x0C + offset] = y;
     }
 
+    /// <summary>
+    /// CreateFunctionalityInfoLogSnapshot method.
+    /// </summary>
     public object CreateFunctionalityInfoLogSnapshot() {
         object[] cursorPositions = new object[8];
         for (int page = 0; page < cursorPositions.Length; page++) {

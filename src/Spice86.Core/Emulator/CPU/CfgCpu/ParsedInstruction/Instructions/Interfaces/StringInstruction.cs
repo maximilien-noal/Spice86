@@ -3,7 +3,13 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 
+/// <summary>
+/// Defines the contract for StringInstruction.
+/// </summary>
 public interface StringInstruction {
+    /// <summary>
+    /// ExecuteStringOperation method.
+    /// </summary>
     public void ExecuteStringOperation(InstructionExecutionHelper helper);
 
     /// <summary>

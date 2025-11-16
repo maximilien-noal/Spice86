@@ -5,8 +5,17 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Value.Constant;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the InstructionFieldAstBuilder class.
+/// </summary>
 public class InstructionFieldAstBuilder(ConstantAstBuilder constant, PointerAstBuilder pointer) {
+    /// <summary>
+    /// Gets or sets the Constant.
+    /// </summary>
     public ConstantAstBuilder Constant { get; } = constant;
+    /// <summary>
+    /// Gets or sets the Pointer.
+    /// </summary>
     public PointerAstBuilder Pointer { get; } = pointer;
 
 
@@ -44,6 +53,9 @@ public class InstructionFieldAstBuilder(ConstantAstBuilder constant, PointerAstB
         return Pointer.ToAbsolutePointer(type, physicalAddress);
     }
 
+    /// <summary>
+    /// ToNode method.
+    /// </summary>
     public ValueNode ToNode(InstructionField<SegmentedAddress> field) {
         if (field.UseValue) {
             return Constant.ToNode(field.Value);
@@ -52,26 +64,44 @@ public class InstructionFieldAstBuilder(ConstantAstBuilder constant, PointerAstB
         return Pointer.ToAbsolutePointer(DataType.UINT32, field.PhysicalAddress);
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<byte> field) {
         return DataType.UINT8;
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<ushort> field) {
         return DataType.UINT16;
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<uint> field) {
         return DataType.UINT32;
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<sbyte> field) {
         return DataType.INT8;
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<short> field) {
         return DataType.INT16;
     }
 
+    /// <summary>
+    /// ToType method.
+    /// </summary>
     public DataType ToType(InstructionField<int> field) {
         return DataType.INT32;
     }

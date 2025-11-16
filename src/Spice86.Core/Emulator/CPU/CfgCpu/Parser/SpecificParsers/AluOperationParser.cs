@@ -26,6 +26,9 @@ public abstract class AluOperationParser : BaseInstructionParser {
     public AluOperationParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parse method.
+    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         ushort opcode = context.OpcodeField.Value;
         bool hasModRm = (opcode & ModRmMask) == 0;

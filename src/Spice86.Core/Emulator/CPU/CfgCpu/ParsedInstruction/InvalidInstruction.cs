@@ -7,6 +7,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Core.Emulator.CPU.Exceptions;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the InvalidInstruction class.
+/// </summary>
 public class InvalidInstruction : CfgInstruction {
     private readonly CpuException _cpuException;
     public InvalidInstruction(SegmentedAddress address, InstructionField<ushort> opcodeField,
@@ -14,10 +17,16 @@ public class InvalidInstruction : CfgInstruction {
         _cpuException = cpuException;
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.HandleCpuException(this, _cpuException);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.INVALID);
     }

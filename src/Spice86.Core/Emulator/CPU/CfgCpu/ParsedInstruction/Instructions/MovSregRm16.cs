@@ -10,6 +10,9 @@ using Spice86.Core.Emulator.CPU.Exceptions;
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the MovSregRm16 class.
+/// </summary>
 public class MovSregRm16 : InstructionWithModRm {
     public MovSregRm16(SegmentedAddress address,
         InstructionField<ushort> opcodeField,
@@ -20,6 +23,9 @@ public class MovSregRm16 : InstructionWithModRm {
         }
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.ModRm.RefreshWithNewModRmContext(ModRmContext);
         helper.State.SegmentRegisters.UInt16[ModRmContext.RegisterIndex] = helper.ModRm.RM16;
@@ -29,6 +35,9 @@ public class MovSregRm16 : InstructionWithModRm {
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.MOV, builder.Register.SReg(ModRmContext.RegisterIndex), builder.ModRm.RmToNode(DataType.UINT16, ModRmContext));
     }

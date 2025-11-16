@@ -29,13 +29,37 @@ public sealed record CpuRegistersResponse {
 /// General purpose registers state.
 /// </summary>
 public sealed record GeneralPurposeRegisters {
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint EAX { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint EBX { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint ECX { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint EDX { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint ESI { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint EDI { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint ESP { get; init; }
+    /// <summary>
+    /// Gets or sets the uint.
+    /// </summary>
     public required uint EBP { get; init; }
 }
 
@@ -43,11 +67,29 @@ public sealed record GeneralPurposeRegisters {
 /// Segment registers state.
 /// </summary>
 public sealed record SegmentRegisters {
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort CS { get; init; }
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort DS { get; init; }
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort ES { get; init; }
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort FS { get; init; }
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort GS { get; init; }
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort SS { get; init; }
 }
 
@@ -55,6 +97,9 @@ public sealed record SegmentRegisters {
 /// Instruction pointer state.
 /// </summary>
 public sealed record InstructionPointer {
+    /// <summary>
+    /// Gets or sets the ushort.
+    /// </summary>
     public required ushort IP { get; init; }
 }
 
@@ -62,13 +107,37 @@ public sealed record InstructionPointer {
 /// CPU flags state.
 /// </summary>
 public sealed record CpuFlags {
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool CarryFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool ParityFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool AuxiliaryFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool ZeroFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool SignFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool DirectionFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool OverflowFlag { get; init; }
+    /// <summary>
+    /// Gets or sets the bool.
+    /// </summary>
     public required bool InterruptFlag { get; init; }
 }
 
@@ -136,7 +205,13 @@ public sealed record FunctionInfo {
 /// JSON schema property descriptor.
 /// </summary>
 internal sealed record JsonSchemaProperty {
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string Description { get; init; }
 }
 
@@ -150,8 +225,17 @@ internal sealed record EmptySchemaProperties {
 /// Empty input schema for tools with no parameters.
 /// </summary>
 internal sealed record EmptyInputSchema {
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets or sets the EmptySchemaProperties.
+    /// </summary>
     public required EmptySchemaProperties Properties { get; init; }
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 
@@ -159,7 +243,13 @@ internal sealed record EmptyInputSchema {
 /// Input schema properties for memory read operation.
 /// </summary>
 internal sealed record MemoryReadInputProperties {
+    /// <summary>
+    /// Gets or sets the JsonSchemaProperty.
+    /// </summary>
     public required JsonSchemaProperty Address { get; init; }
+    /// <summary>
+    /// Gets or sets the JsonSchemaProperty.
+    /// </summary>
     public required JsonSchemaProperty Length { get; init; }
 }
 
@@ -167,8 +257,17 @@ internal sealed record MemoryReadInputProperties {
 /// Input schema for memory read operation.
 /// </summary>
 internal sealed record MemoryReadInputSchema {
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets or sets the MemoryReadInputProperties.
+    /// </summary>
     public required MemoryReadInputProperties Properties { get; init; }
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 
@@ -176,6 +275,9 @@ internal sealed record MemoryReadInputSchema {
 /// Input schema properties for function list operation.
 /// </summary>
 internal sealed record FunctionListInputProperties {
+    /// <summary>
+    /// Gets or sets the JsonSchemaProperty.
+    /// </summary>
     public required JsonSchemaProperty Limit { get; init; }
 }
 
@@ -183,8 +285,17 @@ internal sealed record FunctionListInputProperties {
 /// Input schema for function list operation.
 /// </summary>
 internal sealed record FunctionListInputSchema {
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string Type { get; init; }
+    /// <summary>
+    /// Gets or sets the FunctionListInputProperties.
+    /// </summary>
     public required FunctionListInputProperties Properties { get; init; }
+    /// <summary>
+    /// Gets or sets the string.
+    /// </summary>
     public required string[] Required { get; init; }
 }
 

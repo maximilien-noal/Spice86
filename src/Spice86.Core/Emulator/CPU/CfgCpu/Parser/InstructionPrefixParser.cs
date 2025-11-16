@@ -5,6 +5,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Core.Emulator.CPU.CfgCpu.Parser.FieldReader;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents the InstructionPrefixParser class.
+/// </summary>
 public class InstructionPrefixParser {
     private readonly InstructionReader _instructionReader;
 

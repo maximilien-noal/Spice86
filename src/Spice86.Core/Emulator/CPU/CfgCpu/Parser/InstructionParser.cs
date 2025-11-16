@@ -12,6 +12,9 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Linq;
 
+/// <summary>
+/// Represents the InstructionParser class.
+/// </summary>
 public class InstructionParser : BaseInstructionParser {
     private readonly AdcAluOperationParser _adcAluOperationParser;
     private readonly AddAluOperationParser _addAluOperationParser;
@@ -180,6 +183,9 @@ public class InstructionParser : BaseInstructionParser {
         return _instructionReader.UInt8AsUshort.NextField(true);
     }
 
+    /// <summary>
+    /// ParseInstructionAt method.
+    /// </summary>
     public CfgInstruction ParseInstructionAt(SegmentedAddress address) {
         _instructionReader.InstructionReaderAddressSource.InstructionAddress = address;
         List<InstructionPrefix> prefixes = ParsePrefixes();

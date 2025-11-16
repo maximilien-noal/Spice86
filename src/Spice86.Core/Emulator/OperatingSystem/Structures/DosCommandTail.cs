@@ -5,10 +5,16 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 
 using System.ComponentModel.DataAnnotations;
 
+/// <summary>
+/// Represents the DosCommandTail class.
+/// </summary>
 public class DosCommandTail : MemoryBasedDataStructure {
     public DosCommandTail(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
     }
 
+    /// <summary>
+    /// The Length.
+    /// </summary>
     public byte Length {
         get => UInt8[0x0];
         set => UInt8[0x0] = value;
@@ -25,7 +31,13 @@ public class DosCommandTail : MemoryBasedDataStructure {
         }
     }
 
+    /// <summary>
+    /// The int.
+    /// </summary>
     public const int MaxCharacterLength = 128;
 
+    /// <summary>
+    /// The int.
+    /// </summary>
     public const int OffsetInPspSegment = 0x80;
 }

@@ -6,6 +6,9 @@ namespace Spice86.Libs.Sound.Devices.NukedOpl3;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+/// <summary>
+/// The partial.
+/// </summary>
 public sealed partial class Opl3Chip {
     /* Original C: static void OPL3_PhaseGenerate(opl3_slot *slot) */
     private static void PhaseGenerate(Opl3Operator slot) {

@@ -94,6 +94,9 @@ public class Flags {
         FlagRegister = 0;
     }
 
+    /// <summary>
+    /// The CpuModel.
+    /// </summary>
     public CpuModel CpuModel {
         get => _cpuModel;
         set {

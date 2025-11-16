@@ -95,12 +95,24 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
     /// </summary>
     public IDictionary<int, EmmHandle> EmmHandles { get; } = new Dictionary<int, EmmHandle>();
 
+    /// <summary>
+    /// Gets or sets the DeviceNumber.
+    /// </summary>
     public uint DeviceNumber { get; set; } = 0;
 
+    /// <summary>
+    /// Gets or sets the Header.
+    /// </summary>
     public DosDeviceHeader Header { get; init; }
 
+    /// <summary>
+    /// The Information.
+    /// </summary>
     public ushort Information => 0xc0c0; //Lifted from DOSBox.
 
+    /// <summary>
+    /// The Name.
+    /// </summary>
     public string Name {
         get {
             return EmsIdentifier;
@@ -154,28 +166,73 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
             Header = header;
         }
 
+        /// <summary>
+        /// The ushort.
+        /// </summary>
         public override ushort Information => _ems.Information;
+        /// <summary>
+        /// The string.
+        /// </summary>
         public override string Name {
             get => _ems.Name;
             set => throw new InvalidOperationException("Cannot rename DOS device!");
         }
 
         // Stream overrides: EMS is not a readable/writable stream
+        /// <summary>
+        /// int method.
+        /// </summary>
         public override int Read(byte[] buffer, int offset, int count) => 0;
+        /// <summary>
+        /// void method.
+        /// </summary>
         public override void Write(byte[] buffer, int offset, int count) { }
+        /// <summary>
+        /// long method.
+        /// </summary>
         public override long Seek(long offset, SeekOrigin origin) => 0;
+        /// <summary>
+        /// void method.
+        /// </summary>
         public override void SetLength(long value) { }
+        /// <summary>
+        /// void method.
+        /// </summary>
         public override void Flush() { }
+        /// <summary>
+        /// The bool.
+        /// </summary>
         public override bool CanRead => false;
+        /// <summary>
+        /// The bool.
+        /// </summary>
         public override bool CanWrite => false;
+        /// <summary>
+        /// The bool.
+        /// </summary>
         public override bool CanSeek => false;
+        /// <summary>
+        /// The long.
+        /// </summary>
         public override long Length => 0;
+        /// <summary>
+        /// Gets or sets the long.
+        /// </summary>
         public override long Position { get; set; }
 
         // IOCTL and status delegation
+        /// <summary>
+        /// byte method.
+        /// </summary>
         public override byte GetStatus(bool inputFlag) => _ems.GetStatus(inputFlag);
+        /// <summary>
+        /// bool method.
+        /// </summary>
         public override bool TryReadFromControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode)
             => _ems.TryReadFromControlChannel(address, size, out returnCode);
+        /// <summary>
+        /// bool method.
+        /// </summary>
         public override bool TryWriteToControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode)
             => _ems.TryWriteToControlChannel(address, size, out returnCode);
     }
@@ -213,6 +270,9 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
         AddAction(0x59, GetExpandedMemoryHardwareInformation);
     }
 
+    /// <summary>
+    /// AsCharacterDevice method.
+    /// </summary>
     public CharacterDevice AsCharacterDevice() => _emmCharacterDevice;
 
     /// <inheritdoc />
@@ -890,15 +950,24 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
         EmmHandles[handle].Name = name;
     }
 
+    /// <summary>
+    /// GetStatus method.
+    /// </summary>
     public byte GetStatus(bool inputFlag) {
         return 0;
     }
 
+    /// <summary>
+    /// TryReadFromControlChannel method.
+    /// </summary>
     public bool TryReadFromControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
     }
 
+    /// <summary>
+    /// TryWriteToControlChannel method.
+    /// </summary>
     public bool TryWriteToControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;

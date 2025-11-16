@@ -5,6 +5,9 @@ using Avalonia.Input;
 
 using Spice86.ViewModels;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class CfgCpuView : UserControl {
     public CfgCpuView() {
         InitializeComponent();

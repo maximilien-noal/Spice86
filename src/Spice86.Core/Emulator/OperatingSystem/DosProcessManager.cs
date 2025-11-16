@@ -80,6 +80,9 @@ public class DosProcessManager : DosFileLoader {
         return res[0..endIndex];
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte[] LoadFile(string file, string? arguments) {
         // TODO: We should be asking DosMemoryManager for a new block for the PSP, program, its
         // stack, and its requested extra space first. We shouldn't always assume that this is the

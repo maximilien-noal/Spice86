@@ -511,6 +511,9 @@ public sealed class RealTimeClock : DefaultIOPortHandler, IDisposable {
         }
     }
 
+    /// <summary>
+    /// Dispose method.
+    /// </summary>
     public void Dispose() {
         if (_disposed) {
             return;

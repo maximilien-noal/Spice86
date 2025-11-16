@@ -50,6 +50,9 @@ public class HostStorageProvider : IHostStorageProvider {
         return await _storageProvider.TryGetWellKnownFolderAsync(wellKnownFolder);
     }
 
+    /// <summary>
+    /// Task method.
+    /// </summary>
     public async Task SaveBitmapFile(WriteableBitmap bitmap) {
         if (CanSave && CanPickFolder) {
             FilePickerSaveOptions options = new() {
@@ -64,6 +67,9 @@ public class HostStorageProvider : IHostStorageProvider {
         }
     }
 
+    /// <summary>
+    /// Task method.
+    /// </summary>
     public async Task SaveBinaryFile(byte[] bytes) {
         if (CanSave && CanPickFolder) {
             FilePickerSaveOptions options = new() {
@@ -79,6 +85,9 @@ public class HostStorageProvider : IHostStorageProvider {
         }
     }
 
+    /// <summary>
+    /// Task method.
+    /// </summary>
     public async Task SaveVideoCardInfoFile(string videoCardInfoJson) {
         string dumpDir = _dumpContext.DumpDirectory;
         if (!Directory.Exists(dumpDir)) {
@@ -88,6 +97,9 @@ public class HostStorageProvider : IHostStorageProvider {
         await File.WriteAllTextAsync(filePath, videoCardInfoJson);
     }
 
+    /// <summary>
+    /// Task method.
+    /// </summary>
     public async Task DumpEmulatorStateToFile() {
         if (CanSave && CanPickFolder) {
             FolderPickerOpenOptions options = new() {

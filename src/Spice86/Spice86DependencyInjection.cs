@@ -61,7 +61,13 @@ using System.Diagnostics;
 /// </summary>
 public class Spice86DependencyInjection : IDisposable {
     private readonly LoggerService _loggerService;
+    /// <summary>
+    /// Gets or sets the Machine.
+    /// </summary>
     public Machine Machine { get; }
+    /// <summary>
+    /// Gets or sets the ProgramExecutor.
+    /// </summary>
     public ProgramExecutor ProgramExecutor { get; }
 
     /// <summary>
@@ -667,6 +673,9 @@ public class Spice86DependencyInjection : IDisposable {
         }
     }
 
+    /// <summary>
+    /// HeadlessModeStart method.
+    /// </summary>
     public void HeadlessModeStart() {
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("Finally starting headless mode...");

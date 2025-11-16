@@ -4,10 +4,16 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
+/// <summary>
+/// Represents the SetRmccParser class.
+/// </summary>
 public class SetRmccParser : BaseInstructionParser {
     public SetRmccParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parse method.
+    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         int condition = context.OpcodeField.Value & 0xF;
         ModRmContext modRmContext = _modRmParser.ParseNext(context);

@@ -55,8 +55,14 @@ public partial class DebuggerLineViewModel : ViewModelBase {
         GenerateFormattedDisassembly();
     }
 
+    /// <summary>
+    /// Gets or sets the ByteString.
+    /// </summary>
     public string ByteString { get; }
     public FunctionInformation? Function { get; }
+    /// <summary>
+    /// Gets or sets the SegmentedAddress.
+    /// </summary>
     public SegmentedAddress SegmentedAddress { get; }
 
     /// <summary>
@@ -64,10 +70,22 @@ public partial class DebuggerLineViewModel : ViewModelBase {
     /// </summary>
     public uint Address { get; }
 
+    /// <summary>
+    /// The ContinuesToNextInstruction.
+    /// </summary>
     public bool ContinuesToNextInstruction => _info.FlowControl == FlowControl.Next;
+    /// <summary>
+    /// The CanBeSteppedOver.
+    /// </summary>
     public bool CanBeSteppedOver => _info.FlowControl is FlowControl.Call or FlowControl.IndirectCall or FlowControl.Interrupt;
+    /// <summary>
+    /// Gets or sets the NextAddress.
+    /// </summary>
     public uint NextAddress { get; private set; }
 
+    /// <summary>
+    /// Disassembly method.
+    /// </summary>
     public string Disassembly => _customFormattedInstruction != null ? string.Join(' ', _customFormattedInstruction.Select(segment => segment.Text)) : _info.ToString();
 
     /// <summary>
@@ -99,6 +117,9 @@ public partial class DebuggerLineViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>
+    /// string method.
+    /// </summary>
     public override string ToString() {
         return $"{SegmentedAddress} {Disassembly} [{ByteString}]";
     }

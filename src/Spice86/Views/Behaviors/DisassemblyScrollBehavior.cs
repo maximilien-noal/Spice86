@@ -18,9 +18,15 @@ public class DisassemblyScrollBehavior {
     private const int AnimationFramesPerSecond = 60;
 
     // Attached property for enabling the behavior
+    /// <summary>
+    /// readonly method.
+    /// </summary>
     public static readonly AttachedProperty<bool> IsEnabledProperty = AvaloniaProperty.RegisterAttached<DisassemblyScrollBehavior, Control, bool>("IsEnabled");
 
     // Attached property for the target address
+    /// <summary>
+    /// readonly method.
+    /// </summary>
     public static readonly AttachedProperty<SegmentedAddress> TargetAddressProperty = AvaloniaProperty.RegisterAttached<DisassemblyScrollBehavior, Control, SegmentedAddress>("TargetAddress");
 
     // Static field to track if we're currently processing a scroll operation
@@ -36,18 +42,30 @@ public class DisassemblyScrollBehavior {
     }
 
     // Helper methods for getting/setting the attached properties
+    /// <summary>
+    /// bool method.
+    /// </summary>
     public static bool GetIsEnabled(Control control) {
         return control.GetValue(IsEnabledProperty);
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public static void SetIsEnabled(Control control, bool value) {
         control.SetValue(IsEnabledProperty, value);
     }
 
+    /// <summary>
+    /// SegmentedAddress method.
+    /// </summary>
     public static SegmentedAddress GetTargetAddress(Control control) {
         return control.GetValue(TargetAddressProperty);
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public static void SetTargetAddress(Control control, SegmentedAddress value) {
         control.SetValue(TargetAddressProperty, value);
     }
@@ -107,6 +125,9 @@ public class DisassemblyScrollBehavior {
     }
 
     // Method to scroll to a specific address in the disassembly view
+    /// <summary>
+    /// void method.
+    /// </summary>
     public static void ScrollToAddress(ListBox listBox, uint targetAddress) {
         // Ensure we're on the UI thread
         if (!Dispatcher.UIThread.CheckAccess()) {

@@ -4,6 +4,9 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Linq;
 
+/// <summary>
+/// Represents the FunctionCatalogue class.
+/// </summary>
 public class FunctionCatalogue {
     public FunctionCatalogue() : this(new List<FunctionInformation>()) {
     }
@@ -12,8 +15,14 @@ public class FunctionCatalogue {
         FunctionInformations = functionInformations.ToDictionary(f => f.Address, f => f);
     }
 
+    /// <summary>
+    /// Gets or sets the FunctionInformations.
+    /// </summary>
     public IDictionary<SegmentedAddress, FunctionInformation> FunctionInformations { get; }
 
+    /// <summary>
+    /// GetOrCreateFunctionInformation method.
+    /// </summary>
     public FunctionInformation GetOrCreateFunctionInformation(SegmentedAddress entryAddress, string? name) {
         if (!FunctionInformations.TryGetValue(entryAddress, out FunctionInformation? res)) {
             res = new FunctionInformation(entryAddress, string.IsNullOrWhiteSpace(name) ? "unknown" : name);

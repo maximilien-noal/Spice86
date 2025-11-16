@@ -1,6 +1,9 @@
 namespace Spice86.Core.Emulator.OperatingSystem.Enums;
 
 #pragma warning disable CS1591
+/// <summary>
+/// CountryId enumeration.
+/// </summary>
 public enum CountryId : ushort {
     UnitedStates = 1,
     CanadianFrench = 2,

@@ -11,12 +11,18 @@ using Spice86.ViewModels;
 using Structurizer;
 using Structurizer.Types;
 
+/// <summary>
+/// Defines the contract for IStructureViewModelFactory.
+/// </summary>
 public interface IStructureViewModelFactory {
     bool IsInitialized { get; }
     StructureViewModel CreateNew(IBinaryDocument data);
     void Parse(string headerFilePath);
 }
 
+/// <summary>
+/// Represents the StructureViewModelFactory class.
+/// </summary>
 public class StructureViewModelFactory : IStructureViewModelFactory {
     private readonly Hydrator? _hydrator;
     private readonly Parser? _parser;
@@ -27,6 +33,9 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
     private readonly ILoggerService _logger;
     private readonly IPauseHandler _pauseHandler;
 
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler? StructureInformationChanged;
 
     public StructureViewModelFactory(Configuration configuration, State state, ILoggerService logger, IPauseHandler pauseHandler) {
@@ -46,8 +55,14 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
         poller.Start();
     }
 
+    /// <summary>
+    /// The IsInitialized.
+    /// </summary>
     public bool IsInitialized => _structureInformation != null && _hydrator != null;
 
+    /// <summary>
+    /// CreateNew method.
+    /// </summary>
     public StructureViewModel CreateNew(IBinaryDocument data) {
         if (_structureInformation == null || _hydrator == null) {
             throw new InvalidOperationException("Factory not initialized.");
@@ -59,6 +74,9 @@ public class StructureViewModelFactory : IStructureViewModelFactory {
         return viewModel;
     }
 
+    /// <summary>
+    /// Parse method.
+    /// </summary>
     public void Parse(string headerFilePath) {
         _logger.Information("Parsing {HeaderFilePath} for structure information", headerFilePath);
         if (_parser == null) {

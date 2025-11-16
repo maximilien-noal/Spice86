@@ -4,6 +4,9 @@ using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the DosVolumeInfo class.
+/// </summary>
 public class DosVolumeInfo : MemoryBasedDataStructure {
     private const int VolumeLabelLength = 11;
     private const int FileSystemTypeLength = 8;

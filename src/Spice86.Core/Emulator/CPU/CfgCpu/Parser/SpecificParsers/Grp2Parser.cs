@@ -4,6 +4,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Grp2Parser class.
+/// </summary>
 public class Grp2Parser : BaseGrpOperationParser {
     public Grp2Parser(BaseInstructionParser instructionParser) : base(instructionParser) {
     }

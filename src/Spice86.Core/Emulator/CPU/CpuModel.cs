@@ -1,5 +1,8 @@
 namespace Spice86.Core.Emulator.CPU;
 
+/// <summary>
+/// CpuModel enumeration.
+/// </summary>
 public enum CpuModel {
     ZET_86,
     INTEL_8086,

@@ -15,19 +15,31 @@ public class NodeToString {
     private readonly AstBuilder _astBuilder = new();
     private readonly AstInstructionRenderer _renderer = new();
 
+    /// <summary>
+    /// ToString method.
+    /// </summary>
     public string ToString(ICfgNode node) {
         return $"{ToHeaderString(node)} / {ToAssemblyString(node)}";
     }
 
+    /// <summary>
+    /// ToHeaderString method.
+    /// </summary>
     public string ToHeaderString(ICfgNode node) {
         return $"{node.Address} / {node.Id}";
     }
 
+    /// <summary>
+    /// ToAssemblyString method.
+    /// </summary>
     public string ToAssemblyString(ICfgNode node) {
         InstructionNode ast = node.ToInstructionAst(_astBuilder);
         return ast.Accept(_renderer);
     }
 
+    /// <summary>
+    /// SuccessorsToString method.
+    /// </summary>
     public string SuccessorsToString(ICfgNode node) {
         return string.Join($"{Environment.NewLine}", SuccessorsToEnumerableString(node));
     }

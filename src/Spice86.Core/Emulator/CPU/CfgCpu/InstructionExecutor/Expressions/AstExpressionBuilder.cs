@@ -14,6 +14,9 @@ using Spice86.Shared.Emulator.Memory;
 using System.Linq.Expressions;
 using System.Reflection;
 
+/// <summary>
+/// Represents the AstExpressionBuilder class.
+/// </summary>
 public class AstExpressionBuilder : IAstVisitor<Expression> {
     private readonly ParameterExpression _memoryParameter = Expression.Parameter(typeof(Memory), "memory");
     private readonly ParameterExpression _stateParameter = Expression.Parameter(typeof(State), "cpuState");
@@ -125,44 +128,71 @@ public class AstExpressionBuilder : IAstVisitor<Expression> {
         return Expression.Property(_stateParameter, stateRegisterProperty);
     }
 
+    /// <summary>
+    /// VisitSegmentRegisterNode method.
+    /// </summary>
     public Expression VisitSegmentRegisterNode(SegmentRegisterNode node) {
         return ToRegisterProperty(node.RegisterIndex, node.DataType, true);
     }
 
+    /// <summary>
+    /// VisitSegmentedPointer method.
+    /// </summary>
     public Expression VisitSegmentedPointer(SegmentedPointerNode node) {
         Expression segmentExpression = node.Segment.Accept(this);
         Expression offsetExpression = node.Offset.Accept(this);
         return ToMemoryIndexer(node.DataType, segmentExpression, offsetExpression);
     }
 
+    /// <summary>
+    /// VisitRegisterNode method.
+    /// </summary>
     public Expression VisitRegisterNode(RegisterNode node) {
         return ToRegisterProperty(node.RegisterIndex, node.DataType, false);
     }
 
+    /// <summary>
+    /// VisitAbsolutePointerNode method.
+    /// </summary>
     public Expression VisitAbsolutePointerNode(AbsolutePointerNode node) {
         Expression index = node.AbsoluteAddress.Accept(this);
         return ToMemoryIndexer(node.DataType, index);
     }
 
+    /// <summary>
+    /// VisitSegmentedAddressConstantNode method.
+    /// </summary>
     public Expression VisitSegmentedAddressConstantNode(SegmentedAddressConstantNode node) {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// VisitBinaryOperationNode method.
+    /// </summary>
     public Expression VisitBinaryOperationNode(BinaryOperationNode node) {
         Expression left = node.Left.Accept(this);
         Expression right = node.Right.Accept(this);
         return ToExpression(node.BinaryOperation, left, right);
     }
 
+    /// <summary>
+    /// VisitUnaryOperationNode method.
+    /// </summary>
     public Expression VisitUnaryOperationNode(UnaryOperationNode node) {
         Expression value = node.Value.Accept(this);
         return ToExpression(node.UnaryOperation, value);
     }
 
+    /// <summary>
+    /// VisitInstructionNode method.
+    /// </summary>
     public Expression VisitInstructionNode(InstructionNode node) {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// VisitConstantNode method.
+    /// </summary>
     public Expression VisitConstantNode(ConstantNode node) {
         Type type = FromDataType(node.DataType);
         object castValue = Convert.ChangeType(node.Value, type);

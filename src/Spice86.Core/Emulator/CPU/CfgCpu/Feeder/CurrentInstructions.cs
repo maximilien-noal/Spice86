@@ -33,6 +33,9 @@ public class CurrentInstructions : InstructionReplacer {
         _emulatorBreakpointsManager = emulatorBreakpointsManager;
     }
 
+    /// <summary>
+    /// GetAll method.
+    /// </summary>
     public IEnumerable<CfgInstruction> GetAll() {
         return _currentInstructionAtAddress.Values;
     }
@@ -42,6 +45,9 @@ public class CurrentInstructions : InstructionReplacer {
         return res;
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         SegmentedAddress instructionAddress = newInstruction.Address;
         if (_currentInstructionAtAddress.ContainsKey(instructionAddress)) {
@@ -51,6 +57,9 @@ public class CurrentInstructions : InstructionReplacer {
     }
 
 
+    /// <summary>
+    /// SetAsCurrent method.
+    /// </summary>
     public void SetAsCurrent(CfgInstruction instruction) {
         // Clear it because in some cases it can be added twice (signature reducer)
         ClearCurrentInstruction(instruction);

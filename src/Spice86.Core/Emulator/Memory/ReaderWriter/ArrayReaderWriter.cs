@@ -5,6 +5,9 @@ namespace Spice86.Core.Emulator.Memory.ReaderWriter;
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public abstract class ArrayReaderWriter<T> : IReaderWriter<T> {
+    /// <summary>
+    /// Gets or sets the Array.
+    /// </summary>
     public T[] Array { get; }
 
     public ArrayReaderWriter(T[] array) {

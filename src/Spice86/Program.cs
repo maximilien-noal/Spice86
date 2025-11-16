@@ -56,6 +56,9 @@ public class Program {
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
+    /// <summary>
+    /// AppBuilder method.
+    /// </summary>
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()

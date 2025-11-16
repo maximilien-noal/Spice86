@@ -90,8 +90,20 @@ public partial class DebugWindowViewModel : ViewModelBase,
     [RelayCommand(CanExecute = nameof(IsPaused))]
     private void Continue() => _uiDispatcher.Post(_pauseHandler.Resume);
 
+    /// <summary>
+    /// Receive method.
+    /// </summary>
     public void Receive(AddViewModelMessage<DisassemblyViewModel> message) => DisassemblyViewModels.Add(message.ViewModel);
+    /// <summary>
+    /// Receive method.
+    /// </summary>
     public void Receive(AddViewModelMessage<MemoryViewModel> message) => MemoryViewModels.Add(message.ViewModel);
+    /// <summary>
+    /// Receive method.
+    /// </summary>
     public void Receive(RemoveViewModelMessage<DisassemblyViewModel> message) => DisassemblyViewModels.Remove(message.ViewModel);
+    /// <summary>
+    /// Receive method.
+    /// </summary>
     public void Receive(RemoveViewModelMessage<MemoryViewModel> message) => MemoryViewModels.Remove(message.ViewModel);
 }

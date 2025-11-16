@@ -74,8 +74,14 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly IOPortDispatcher _ioPortDispatcher;
     private readonly PicPitCpuState _picPitCpuState;
 
+    /// <summary>
+    /// Gets or sets the ExecutionFlowRecorder.
+    /// </summary>
     public ExecutionFlowRecorder ExecutionFlowRecorder { get; }
 
+    /// <summary>
+    /// Gets or sets the InterruptVectorTable.
+    /// </summary>
     public InterruptVectorTable InterruptVectorTable { get; }
 
     public Cpu(InterruptVectorTable interruptVectorTable,
@@ -143,10 +149,16 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// ExternalInterrupt method.
+    /// </summary>
     public void ExternalInterrupt(byte vectorNumber) {
         ExternalInterruptVectorNumber = vectorNumber;
     }
 
+    /// <summary>
+    /// FarRet method.
+    /// </summary>
     public void FarRet(ushort numberOfBytesToPop) {
         FunctionHandlerInUse.Ret(CallType.FAR16, null);
         _internalIp = Stack.Pop16();
@@ -158,18 +170,39 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// Gets or sets the FunctionHandler.
+    /// </summary>
     public FunctionHandler FunctionHandler { get; }
 
+    /// <summary>
+    /// Gets or sets the FunctionHandlerInExternalInterrupt.
+    /// </summary>
     public FunctionHandler FunctionHandlerInExternalInterrupt { get; }
 
+    /// <summary>
+    /// Gets or sets the FunctionHandlerInUse.
+    /// </summary>
     public FunctionHandler FunctionHandlerInUse { get; private set; }
 
+    /// <summary>
+    /// The IsInitialExecutionContext.
+    /// </summary>
     public bool IsInitialExecutionContext => FunctionHandlerInUse == FunctionHandler;
 
+    /// <summary>
+    /// Gets or sets the Stack.
+    /// </summary>
     public Stack Stack { get; }
 
+    /// <summary>
+    /// Gets or sets the State.
+    /// </summary>
     public State State { get; }
 
+    /// <summary>
+    /// InterruptRet method.
+    /// </summary>
     public void InterruptRet() {
         FunctionHandlerInUse.Ret(CallType.INTERRUPT, null);
         _internalIp = Stack.Pop16();
@@ -180,6 +213,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// NearRet method.
+    /// </summary>
     public void NearRet(int numberOfBytesToPop) {
         FunctionHandlerInUse.Ret(CallType.NEAR16, null);
         _internalIp = Stack.Pop16();
@@ -189,6 +225,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         State.IP = _internalIp;
     }
 
+    /// <summary>
+    /// NextUint32 method.
+    /// </summary>
     public uint NextUint32() {
         uint res = _memory.UInt32[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -199,6 +238,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         return res;
     }
 
+    /// <summary>
+    /// NextUint16 method.
+    /// </summary>
     public ushort NextUint16() {
         ushort res = _memory.UInt16[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -207,6 +249,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         return res;
     }
 
+    /// <summary>
+    /// NextUint8 method.
+    /// </summary>
     public byte NextUint8() {
         byte res = _memory.UInt8[InternalIpPhysicalAddress];
         ExecutionFlowRecorder.RegisterExecutableByte(_memory, State, EmulatorBreakpointsManager, State.CS, _internalIp);
@@ -235,6 +280,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
             or 0xAE // SCASB
             or 0xAF;
 
+    /// <summary>
+    /// Callback method.
+    /// </summary>
     public void Callback(ushort callbackIndex) => _callbackHandler.Run(callbackIndex);
 
     private void ExecSubOpcode(byte subcode) {
@@ -1096,6 +1144,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         }
     }
 
+    /// <summary>
+    /// FarCallWithReturnIpNextInstruction method.
+    /// </summary>
     public void FarCallWithReturnIpNextInstruction(ushort targetCS, ushort targetIP) {
         FarCall(State.CS, _internalIp, targetCS, targetIP);
     }
@@ -1250,14 +1301,23 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         }
     }
 
+    /// <summary>
+    /// JumpFar method.
+    /// </summary>
     public void JumpFar(ushort cs, ushort ip) {
         HandleJump(cs, ip);
     }
 
+    /// <summary>
+    /// JumpNear method.
+    /// </summary>
     public void JumpNear(ushort ip) {
         HandleJump(State.CS, ip);
     }
 
+    /// <summary>
+    /// NearCallWithReturnIpNextInstruction method.
+    /// </summary>
     public void NearCallWithReturnIpNextInstruction(ushort callIP) {
         NearCall(_internalIp, callIP);
     }
@@ -1267,22 +1327,40 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         HandleCall(CallType.NEAR16, State.CS, returnIP, State.CS, callIP);
     }
 
+    /// <summary>
+    /// In8 method.
+    /// </summary>
     public byte In8(ushort port) {
         return _ioPortDispatcher.ReadByte(port);
     }
 
+    /// <summary>
+    /// In16 method.
+    /// </summary>
     public ushort In16(ushort port) {
         return _ioPortDispatcher.ReadWord(port);
     }
 
+    /// <summary>
+    /// In32 method.
+    /// </summary>
     public uint In32(ushort port) {
         return _ioPortDispatcher.ReadDWord(port);
     }
 
+    /// <summary>
+    /// Out8 method.
+    /// </summary>
     public void Out8(ushort port, byte val) => _ioPortDispatcher.WriteByte(port, val);
 
+    /// <summary>
+    /// Out16 method.
+    /// </summary>
     public void Out16(ushort port, ushort val) => _ioPortDispatcher.WriteWord(port, val);
 
+    /// <summary>
+    /// Out32 method.
+    /// </summary>
     public void Out32(ushort port, uint val) => _ioPortDispatcher.WriteDWord(port, val);
 
     private bool ProcessPrefix(int opcode) {
@@ -1370,6 +1448,9 @@ public class Cpu : IInstructionExecutor, IFunctionHandlerProvider {
         FunctionHandlerInUse.Call(CallType.MACHINE, State.IpSegmentedAddress, null, null);
     }
 
+    /// <summary>
+    /// SignalEnd method.
+    /// </summary>
     public void SignalEnd() {
         FunctionHandlerInUse.Ret(CallType.MACHINE, null);
     }

@@ -12,6 +12,9 @@ public abstract class OperationOverridableSegmentRegisterIndexParser : BaseInstr
     public OperationOverridableSegmentRegisterIndexParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parse method.
+    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         int segmentRegisterIndex = GetSegmentRegisterOverrideOrDs(context);
         BitWidth bitWidth = GetBitWidth(context.OpcodeField, context.HasOperandSize32);

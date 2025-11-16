@@ -24,6 +24,9 @@ public class UInt8HighLowRegistersIndexer : RegistersIndexer<byte> {
         _uInt8LowRegistersIndexer = uInt8LowRegistersIndexer;
     }
 
+    /// <summary>
+    /// The byte.
+    /// </summary>
     public override byte this[uint index] {
         get {
             uint indexInArray = ComputeRegisterIndexInArray(index);
@@ -43,10 +46,16 @@ public class UInt8HighLowRegistersIndexer : RegistersIndexer<byte> {
         }
     }
 
+    /// <summary>
+    /// bool method.
+    /// </summary>
     public static bool IsHigh(uint index) {
         return (index & Register8IndexHighBitMask) != 0;
     }
 
+    /// <summary>
+    /// uint method.
+    /// </summary>
     public static uint ComputeRegisterIndexInArray(uint index) {
         return index & Register8IndexHighLowMask;
     }

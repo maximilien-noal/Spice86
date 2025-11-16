@@ -25,14 +25,23 @@ public abstract class PoleFilterBase<TAnalog, TState> : Cascade
 
     protected LayoutBase DigitalPrototype { get; }
 
+    /// <summary>
+    /// Reset method.
+    /// </summary>
     public void Reset() {
         _stages.Reset();
     }
 
+    /// <summary>
+    /// Filter method.
+    /// </summary>
     public double Filter(double input) {
         return _stages.Filter(input);
     }
 
+    /// <summary>
+    /// Filter method.
+    /// </summary>
     public float Filter(float input) {
         return _stages.FilterSingle(input);
     }

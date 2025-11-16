@@ -7,11 +7,26 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.CPU.Registers;
 
+/// <summary>
+/// Represents the ModRmAstBuilder class.
+/// </summary>
 public class ModRmAstBuilder(RegisterAstBuilder register, InstructionFieldAstBuilder instructionField, PointerAstBuilder pointer) {
+    /// <summary>
+    /// Gets or sets the Register.
+    /// </summary>
     public RegisterAstBuilder Register { get; } = register;
+    /// <summary>
+    /// Gets or sets the InstructionField.
+    /// </summary>
     public InstructionFieldAstBuilder InstructionField { get; } = instructionField;
+    /// <summary>
+    /// Gets or sets the Pointer.
+    /// </summary>
     public PointerAstBuilder Pointer { get; } = pointer;
 
+    /// <summary>
+    /// RmToNode method.
+    /// </summary>
     public ValueNode RmToNode(DataType targetDataType, ModRmContext modRmContext) {
         if (modRmContext.MemoryAddressType == MemoryAddressType.NONE) {
             // then it's a register
@@ -21,10 +36,16 @@ public class ModRmAstBuilder(RegisterAstBuilder register, InstructionFieldAstBui
         return ToMemoryAddressNode(targetDataType, modRmContext);
     }
 
+    /// <summary>
+    /// RToNode method.
+    /// </summary>
     public ValueNode RToNode(DataType dataType, ModRmContext modRmContext) {
         return new RegisterNode(dataType, modRmContext.RegisterIndex);
     }
 
+    /// <summary>
+    /// ToMemoryAddressNode method.
+    /// </summary>
     public ValueNode ToMemoryAddressNode(DataType targetDataType, ModRmContext modRmContext) {
         if (modRmContext.MemoryAddressType == MemoryAddressType.NONE) {
             throw new ArgumentException(
@@ -40,6 +61,9 @@ public class ModRmAstBuilder(RegisterAstBuilder register, InstructionFieldAstBui
         return Pointer.ToSegmentedPointer(targetDataType, segment, offset);
     }
 
+    /// <summary>
+    /// MemoryOffsetToNode method.
+    /// </summary>
     public ValueNode MemoryOffsetToNode(ModRmContext modRmContext) {
         if (modRmContext.MemoryOffsetType == MemoryOffsetType.NONE) {
             throw new ArgumentException(

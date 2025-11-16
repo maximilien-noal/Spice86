@@ -2,6 +2,9 @@ namespace Spice86.Core.Emulator.Function.Dump;
 
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the ExecutionDump class.
+/// </summary>
 public class ExecutionDump {
     /// <summary>
     /// Gets a dictionary of calls from one address to another.

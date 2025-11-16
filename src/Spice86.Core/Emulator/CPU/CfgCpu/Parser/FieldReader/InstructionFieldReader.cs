@@ -7,6 +7,9 @@ using Spice86.Shared.Emulator.Memory;
 using System.Collections.Immutable;
 using System.Linq;
 
+/// <summary>
+/// The class.
+/// </summary>
 public abstract class InstructionFieldReader<T> {
     protected IIndexable Memory { get; }
 
@@ -21,11 +24,20 @@ public abstract class InstructionFieldReader<T> {
     protected SegmentedAddress CurrentAddress => AddressSource.CurrentAddress;
 
     protected abstract int FieldSize();
+    /// <summary>
+    /// T method.
+    /// </summary>
     public abstract T PeekValue();
 
+    /// <summary>
+    /// Advance method.
+    /// </summary>
     public void Advance() {
         AddressSource.IndexInInstruction += FieldSize();
     }
+    /// <summary>
+    /// Recede method.
+    /// </summary>
     public void Recede() {
         AddressSource.IndexInInstruction -= FieldSize();
     }

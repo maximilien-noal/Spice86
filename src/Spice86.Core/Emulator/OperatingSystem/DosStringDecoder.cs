@@ -12,6 +12,9 @@ using System.Text;
 /// The class is responsible for decoding DOS strings with the currently set DOS Encoding.
 /// </summary>
 public class DosStringDecoder {
+    /// <summary>
+    /// The ushort.
+    /// </summary>
     public const ushort MaxDosStringLength = 256;
 
     private readonly IMemory _memory;

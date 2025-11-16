@@ -25,6 +25,9 @@ internal partial class App : Application {
     /// </summary>
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void OnFrameworkInitializationCompleted() {
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {

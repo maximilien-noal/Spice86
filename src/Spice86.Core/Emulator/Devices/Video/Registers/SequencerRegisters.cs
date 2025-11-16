@@ -12,6 +12,9 @@ public class SequencerRegisters {
     ///     accessed.
     /// </summary>
     private SequencerRegister _address;
+    /// <summary>
+    /// The Address.
+    /// </summary>
     public SequencerRegister Address {
         get => _address;
         set => _address = (SequencerRegister)((int)value & 0x07);

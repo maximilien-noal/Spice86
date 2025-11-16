@@ -12,6 +12,9 @@ public class UInt16RegistersIndexer : RegistersIndexer<ushort> {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }
 
+    /// <summary>
+    /// The ushort.
+    /// </summary>
     public override ushort this[uint index] {
         get => (ushort)_uIntArrayReaderWriter[index];
         set {

@@ -98,6 +98,9 @@ public class KeyboardScancodeConverter {
         };
     }
 
+    /// <summary>
+    /// GetScanCode1 method.
+    /// </summary>
     public List<byte> GetScanCode1(KbdKey keyType, bool isPressed) {
         bool extend = false;
 

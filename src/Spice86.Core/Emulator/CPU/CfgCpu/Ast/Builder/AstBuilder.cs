@@ -4,21 +4,45 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.Interfaces;
 
+/// <summary>
+/// Represents the AstBuilder class.
+/// </summary>
 public class AstBuilder {
     public AstBuilder() {
         InstructionField = new(Constant, Pointer);
         ModRm = new(Register, InstructionField, Pointer);
     }
 
+    /// <summary>
+    /// Register method.
+    /// </summary>
     public RegisterAstBuilder Register { get; } = new();
+    /// <summary>
+    /// Pointer method.
+    /// </summary>
     public PointerAstBuilder Pointer { get; } = new();
+    /// <summary>
+    /// Constant method.
+    /// </summary>
     public ConstantAstBuilder Constant { get; } = new();
+    /// <summary>
+    /// Gets or sets the InstructionField.
+    /// </summary>
     public InstructionFieldAstBuilder InstructionField { get; }
+    /// <summary>
+    /// Gets or sets the ModRm.
+    /// </summary>
     public ModRmAstBuilder ModRm { get; }
 
+    /// <summary>
+    /// SType method.
+    /// </summary>
     public DataType SType(int size) {
         return Type(size, true);
     }
+    /// <summary>
+    /// UType method.
+    /// </summary>
     public DataType UType(int size) {
         return Type(size, false);
     }
@@ -32,6 +56,9 @@ public class AstBuilder {
         };
     }
 
+    /// <summary>
+    /// AddressType method.
+    /// </summary>
     public DataType AddressType(CfgInstruction instruction) {
         return instruction.AddressSize32Prefix == null ? DataType.UINT16 : DataType.UINT32;
     }

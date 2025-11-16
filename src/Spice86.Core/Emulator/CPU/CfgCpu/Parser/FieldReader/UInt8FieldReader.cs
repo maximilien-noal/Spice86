@@ -2,6 +2,9 @@ namespace Spice86.Core.Emulator.CPU.CfgCpu.Parser.FieldReader;
 
 using Spice86.Core.Emulator.Memory.Indexable;
 
+/// <summary>
+/// Represents the UInt8FieldReader class.
+/// </summary>
 public class UInt8FieldReader : InstructionFieldReader<byte> {
     public UInt8FieldReader(IIndexable memory, InstructionReaderAddressSource addressSource) :
         base(memory, addressSource) {
@@ -11,6 +14,9 @@ public class UInt8FieldReader : InstructionFieldReader<byte> {
         return 1;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte PeekValue() {
         return Memory.UInt8[CurrentAddress];
     }

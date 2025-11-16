@@ -60,12 +60,21 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
     /// </summary>
     public Dictionary<InstructionSuccessorType, ISet<ICfgNode>> SuccessorsPerType { get; } = new();
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void UpdateSuccessorCache() {
         SuccessorsPerAddress = Successors.ToDictionary(node => node.Address);
     }
 
+    /// <summary>
+    /// The bool.
+    /// </summary>
     public override bool IsLive => _isLive;
 
+    /// <summary>
+    /// FieldsInOrder method.
+    /// </summary>
     public List<FieldWithValue> FieldsInOrder { get; } = new();
 
     protected void AddField(FieldWithValue fieldWithValue) {
@@ -82,10 +91,19 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
     public AddressSize32Prefix? AddressSize32Prefix { get; }
     public RepPrefix? RepPrefix { get; }
 
+    /// <summary>
+    /// Gets or sets the Length.
+    /// </summary>
     public byte Length { get; private set; }
 
+    /// <summary>
+    /// NextInMemoryAddress method.
+    /// </summary>
     public SegmentedAddress NextInMemoryAddress => new(Address.Segment, (ushort)(Address.Offset + Length));
 
+    /// <summary>
+    /// Gets or sets the InstructionPrefixes.
+    /// </summary>
     public List<InstructionPrefix> InstructionPrefixes { get; }
 
     /// <summary>
@@ -127,10 +145,16 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
             .ToImmutableList();
     }
 
+    /// <summary>
+    /// SetLive method.
+    /// </summary>
     public void SetLive(bool isLive) {
         _isLive = isLive;
     }
 
+    /// <summary>
+    /// IncreaseMaxSuccessorsCount method.
+    /// </summary>
     public void IncreaseMaxSuccessorsCount(SegmentedAddress target) {
         if (MaxSuccessorsCount is not null && !SuccessorsPerAddress.ContainsKey(target)) {
             // Ensure the subsequent link attempt will be done

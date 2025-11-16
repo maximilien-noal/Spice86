@@ -11,9 +11,18 @@ using System;
 /// Centralizes global DOS memory structures
 /// </summary>
 public class DosTables {
+    /// <summary>
+    /// The ushort.
+    /// </summary>
     public const ushort DosPrivateTablesSegmentStart = 0xC800;
+    /// <summary>
+    /// The ushort.
+    /// </summary>
     public const ushort DosPrivateTablesSegmentEnd = 0xD000;
 
+    /// <summary>
+    /// Gets or sets the CurrentMemorySegment.
+    /// </summary>
     public ushort CurrentMemorySegment { get; set; } = DosPrivateTablesSegmentStart;
 
     /// <summary>

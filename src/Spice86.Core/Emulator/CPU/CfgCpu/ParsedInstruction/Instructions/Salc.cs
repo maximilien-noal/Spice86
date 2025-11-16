@@ -10,11 +10,17 @@ using Spice86.Shared.Emulator.Memory;
 /// </summary>
 public class Salc(SegmentedAddress address, InstructionField<ushort> opcodeField)
     : CfgInstruction(address, opcodeField, 1) {
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.State.AL = helper.State.CarryFlag ? (byte)0xFF : (byte)0;
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.SALC);
     }

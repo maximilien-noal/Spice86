@@ -5,6 +5,9 @@ using Spice86.Core.Emulator.Memory;
 
 using System.Linq;
 
+/// <summary>
+/// Represents the MemoryInstructionMatcher class.
+/// </summary>
 public class MemoryInstructionMatcher {
     private readonly IMemory _memory;
 

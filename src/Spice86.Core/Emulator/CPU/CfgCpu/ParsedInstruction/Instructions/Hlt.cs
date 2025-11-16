@@ -5,17 +5,26 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Hlt class.
+/// </summary>
 public class Hlt : CfgInstruction {
     public Hlt(SegmentedAddress address, InstructionField<ushort> opcodeField) :
         base(address, opcodeField, 0) {
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.State.IsRunning = false;
         helper.MoveIpToEndOfInstruction(this);
         helper.NextNode = null;
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.HLT);
     }

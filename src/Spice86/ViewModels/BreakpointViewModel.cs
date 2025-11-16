@@ -7,6 +7,9 @@ using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Emulator.VM.Breakpoint;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class BreakpointViewModel : ViewModelBase {
     private readonly List<BreakPoint> _breakpoints = new List<BreakPoint>();
     private readonly Action _onReached;
@@ -51,12 +54,21 @@ public partial class BreakpointViewModel : ViewModelBase {
 
     public SegmentedAddress? SegmentedAddress { get; }
 
+    /// <summary>
+    /// The OnReached.
+    /// </summary>
     public Action OnReached => _onReached;
 
+    /// <summary>
+    /// Gets or sets the Type.
+    /// </summary>
     public BreakPointType Type { get; }
 
     private bool _isEnabled;
 
+    /// <summary>
+    /// The IsEnabled.
+    /// </summary>
     public bool IsEnabled {
         get => _isEnabled;
         set {
@@ -69,12 +81,24 @@ public partial class BreakpointViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>
+    /// Gets or sets the IsRemovedOnTrigger.
+    /// </summary>
     public bool IsRemovedOnTrigger { get; }
 
+    /// <summary>
+    /// Gets or sets the Address.
+    /// </summary>
     public long Address { get; }
 
+    /// <summary>
+    /// Gets or sets the EndAddress.
+    /// </summary>
     public long EndAddress { get; }
 
+    /// <summary>
+    /// Toggle method.
+    /// </summary>
     public void Toggle() {
         if (IsEnabled) {
             Disable();

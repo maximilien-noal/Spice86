@@ -32,6 +32,9 @@ public sealed class ProgramExecutor : IDisposable {
     private readonly EmulatorBreakpointsManager _emulatorBreakpointsManager;
     private readonly EmulatorStateSerializer _emulatorStateSerializer;
     private readonly DumpFolderMetadata _dumpContext;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler? EmulationStopped;
 
     /// <summary>

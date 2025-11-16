@@ -20,10 +20,25 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
     private readonly IGuiMouseEvents _mouseEvents;
     private readonly IGuiKeyboardEvents _keyboardEvents;
 
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyUp;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseMoveEventArgs>? MouseMoved;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
 
     public InputEventQueue(
@@ -79,17 +94,29 @@ public class InputEventQueue : IGuiKeyboardEvents, IGuiMouseEvents, IDisposable 
         _mouseEvents.MouseButtonUp -= OnMouseButtonUp;
     }
 
+    /// <summary>
+    /// The MouseX.
+    /// </summary>
     public double MouseX {
         get => _mouseEvents.MouseX;
         set => _mouseEvents.MouseX = value;
     }
 
+    /// <summary>
+    /// The MouseY.
+    /// </summary>
     public double MouseY {
         get => _mouseEvents.MouseY;
         set => _mouseEvents.MouseY = value;
     }
 
+    /// <summary>
+    /// HideMouseCursor method.
+    /// </summary>
     public void HideMouseCursor() => _mouseEvents.HideMouseCursor();
 
+    /// <summary>
+    /// ShowMouseCursor method.
+    /// </summary>
     public void ShowMouseCursor() => _mouseEvents.ShowMouseCursor();
 }

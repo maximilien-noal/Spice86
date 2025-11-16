@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+/// <summary>
+/// Emulates the Intel 8042 keyboard controller (PS/2 controller) which manages keyboard and mouse input.
+/// </summary>
 [DebuggerDisplay("I8042 New={_status.IsDataNew} Aux={_status.IsDataFromAux} Cmd={_status.WasLastWriteCmd} Buf={_bufferNumUsed}/{BufferSize} WaitK={_waitingBytesFromKbd} WaitM={_waitingBytesFromAux} DisKbd={_config.DisableKbdPort} CmdPending={_currentCommand}")]
 public class Intel8042Controller : DefaultIOPortHandler {
     private const byte IrqNumKbdIbmPc = 1;

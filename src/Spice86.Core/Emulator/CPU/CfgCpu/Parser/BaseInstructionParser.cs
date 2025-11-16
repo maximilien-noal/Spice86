@@ -7,6 +7,9 @@ using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the BaseInstructionParser class.
+/// </summary>
 public class BaseInstructionParser {
     protected const int RegIndexMask = 0b111;
     protected const int WordMask = 0b1000;

@@ -10,6 +10,9 @@ using Spice86.ViewModels.ValueViewModels.Debugging;
 
 using System.ComponentModel;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class SoftwareMixerViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly Dictionary<SoundChannel, SoundChannelInfo> _channelInfos = new();
     private readonly SoftwareMixer _softwareMixer;
@@ -21,8 +24,14 @@ public partial class SoftwareMixerViewModel : ViewModelBase, IEmulatorObjectView
         _softwareMixer = softwareMixer;
     }
 
+    /// <summary>
+    /// Gets or sets the IsVisible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
+    /// <summary>
+    /// UpdateValues method.
+    /// </summary>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;

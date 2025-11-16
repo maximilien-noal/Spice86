@@ -7,10 +7,16 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.CommonGram
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the BswapReg32 class.
+/// </summary>
 public class BswapReg32(
     SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes,
     int registerIndex)
     : InstructionWithRegisterIndex(address, opcodeField, prefixes, registerIndex, 1) {
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         uint v = helper.UInt32Registers[RegisterIndex];
         helper.UInt32Registers[RegisterIndex] = (v >> 24)
@@ -20,6 +26,9 @@ public class BswapReg32(
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.BSWAP,
             builder.Register.Reg(builder.UType(32), RegisterIndex));

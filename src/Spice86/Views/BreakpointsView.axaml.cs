@@ -7,6 +7,9 @@ using Spice86.ViewModels;
 
 using System;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class BreakpointsView : UserControl {
     public BreakpointsView() {
         InitializeComponent();

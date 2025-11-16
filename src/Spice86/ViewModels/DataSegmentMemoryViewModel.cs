@@ -11,6 +11,9 @@ using Spice86.ViewModels.Services;
 
 namespace Spice86.ViewModels;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class DataSegmentMemoryViewModel : MemoryViewModel {
     public DataSegmentMemoryViewModel(IMemory memory, MemoryDataExporter memoryDataExporter, State state,
         BreakpointsViewModel breakpointsViewModel, IPauseHandler pauseHandler,

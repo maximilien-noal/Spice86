@@ -4,6 +4,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.Interfaces
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// The class.
+/// </summary>
 public abstract class InstructionWithSegmentRegisterIndexAndOffsetField<T> : CfgInstruction, IInstructionWithSegmentRegisterIndex, IInstructionWithOffsetField<T> {
     protected InstructionWithSegmentRegisterIndexAndOffsetField(
         SegmentedAddress address,
@@ -17,6 +20,12 @@ public abstract class InstructionWithSegmentRegisterIndexAndOffsetField<T> : Cfg
         AddField(offsetField);
     }
 
+    /// <summary>
+    /// Gets or sets the SegmentRegisterIndex.
+    /// </summary>
     public int SegmentRegisterIndex { get; }
+    /// <summary>
+    /// Gets or sets the OffsetField.
+    /// </summary>
     public InstructionField<T> OffsetField { get; }
 }

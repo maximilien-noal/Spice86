@@ -17,6 +17,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
     public Alu8(State state) : base(state) {
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Add(byte value1, byte value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         byte res = (byte)(value1 + value2 + carry);
@@ -29,6 +32,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte And(byte value1, byte value2) {
         byte res = (byte)(value1 & value2);
         UpdateFlags(res);
@@ -37,6 +43,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Div(ushort value1, byte value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -50,6 +59,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (byte)res;
     }
 
+    /// <summary>
+    /// sbyte method.
+    /// </summary>
     public override sbyte Idiv(short value1, sbyte value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -65,6 +77,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (sbyte)res;
     }
 
+    /// <summary>
+    /// short method.
+    /// </summary>
     public override short Imul(sbyte value1, sbyte value2) {
         int res = value1 * value2;
         bool doesNotFitInByte = res != (sbyte)res;
@@ -74,6 +89,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
     }
 
 
+    /// <summary>
+    /// ushort method.
+    /// </summary>
     public override ushort Mul(byte value1, byte value2) {
         ushort res = (ushort)(value1 * value2);
         bool upperHalfNonZero = (res & 0xFF00) != 0;
@@ -83,6 +101,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Or(byte value1, byte value2) {
         byte res = (byte)(value1 | value2);
         UpdateFlags(res);
@@ -93,6 +114,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Rcl(byte value, byte count) {
         count = (byte)((count & ShiftCountMask) % 9);
         if (count == 0) {
@@ -114,6 +138,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Rcr(byte value, int count) {
         count = (count & ShiftCountMask) % 9;
         if (count == 0) {
@@ -134,6 +161,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Rol(byte value, byte count) {
         count = (byte)((count & ShiftCountMask) % 8);
         if (count == 0) {
@@ -150,6 +180,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Ror(byte value, int count) {
         count = (count & ShiftCountMask) % 8;
         if (count == 0) {
@@ -165,6 +198,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Sar(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -179,6 +215,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return (byte)res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Shl(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -193,14 +232,23 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Shld(byte destination, byte source, byte count) {
         throw new NotImplementedException("Shld is not available for 8bits operations");
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Shrd(byte destination, byte source, byte count) {
         throw new NotImplementedException("Shrd is not available for 8bits operations");
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Shr(byte value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -215,6 +263,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Sub(byte value1, byte value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         byte res = (byte)(value1 - value2 - carry);
@@ -227,6 +278,9 @@ public class Alu8 : Alu<byte, sbyte, ushort, short> {
         return res;
     }
 
+    /// <summary>
+    /// byte method.
+    /// </summary>
     public override byte Xor(byte value1, byte value2) {
         byte res = (byte)(value1 ^ value2);
         UpdateFlags(res);

@@ -7,6 +7,9 @@ using System;
 using System.ComponentModel;
 
 internal sealed class ViewLocator : IDataTemplate {
+    /// <summary>
+    /// The SupportsRecycling.
+    /// </summary>
     public bool SupportsRecycling => false;
 
     /// <summary>
@@ -36,6 +39,9 @@ internal sealed class ViewLocator : IDataTemplate {
         }
     }
 
+    /// <summary>
+    /// Match method.
+    /// </summary>
     public bool Match(object? data) {
         return data is INotifyPropertyChanged;
     }

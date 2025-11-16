@@ -29,11 +29,20 @@ public class CfgNodeFeeder {
         _signatureReducer = new(replacerRegistry);
     }
 
+    /// <summary>
+    /// Gets or sets the InstructionsFeeder.
+    /// </summary>
     public InstructionsFeeder InstructionsFeeder { get; }
 
+    /// <summary>
+    /// The CurrentNodeFromInstructionFeeder.
+    /// </summary>
     public CfgInstruction CurrentNodeFromInstructionFeeder =>
         InstructionsFeeder.GetInstructionFromMemory(_state.IpSegmentedAddress);
 
+    /// <summary>
+    /// GetLinkedCfgNodeToExecute method.
+    /// </summary>
     public ICfgNode GetLinkedCfgNodeToExecute(ExecutionContext executionContext) {
         // Determine actual node to execute. Graph may not represent what is actually in memory if graph is not complete or if self modifying code
         ICfgNode toExecute = DetermineToExecute(executionContext.NodeToExecuteNextAccordingToGraph);

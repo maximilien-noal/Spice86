@@ -22,6 +22,9 @@ using Spice86.Shared.Utils;
 
 using System.Runtime.CompilerServices;
 
+/// <summary>
+/// Represents the InstructionExecutionHelper class.
+/// </summary>
 public class InstructionExecutionHelper {
     private readonly ILoggerService _loggerService;
     private readonly BreakPointHolder _interruptBreakPoints;
@@ -49,19 +52,61 @@ public class InstructionExecutionHelper {
         InstructionFieldValueRetriever = new(memory);
         ModRm = new(state, memory, InstructionFieldValueRetriever);
     }
+    /// <summary>
+    /// Gets or sets the State.
+    /// </summary>
     public State State { get; }
+    /// <summary>
+    /// Gets or sets the Memory.
+    /// </summary>
     public IMemory Memory { get; }
+    /// <summary>
+    /// Gets or sets the InterruptVectorTable.
+    /// </summary>
     public InterruptVectorTable InterruptVectorTable { get; }
+    /// <summary>
+    /// Gets or sets the Stack.
+    /// </summary>
     public Stack Stack { get; }
+    /// <summary>
+    /// Gets or sets the IoPortDispatcher.
+    /// </summary>
     public IOPortDispatcher IoPortDispatcher { get; }
+    /// <summary>
+    /// Gets or sets the CallbackHandler.
+    /// </summary>
     public CallbackHandler CallbackHandler { get; }
+    /// <summary>
+    /// Gets or sets the InstructionFieldValueRetriever.
+    /// </summary>
     public InstructionFieldValueRetriever InstructionFieldValueRetriever { get; }
+    /// <summary>
+    /// Gets or sets the ModRm.
+    /// </summary>
     public ModRmExecutor ModRm { get; }
+    /// <summary>
+    /// Gets or sets the Alu8.
+    /// </summary>
     public Alu8 Alu8 { get; }
+    /// <summary>
+    /// Gets or sets the Alu16.
+    /// </summary>
     public Alu16 Alu16 { get; }
+    /// <summary>
+    /// Gets or sets the Alu32.
+    /// </summary>
     public Alu32 Alu32 { get; }
+    /// <summary>
+    /// The UInt16Registers.
+    /// </summary>
     public UInt16RegistersIndexer UInt16Registers => State.GeneralRegisters.UInt16;
+    /// <summary>
+    /// The UInt32Registers.
+    /// </summary>
     public UInt32RegistersIndexer UInt32Registers => State.GeneralRegisters.UInt32;
+    /// <summary>
+    /// The SegmentRegisters.
+    /// </summary>
     public UInt16RegistersIndexer SegmentRegisters => State.SegmentRegisters.UInt16;
     private FunctionHandler CurrentFunctionHandler => _executionContextManager.CurrentExecutionContext.FunctionHandler;
     private ExecutionContext CurrentExecutionContext => _executionContextManager.CurrentExecutionContext;
@@ -85,22 +130,34 @@ public class InstructionExecutionHelper {
         return MemoryUtils.ToPhysicalAddress(SegmentValue(instruction), (ushort)offset);
     }
 
+    /// <summary>
+    /// UShortOffsetValue method.
+    /// </summary>
     public ushort UShortOffsetValue(IInstructionWithOffsetField<ushort> instruction) {
         return InstructionFieldValueRetriever.GetFieldValue(instruction.OffsetField);
     }
 
+    /// <summary>
+    /// GetSegmentedAddress method.
+    /// </summary>
     public SegmentedAddress GetSegmentedAddress(InstructionWithSegmentRegisterIndexAndOffsetField<ushort> instruction) {
         ushort segment = SegmentValue(instruction);
         ushort offset = UShortOffsetValue(instruction);
         return new SegmentedAddress(segment, offset);
     }
 
+    /// <summary>
+    /// JumpFar method.
+    /// </summary>
     public void JumpFar(CfgInstruction instruction, ushort cs, ushort ip) {
         State.CS = cs;
         State.IP = ip;
         SetNextNodeToSuccessorAtCsIp(instruction);
     }
 
+    /// <summary>
+    /// JumpNear method.
+    /// </summary>
     public void JumpNear(CfgInstruction instruction, ushort ip) {
         State.IP = ip;
         SetNextNodeToSuccessorAtCsIp(instruction);
@@ -221,6 +278,9 @@ public class InstructionExecutionHelper {
         SetNextNodeToSuccessorAtCsIp(instruction);
     }
 
+    /// <summary>
+    /// MoveIpToEndOfInstruction method.
+    /// </summary>
     public void MoveIpToEndOfInstruction(CfgInstruction instruction) {
         State.IP = (ushort)(State.IP + instruction.Length);
     }
@@ -233,33 +293,60 @@ public class InstructionExecutionHelper {
         return res;
     }
 
+    /// <summary>
+    /// SetNextNodeToSuccessorAtCsIp method.
+    /// </summary>
     public void SetNextNodeToSuccessorAtCsIp(CfgInstruction instruction) {
         NextNode = GetSuccessorAtCsIp(instruction);
     }
 
+    /// <summary>
+    /// MoveIpAndSetNextNode method.
+    /// </summary>
     public void MoveIpAndSetNextNode(CfgInstruction instruction) {
         MoveIpToEndOfInstruction(instruction);
         SetNextNodeToSuccessorAtCsIp(instruction);
     }
 
+    /// <summary>
+    /// In8 method.
+    /// </summary>
     public byte In8(ushort port) {
         return IoPortDispatcher.ReadByte(port);
     }
 
+    /// <summary>
+    /// In16 method.
+    /// </summary>
     public ushort In16(ushort port) {
         return IoPortDispatcher.ReadWord(port);
     }
 
+    /// <summary>
+    /// In32 method.
+    /// </summary>
     public uint In32(ushort port) {
         return IoPortDispatcher.ReadDWord(port);
     }
 
+    /// <summary>
+    /// Out8 method.
+    /// </summary>
     public void Out8(ushort port, byte val) => IoPortDispatcher.WriteByte(port, val);
 
+    /// <summary>
+    /// Out16 method.
+    /// </summary>
     public void Out16(ushort port, ushort val) => IoPortDispatcher.WriteWord(port, val);
 
+    /// <summary>
+    /// Out32 method.
+    /// </summary>
     public void Out32(ushort port, uint val) => IoPortDispatcher.WriteDWord(port, val);
 
+    /// <summary>
+    /// MemoryAddressEsDi method.
+    /// </summary>
     public uint MemoryAddressEsDi => MemoryUtils.ToPhysicalAddress(State.ES, State.DI);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -267,18 +354,30 @@ public class InstructionExecutionHelper {
         return PhysicalAddress(instruction, State.SI);
     }
 
+    /// <summary>
+    /// AdvanceSI method.
+    /// </summary>
     public void AdvanceSI(short diff) {
         State.SI = (ushort)(State.SI + diff);
     }
 
+    /// <summary>
+    /// AdvanceDI method.
+    /// </summary>
     public void AdvanceDI(short diff) {
         State.DI = (ushort)(State.DI + diff);
     }
+    /// <summary>
+    /// AdvanceSIDI method.
+    /// </summary>
     public void AdvanceSIDI(short diff) {
         AdvanceSI(diff);
         AdvanceDI(diff);
     }
 
+    /// <summary>
+    /// HandleCpuException method.
+    /// </summary>
     public void HandleCpuException(CfgInstruction instruction, CpuException cpuException) {
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug(cpuException, "{ExceptionType} in {MethodName}", nameof(CpuException), nameof(HandleCpuException));
@@ -296,6 +395,9 @@ public class InstructionExecutionHelper {
         }
     }
 
+    /// <summary>
+    /// ExecuteStringOperation method.
+    /// </summary>
     public void ExecuteStringOperation(StringInstruction instruction) {
         RepPrefix? repPrefix = instruction.RepPrefix;
         if (repPrefix == null) {

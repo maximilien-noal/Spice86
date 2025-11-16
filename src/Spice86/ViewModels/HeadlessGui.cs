@@ -25,35 +25,80 @@ public sealed class HeadlessGui : IGui, IDisposable {
         Console.CancelKeyPress += OnProcessExit;
     }
 
+    /// <summary>
+    /// Dispose method.
+    /// </summary>
     public void Dispose() {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// ShowMouseCursor method.
+    /// </summary>
     public void ShowMouseCursor() {
     }
 
+    /// <summary>
+    /// HideMouseCursor method.
+    /// </summary>
     public void HideMouseCursor() {
     }
 
 #pragma warning disable CS0067 // Headless GUI never raises these events
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyUp;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseMoveEventArgs>? MouseMoved;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<UIRenderEventArgs>? RenderScreen;
+    /// <summary>
+    /// The Action.
+    /// </summary>
     public event Action? UserInterfaceInitialized;
 #pragma warning restore CS0067
 
+    /// <summary>
+    /// Gets or sets the Width.
+    /// </summary>
     public int Width { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the Height.
+    /// </summary>
     public int Height { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the MouseX.
+    /// </summary>
     public double MouseX { get; set; }
 
+    /// <summary>
+    /// Gets or sets the MouseY.
+    /// </summary>
     public double MouseY { get; set; }
 
+    /// <summary>
+    /// SetResolution method.
+    /// </summary>
     public void SetResolution(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new ArgumentOutOfRangeException($"Invalid resolution: {width}x{height}");

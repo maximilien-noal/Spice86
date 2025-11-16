@@ -1,5 +1,8 @@
 namespace Spice86.Core.Emulator.Devices.Video.Registers.CrtController;
 
+/// <summary>
+/// Represents the VerticalSyncEndRegister class.
+/// </summary>
 public class VerticalSyncEndRegister : Register8 {
     /// <summary>
     ///     If this bit is set to true, registers CR0–CR7 cannot be written. Writes addressed to those registers are ignored.
@@ -18,6 +21,9 @@ public class VerticalSyncEndRegister : Register8 {
         set => SetBit(6, value);
     }
 
+    /// <summary>
+    /// RefreshCyclesPerScanline method.
+    /// </summary>
     public byte RefreshCyclesPerScanline => (byte)(RefreshCycleControl ? 5 : 3);
 
     /// <summary>

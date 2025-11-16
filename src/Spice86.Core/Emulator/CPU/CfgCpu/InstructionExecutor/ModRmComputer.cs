@@ -8,6 +8,9 @@ using Spice86.Shared.Utils;
 
 using System.Collections.Immutable;
 
+/// <summary>
+/// Represents the ModRmComputer class.
+/// </summary>
 public class ModRmComputer {
     private readonly State _state;
     private readonly InstructionFieldValueRetriever _instructionFieldValueRetriever;
@@ -18,6 +21,9 @@ public class ModRmComputer {
         ModRmContext = new ModRmContext(new InstructionField<byte>(0, 0, 0, 0, ImmutableList.CreateRange(new[] { (byte?)0 }), true), 0, 0, 0, BitWidth.WORD_16, MemoryOffsetType.NONE, MemoryAddressType.NONE, null, null, null, null, null, null);
     }
 
+    /// <summary>
+    /// Gets or sets the ModRmContext.
+    /// </summary>
     public ModRmContext ModRmContext { get; set; }
 
 

@@ -5,11 +5,17 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Aaa class.
+/// </summary>
 public class Aaa : CfgInstruction {
     public Aaa(SegmentedAddress address, InstructionField<ushort> opcodeField) :
         base(address, opcodeField, 1) {
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         bool finalAuxillaryFlag = false;
         bool finalCarryFlag = false;
@@ -27,6 +33,9 @@ public class Aaa : CfgInstruction {
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.AAA);
     }

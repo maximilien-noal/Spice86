@@ -7,10 +7,16 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Fnstsw class.
+/// </summary>
 public class Fnstsw : InstructionWithModRm {
 
     public Fnstsw(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes, ModRmContext modRmContext) : base(address, opcodeField, prefixes, modRmContext, 1) {
     }
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.ModRm.RefreshWithNewModRmContext(ModRmContext);
         // Set non zero, means no FPU installed when called after FNINIT.
@@ -18,6 +24,9 @@ public class Fnstsw : InstructionWithModRm {
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.FNSTSW);
     }

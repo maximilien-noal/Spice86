@@ -6,6 +6,9 @@ using CommunityToolkit.Mvvm.Messaging;
 using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class StatusMessageViewModel : ViewModelBase, IRecipient<StatusMessage> {
     private readonly IUIDispatcher _uiDispatcher;
 
@@ -20,6 +23,9 @@ public partial class StatusMessageViewModel : ViewModelBase, IRecipient<StatusMe
         _uiDispatcher = dispatcher;
     }
 
+    /// <summary>
+    /// Receive method.
+    /// </summary>
     public void Receive(StatusMessage message) {
         Message = message;
         IsVisible = true;

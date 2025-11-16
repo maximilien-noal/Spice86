@@ -7,6 +7,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Grp4Callback class.
+/// </summary>
 public class Grp4Callback : InstructionWithModRm {
     public Grp4Callback(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes,
         ModRmContext modRmContext, InstructionField<ushort> callbackNumber) : base(address, opcodeField, prefixes,
@@ -15,14 +18,23 @@ public class Grp4Callback : InstructionWithModRm {
         AddField(callbackNumber);
     }
 
+    /// <summary>
+    /// Gets or sets the CallbackNumber.
+    /// </summary>
     public InstructionField<ushort> CallbackNumber { get; }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.ModRm.RefreshWithNewModRmContext(ModRmContext);
         helper.CallbackHandler.Run(helper.InstructionFieldValueRetriever.GetFieldValue(CallbackNumber));
         helper.MoveIpAndSetNextNode(this);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.CALLBACK);
     }

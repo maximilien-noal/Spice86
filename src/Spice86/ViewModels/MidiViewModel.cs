@@ -9,6 +9,9 @@ using Spice86.ViewModels.PropertiesMappers;
 using Spice86.ViewModels.Services;
 using Spice86.ViewModels.ValueViewModels.Debugging;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class MidiViewModel : ViewModelBase, IEmulatorObjectViewModel {
     [ObservableProperty]
     private MidiInfo _midi = new();
@@ -20,9 +23,15 @@ public partial class MidiViewModel : ViewModelBase, IEmulatorObjectViewModel {
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, UpdateValues);
     }
 
+    /// <summary>
+    /// Gets or sets the IsVisible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
 
+    /// <summary>
+    /// UpdateValues method.
+    /// </summary>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;

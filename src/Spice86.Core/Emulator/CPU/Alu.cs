@@ -98,17 +98,29 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
         return res;
     }
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Add(TUnsigned value1, TUnsigned value2, bool useCarry);
 
 
+    /// <summary>
+    /// Sbb method.
+    /// </summary>
     public TUnsigned Sbb(TUnsigned value1, TUnsigned value2) {
         return Sub(value1, value2, true);
     }
 
+    /// <summary>
+    /// Sub method.
+    /// </summary>
     public TUnsigned Sub(TUnsigned value1, TUnsigned value2) {
         return Sub(value1, value2, false);
     }
 
+    /// <summary>
+    /// Dec method.
+    /// </summary>
     public TUnsigned Dec(TUnsigned value1) {
         bool carry = _state.CarryFlag;
         TUnsigned res = Sub(value1, TUnsigned.One, false);
@@ -116,17 +128,38 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
         return res;
     }
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Sub(TUnsigned value1, TUnsigned value2, bool useCarry);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Div(TUnsignedUpper value1, TUnsigned value2);
+    /// <summary>
+    /// TUnsignedUpper method.
+    /// </summary>
     public abstract TUnsignedUpper Mul(TUnsigned value1, TUnsigned value2);
 
+    /// <summary>
+    /// TSigned method.
+    /// </summary>
     public abstract TSigned Idiv(TSignedUpper value1, TSigned value2);
 
+    /// <summary>
+    /// TSignedUpper method.
+    /// </summary>
     public abstract TSignedUpper Imul(TSigned value1, TSigned value2);
 
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned And(TUnsigned value1, TUnsigned value2);
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Or(TUnsigned value1, TUnsigned value2);
 
     /// <summary>
@@ -136,22 +169,49 @@ public abstract class Alu<TUnsigned, TSigned, TUnsignedUpper, TSignedUpper>
     /// </summary>
     public abstract TUnsigned Xor(TUnsigned value1, TUnsigned value2);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Rcl(TUnsigned value, byte count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Rcr(TUnsigned value, int count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Rol(TUnsigned value, byte count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Ror(TUnsigned value, int count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Sar(TUnsigned value, int count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Shl(TUnsigned value, int count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Shld(TUnsigned destination, TUnsigned source, byte count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Shrd(TUnsigned destination, TUnsigned source, byte count);
 
+    /// <summary>
+    /// TUnsigned method.
+    /// </summary>
     public abstract TUnsigned Shr(TUnsigned value, int count);
 
     protected static uint BorrowBitsSub(uint value1, uint value2, uint dst) {

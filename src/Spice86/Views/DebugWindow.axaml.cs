@@ -2,6 +2,9 @@ namespace Spice86.Views;
 
 using Avalonia.Controls;
 
+/// <summary>
+/// The partial.
+/// </summary>
 public sealed partial class DebugWindow : Window {
     public DebugWindow() {
         InitializeComponent();

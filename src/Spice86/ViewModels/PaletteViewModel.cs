@@ -11,6 +11,9 @@ using Spice86.Core.Emulator.Devices.Video;
 using Spice86.Shared.Emulator.Video;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class PaletteViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly ArgbPalette _argbPalette;
 
@@ -20,9 +23,15 @@ public partial class PaletteViewModel : ViewModelBase, IEmulatorObjectViewModel 
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromMilliseconds(1000), DispatcherPriority.Background, UpdateValues);
     }
 
+    /// <summary>
+    /// Gets or sets the IsVisible.
+    /// </summary>
     public bool IsVisible { get; set; }
 
 
+    /// <summary>
+    /// UpdateValues method.
+    /// </summary>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;

@@ -17,10 +17,16 @@ public class UIDispatcher : IUIDispatcher {
         }
     }
 
+    /// <summary>
+    /// Post method.
+    /// </summary>
     public void Post(Action callback, DispatcherPriority priority = default) {
         _dispatcher.Post(callback, priority);
     }
 
+    /// <summary>
+    /// CheckAccess method.
+    /// </summary>
     public bool CheckAccess() {
         return _dispatcher.CheckAccess();
     }

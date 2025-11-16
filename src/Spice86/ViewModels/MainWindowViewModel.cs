@@ -78,11 +78,29 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     private readonly SemaphoreSlim? _drawingSemaphoreSlim = new(1, 1);
     private readonly InputEventQueue _inputEventQueue;
 
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyUp;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<KeyboardEventArgs>? KeyDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseMoveEventArgs>? MouseMoved;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonDown;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<MouseButtonEventArgs>? MouseButtonUp;
+    /// <summary>
+    /// The EventHandler.
+    /// </summary>
     public event EventHandler<UIRenderEventArgs>? RenderScreen;
     internal event EventHandler? CloseMainWindow;
 
@@ -169,6 +187,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
 
     private bool _showCursor;
 
+    /// <summary>
+    /// The ShowCursor.
+    /// </summary>
     public bool ShowCursor {
         get => _showCursor;
         set {
@@ -224,14 +245,29 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
     [NotifyCanExecuteChangedFor(nameof(PlayCommand))]
     private bool _isPaused;
 
+    /// <summary>
+    /// Gets or sets the Width.
+    /// </summary>
     public int Width { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the Height.
+    /// </summary>
     public int Height { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the MouseX.
+    /// </summary>
     public double MouseX { get; set; }
 
+    /// <summary>
+    /// Gets or sets the MouseY.
+    /// </summary>
     public double MouseY { get; set; }
 
+    /// <summary>
+    /// OnMouseButtonDown method.
+    /// </summary>
     public void OnMouseButtonDown(PointerPressedEventArgs @event, Image image) {
         if (_pauseHandler.IsPaused) {
             return;
@@ -240,6 +276,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         MouseButtonDown?.Invoke(this, new MouseButtonEventArgs((MouseButton)mouseButton, true));
     }
 
+    /// <summary>
+    /// OnMouseButtonUp method.
+    /// </summary>
     public void OnMouseButtonUp(PointerReleasedEventArgs @event, Image image) {
         if (_pauseHandler.IsPaused) {
             return;
@@ -248,6 +287,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         MouseButtonUp?.Invoke(this, new MouseButtonEventArgs((MouseButton)mouseButton, false));
     }
 
+    /// <summary>
+    /// OnMouseMoved method.
+    /// </summary>
     public void OnMouseMoved(PointerEventArgs @event, Image image) {
         if (image.Source is null || _pauseHandler.IsPaused) {
             return;
@@ -258,6 +300,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         UpdateShownEmulatorMouseCursorPosition();
     }
 
+    /// <summary>
+    /// SetResolution method.
+    /// </summary>
     public void SetResolution(int width, int height) {
         _uiDispatcher.Post(() => {
             _isSettingResolution = true;
@@ -284,8 +329,14 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         }, DispatcherPriority.Background);
     }
 
+    /// <summary>
+    /// HideMouseCursor method.
+    /// </summary>
     public void HideMouseCursor() => _uiDispatcher.Post(() => ShowCursor = false);
 
+    /// <summary>
+    /// ShowMouseCursor method.
+    /// </summary>
     public void ShowMouseCursor() => _uiDispatcher.Post(() => ShowCursor = true);
 
     [ObservableProperty]
@@ -376,6 +427,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         StartEmulatorThread();
     }
 
+    /// <summary>
+    /// Dispose method.
+    /// </summary>
     public void Dispose() {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(disposing: true);
@@ -453,6 +507,9 @@ public sealed partial class MainWindowViewModel : ViewModelWithErrorDialog, IGui
         });
     }
 
+    /// <summary>
+    /// The Action.
+    /// </summary>
     public event Action? UserInterfaceInitialized;
 
     private void EmulatorThread() {

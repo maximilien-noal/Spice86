@@ -5,6 +5,9 @@ using Spice86.Shared.Utils;
 
 using System.Collections;
 
+/// <summary>
+/// The class.
+/// </summary>
 public abstract class MemoryIndexer<T> : Indexer<T>, IList<T> {
 
     /// <summary>

@@ -11,6 +11,9 @@ using Spice86.ViewModels.Services;
 
 namespace Spice86.ViewModels;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class StackMemoryViewModel : MemoryViewModel {
     public StackMemoryViewModel(IMemory memory, MemoryDataExporter memoryDataExporter, State state, Stack stack,
         BreakpointsViewModel breakpointsViewModel, IPauseHandler pauseHandler,

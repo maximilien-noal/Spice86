@@ -12,6 +12,9 @@ public class UInt32RegistersIndexer : RegistersIndexer<uint> {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }
 
+    /// <summary>
+    /// The uint.
+    /// </summary>
     public override uint this[uint index] {
         get => _uIntArrayReaderWriter[index];
         set => _uIntArrayReaderWriter[index] = value;

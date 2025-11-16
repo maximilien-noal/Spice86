@@ -4,6 +4,9 @@ namespace Spice86.Core.Emulator.Devices.Video.Registers.General;
 ///     Emulates the Miscellaneous Output register.
 /// </summary>
 public class MiscellaneousOutput : Register8 {
+    /// <summary>
+    /// ClockSelectValue enumeration.
+    /// </summary>
     public enum ClockSelectValue {
         Use25175Khz,
         Use28322Khz,
@@ -11,11 +14,17 @@ public class MiscellaneousOutput : Register8 {
         Reserved
     }
 
+    /// <summary>
+    /// IoAddressSelectValue enumeration.
+    /// </summary>
     public enum IoAddressSelectValue {
         Monochrome,
         Color
     }
 
+    /// <summary>
+    /// PolarityValue enumeration.
+    /// </summary>
     public enum PolarityValue {
         Negative,
         Positive

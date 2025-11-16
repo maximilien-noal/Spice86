@@ -3,6 +3,9 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.Memory;
 
+/// <summary>
+/// Represents the ModRmExecutor class.
+/// </summary>
 public class ModRmExecutor {
     private readonly State _state;
     private readonly IMemory _memory;
@@ -86,6 +89,9 @@ public class ModRmExecutor {
     /// </summary>
     public byte R8 { get => _state.GeneralRegisters.UInt8HighLow[RegisterIndex]; set => _state.GeneralRegisters.UInt8HighLow[RegisterIndex] = value; }
 
+    /// <summary>
+    /// The RM32.
+    /// </summary>
     public uint RM32 {
         get {
             if (MemoryAddress == null) {
@@ -102,6 +108,9 @@ public class ModRmExecutor {
         }
     }
 
+    /// <summary>
+    /// The RM16.
+    /// </summary>
     public ushort RM16 {
         get {
             if (MemoryAddress == null) {
@@ -118,6 +127,9 @@ public class ModRmExecutor {
         }
     }
 
+    /// <summary>
+    /// The RM8.
+    /// </summary>
     public byte RM8 {
         get {
             if (MemoryAddress == null) {

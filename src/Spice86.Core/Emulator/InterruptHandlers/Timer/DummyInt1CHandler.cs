@@ -12,6 +12,9 @@ public class DummyInt1CHandler : IInterruptHandler {
     /// <inheritdoc />
     public byte VectorNumber => 0x1C;
 
+    /// <summary>
+    /// WriteAssemblyInRam method.
+    /// </summary>
     public SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
         SegmentedAddress interruptHandlerAddress = memoryAsmWriter.CurrentAddress;
         memoryAsmWriter.WriteIret();

@@ -33,10 +33,19 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         _pauseHandler = pauseHandler;
     }
 
+    /// <summary>
+    /// Gets or sets the MemoryReadWriteBreakpoints.
+    /// </summary>
     public AddressReadWriteBreakpoints MemoryReadWriteBreakpoints { get; }
 
+    /// <summary>
+    /// Gets or sets the IoReadWriteBreakpoints.
+    /// </summary>
     public AddressReadWriteBreakpoints IoReadWriteBreakpoints { get; }
 
+    /// <summary>
+    /// Gets or sets the InterruptBreakPoints.
+    /// </summary>
     public BreakPointHolder InterruptBreakPoints { get; }
 
     /// <summary>
@@ -104,6 +113,9 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         }
     }
 
+    /// <summary>
+    /// The HasActiveBreakpoints.
+    /// </summary>
     public bool HasActiveBreakpoints =>
         _executionBreakPoints.HasActiveBreakpoints || _cycleBreakPoints.HasActiveBreakpoints;
 
@@ -127,6 +139,9 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         }
     }
 
+    /// <summary>
+    /// CreateSerializableBreakpoints method.
+    /// </summary>
     public SerializableUserBreakpointCollection CreateSerializableBreakpoints() {
         var serializableBreakpoints = new SerializableUserBreakpointCollection();
         AddBreakpointsToCollection(serializableBreakpoints, _executionBreakPoints.SerializableBreakpoints);
@@ -199,6 +214,9 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
             IsEnabled = breakpoint.IsEnabled
         };
     }
+    /// <summary>
+    /// RestoreBreakpoints method.
+    /// </summary>
     public void RestoreBreakpoints(SerializableUserBreakpointCollection serializableUserBreakpointCollection) {
         foreach (SerializableUserBreakpoint serializableBreakpoint in serializableUserBreakpointCollection.Breakpoints) {
             IEnumerable<AddressBreakPoint> breakpoints = FromSerializedBreakpoints(serializableBreakpoint);
@@ -240,6 +258,9 @@ public sealed class EmulatorBreakpointsManager : ISerializableBreakpointsSource 
         };
     }
 
+    /// <summary>
+    /// RemoveUserBreakpoint method.
+    /// </summary>
     public void RemoveUserBreakpoint(BreakPoint breakPoint) {
         ToggleBreakPoint(breakPoint, false);
     }

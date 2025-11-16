@@ -6,6 +6,9 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Numerics;
 
+/// <summary>
+/// The class.
+/// </summary>
 public abstract class InstructionWithValueField<T> : CfgInstruction, IInstructionWithValueField<T> where T : INumberBase<T> {
     protected InstructionWithValueField(SegmentedAddress address,
         InstructionField<ushort> opcodeField,
@@ -25,5 +28,8 @@ public abstract class InstructionWithValueField<T> : CfgInstruction, IInstructio
         opcodeField, new List<InstructionPrefix>(), valueField, maxSuccessorsCount) {
     }
 
+    /// <summary>
+    /// Gets or sets the ValueField.
+    /// </summary>
     public InstructionField<T> ValueField { get; }
 }

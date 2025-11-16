@@ -10,6 +10,9 @@ using AvaloniaGraphControl;
 
 using System.Windows.Input;
 
+/// <summary>
+/// Represents the GraphNodeBehavior class.
+/// </summary>
 public class GraphNodeBehavior {
     // Attached command property
     public static readonly AttachedProperty<ICommand> NodeClickCommandProperty =
@@ -17,9 +20,15 @@ public class GraphNodeBehavior {
             "NodeClickCommand");
 
     // Get/Set methods for the attached property
+    /// <summary>
+    /// void method.
+    /// </summary>
     public static void SetNodeClickCommand(Control element, ICommand value) =>
         element.SetValue(NodeClickCommandProperty, value);
 
+    /// <summary>
+    /// ICommand method.
+    /// </summary>
     public static ICommand GetNodeClickCommand(Control element) =>
         element.GetValue(NodeClickCommandProperty);
 

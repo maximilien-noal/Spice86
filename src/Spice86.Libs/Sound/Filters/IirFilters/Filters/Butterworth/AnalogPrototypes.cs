@@ -5,6 +5,9 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
+/// <summary>
+/// The class.
+/// </summary>
 public sealed class AnalogLowPass : LayoutBase {
     private int _numPoles = -1;
 
@@ -12,6 +15,9 @@ public sealed class AnalogLowPass : LayoutBase {
         SetNormal(0.0, 1.0);
     }
 
+    /// <summary>
+    /// Design method.
+    /// </summary>
     public void Design(int numPoles) {
         if (_numPoles == numPoles) {
             return;
@@ -34,6 +40,9 @@ public sealed class AnalogLowPass : LayoutBase {
     }
 }
 
+/// <summary>
+/// The class.
+/// </summary>
 public sealed class AnalogLowShelf : LayoutBase {
     private double _gainDb;
     private int _numPoles = -1;
@@ -42,6 +51,9 @@ public sealed class AnalogLowShelf : LayoutBase {
         SetNormal(MathEx.DoublePi, 1.0);
     }
 
+    /// <summary>
+    /// Design method.
+    /// </summary>
     public void Design(int numPoles, double gainDb) {
         if (_numPoles == numPoles && Math.Abs(_gainDb - gainDb) <= double.Epsilon) {
             return;

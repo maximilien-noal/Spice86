@@ -2,6 +2,9 @@ namespace Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 
 using System.Collections.Immutable;
 
+/// <summary>
+/// The class.
+/// </summary>
 public abstract class FieldWithValue : Signature {
     public FieldWithValue(ImmutableList<byte?> signatureValue, bool final) : base(signatureValue) {
         Final = final;

@@ -6,6 +6,9 @@ using Spice86.Core.Emulator.InterruptHandlers.Common.Callback;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
+/// <summary>
+/// Represents the MemoryDataExporter class.
+/// </summary>
 public class MemoryDataExporter : RecordedDataIoHandler {
     private readonly ILoggerService _loggerService;
     private readonly IMemory _memory;
@@ -41,6 +44,9 @@ public class MemoryDataExporter : RecordedDataIoHandler {
         File.WriteAllBytes(path, GenerateToolingCompliantRamDump());
     }
 
+    /// <summary>
+    /// GenerateToolingCompliantRamDump method.
+    /// </summary>
     public byte[] GenerateToolingCompliantRamDump() {
         if (_configuration.InitializeDOS is true) {
             return _callbackHandler.ReplaceAllCallbacksInRamImage(_memory);

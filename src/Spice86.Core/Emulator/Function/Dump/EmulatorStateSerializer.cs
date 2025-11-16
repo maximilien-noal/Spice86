@@ -92,6 +92,9 @@ public class EmulatorStateSerializer {
         }
     }
 
+    /// <summary>
+    /// LoadBreakpoints method.
+    /// </summary>
     public SerializableUserBreakpointCollection LoadBreakpoints(string dirPath) {
         string fileName = ComputeFileName(dirPath);
         return DeserializeBreakpoints(fileName);

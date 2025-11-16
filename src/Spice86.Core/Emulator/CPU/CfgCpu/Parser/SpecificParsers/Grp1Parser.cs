@@ -4,6 +4,9 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Grp1Parser class.
+/// </summary>
 public class Grp1Parser : BaseGrpOperationParser {
     public Grp1Parser(BaseInstructionParser instructionParser) : base(instructionParser) {
     }
@@ -39,6 +42,9 @@ public abstract class Grp1OperationParser : BaseInstructionParser {
     protected Grp1OperationParser(BaseInstructionParser other) : base(other) {
     }
 
+    /// <summary>
+    /// Parse method.
+    /// </summary>
     public CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, BitWidth bitWidth, bool signExtendOp2) {
         return bitWidth switch {
             BitWidth.BYTE_8 => BuildOperandSize8(context, modRmContext,

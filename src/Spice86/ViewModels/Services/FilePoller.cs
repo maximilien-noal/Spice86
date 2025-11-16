@@ -6,6 +6,9 @@ using System;
 using System.IO;
 using System.Timers;
 
+/// <summary>
+/// Represents the FilePoller class.
+/// </summary>
 public class FilePoller {
     private readonly string _filePath;
     private ulong _lastHash;
@@ -21,10 +24,16 @@ public class FilePoller {
         _timer.AutoReset = true;
     }
 
+    /// <summary>
+    /// Start method.
+    /// </summary>
     public void Start() {
         _timer.Start();
     }
 
+    /// <summary>
+    /// Stop method.
+    /// </summary>
     public void Stop() {
         _timer.Stop();
     }

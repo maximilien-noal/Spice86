@@ -24,6 +24,9 @@ internal readonly struct ShortSignalSource {
         _kind = kind;
     }
 
+    /// <summary>
+    /// The ShortSignalSource.
+    /// </summary>
     public static ShortSignalSource Zero => default;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

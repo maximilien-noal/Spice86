@@ -15,6 +15,9 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure.Array;
 /// In DOSBox, this is the 'DOS_InfoBlock' class 
 /// </remarks>
 public class DosSysVars : MemoryBasedDataStructure {
+    /// <summary>
+    /// The int.
+    /// </summary>
     public const int FirstMcbSegment = 0x16F;
     private readonly DosDeviceHeader _nullDeviceHeader;
     /// <summary>
@@ -67,6 +70,9 @@ public class DosSysVars : MemoryBasedDataStructure {
         SpecialCodeSegment = 0x0;
     }
 
+    /// <summary>
+    /// The MagicWord.
+    /// </summary>
     public ushort MagicWord {
         get => UInt16[-0x22];
         set => UInt16[-0x22] = value;

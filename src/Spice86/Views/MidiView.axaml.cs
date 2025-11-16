@@ -7,6 +7,9 @@ using Avalonia.Threading;
 using Spice86.ViewModels;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// The class.
+/// </summary>
 public partial class MidiView : UserControl {
     private DispatcherTimer? _timer;
     public MidiView() {

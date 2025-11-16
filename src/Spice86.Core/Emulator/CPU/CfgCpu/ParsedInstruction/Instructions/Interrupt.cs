@@ -7,15 +7,24 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.CommonGram
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.Interfaces;
 using Spice86.Shared.Emulator.Memory;
 
+/// <summary>
+/// Represents the Interrupt class.
+/// </summary>
 public class Interrupt : InstructionWithValueField<byte>, ICallInstruction {
     public Interrupt(SegmentedAddress address, InstructionField<ushort> opcodeField,
         InstructionField<byte> valueField) : base(address, opcodeField, valueField, null) {
     }
 
+    /// <summary>
+    /// void method.
+    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.HandleInterruptInstruction(this, ValueField.Value);
     }
 
+    /// <summary>
+    /// InstructionNode method.
+    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.INT, builder.InstructionField.ToNode(ValueField)!);
     }
