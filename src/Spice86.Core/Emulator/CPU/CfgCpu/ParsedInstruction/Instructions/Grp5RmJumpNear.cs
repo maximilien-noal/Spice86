@@ -9,27 +9,18 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Grp5RmJumpNear class.
-/// </summary>
 public class Grp5RmJumpNear : InstructionWithModRm, IJumpInstruction {
     public Grp5RmJumpNear(SegmentedAddress address, InstructionField<ushort> opcodeField,
         List<InstructionPrefix> prefixes, ModRmContext modRmContext) : base(address, opcodeField, prefixes,
         modRmContext, null) {
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.ModRm.RefreshWithNewModRmContext(ModRmContext);
         ushort ip = helper.ModRm.RM16;
         helper.JumpNear(this, ip);
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.JMP_NEAR, builder.ModRm.RmToNode(DataType.UINT16, ModRmContext));
     }

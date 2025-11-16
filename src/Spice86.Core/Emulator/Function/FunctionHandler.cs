@@ -161,9 +161,6 @@ public class FunctionHandler {
         return currentFunctionCall == null ? null : PeekReturnAddressOnMachineStack(currentFunctionCall.Value.CallType);
     }
 
-    /// <summary>
-    /// PeekReturn method.
-    /// </summary>
     public string PeekReturn() => SegmentedAddress.ToString(PeekReturnAddressOnMachineStackForCurrentFunction());
 
     /// <summary>

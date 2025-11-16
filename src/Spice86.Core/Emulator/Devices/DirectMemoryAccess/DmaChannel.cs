@@ -7,9 +7,6 @@ using Spice86.Shared.Interfaces;
 
 using System.Diagnostics;
 
-/// <summary>
-/// The class.
-/// </summary>
 public sealed class DmaChannel {
     /// <summary>
     ///     Callback invoked when the channel changes state.
@@ -460,9 +457,6 @@ public sealed class DmaChannel {
         _reservationOwnerName = null;
     }
 
-    /// <summary>
-    /// SetMode method.
-    /// </summary>
     public void SetMode(byte value) {
         IsAutoiniting = (value & 0x10) != 0;
         IsIncremented = (value & 0x20) == 0;

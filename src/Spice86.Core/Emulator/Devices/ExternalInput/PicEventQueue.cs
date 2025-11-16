@@ -318,14 +318,8 @@ public sealed class PicEventQueue {
     /// </summary>
     private sealed class PicEntry {
         public PicEventHandler? Handler; // Callback stored for dispatch.
-        /// <summary>
-        /// The Index.
-        /// </summary>
         public double Index; // Fractional tick deadline.
         public PicEntry? Next;
-        /// <summary>
-        /// The Value.
-        /// </summary>
         public uint Value; // Value forwarded to the handler.
     }
 }

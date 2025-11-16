@@ -24,9 +24,6 @@ public class DataRotateRegister : Register8 {
     }
 }
 
-/// <summary>
-/// FunctionSelect enumeration.
-/// </summary>
 public enum FunctionSelect {
     None,
     And,

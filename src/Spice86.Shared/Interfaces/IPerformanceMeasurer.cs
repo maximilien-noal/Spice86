@@ -20,9 +20,6 @@ public interface IPerformanceMeasureReader {
     long AverageValuePerSecond { get; }
 }
 
-/// <summary>
-/// Defines the contract for IPerformanceMeasureWriter.
-/// </summary>
 public interface IPerformanceMeasureWriter {
     /// <summary>
     /// Updates performance measurements with a new value.

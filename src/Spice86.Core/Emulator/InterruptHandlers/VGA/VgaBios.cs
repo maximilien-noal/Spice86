@@ -611,9 +611,6 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         AddAction(0x4F, VesaFunctions);
     }
 
-    /// <summary>
-    /// VesaFunctions method.
-    /// </summary>
     public void VesaFunctions() {
         if (_logger.IsEnabled(LogEventLevel.Warning)) {
             // This can be valid, video cards came to the scene before VESA was a standard.

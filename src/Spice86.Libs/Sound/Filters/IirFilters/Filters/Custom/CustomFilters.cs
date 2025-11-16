@@ -7,9 +7,6 @@ using System.Numerics;
 
 internal sealed class OnePoleInternal<TState> : BiquadFilterBase<TState>
     where TState : struct, ISectionState {
-    /// <summary>
-    /// Setup method.
-    /// </summary>
     public void Setup(double scale, double pole, double zero) {
         Coefficients.SetOnePole(new Complex(pole, 0.0), new Complex(zero, 0.0));
         Coefficients.ApplyScale(scale);
@@ -18,9 +15,6 @@ internal sealed class OnePoleInternal<TState> : BiquadFilterBase<TState>
 
 internal sealed class TwoPoleInternal<TState> : BiquadFilterBase<TState>
     where TState : struct, ISectionState {
-    /// <summary>
-    /// Setup method.
-    /// </summary>
     public void Setup(double scale, double poleRho, double poleTheta, double zeroRho, double zeroTheta) {
         var pole = Complex.FromPolarCoordinates(poleRho, poleTheta);
         var zero = Complex.FromPolarCoordinates(zeroRho, zeroTheta);
@@ -42,42 +36,24 @@ internal sealed class SosCascadeInternal<TState>
         _stages = new CascadeStages<TState>(stageCount);
     }
 
-    /// <summary>
-    /// Gets or sets the StageCount.
-    /// </summary>
     public int StageCount { get; }
 
-    /// <summary>
-    /// Reset method.
-    /// </summary>
     public void Reset() {
         _stages.Reset();
     }
 
-    /// <summary>
-    /// Filter method.
-    /// </summary>
     public double Filter(double sample) {
         return _stages.Filter(sample);
     }
 
-    /// <summary>
-    /// Filter method.
-    /// </summary>
     public float Filter(float sample) {
         return _stages.FilterSingle(sample);
     }
 
-    /// <summary>
-    /// Setup method.
-    /// </summary>
     public void Setup(ReadOnlySpan<double> sosCoefficients) {
         _stages.Setup(sosCoefficients);
     }
 
-    /// <summary>
-    /// Setup method.
-    /// </summary>
     public void Setup(double[,] sosCoefficients) {
         _stages.Setup(sosCoefficients);
     }

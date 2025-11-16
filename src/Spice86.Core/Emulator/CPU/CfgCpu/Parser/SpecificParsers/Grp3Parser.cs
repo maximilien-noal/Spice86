@@ -5,9 +5,6 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Grp3Parser class.
-/// </summary>
 public class Grp3Parser : BaseGrpOperationParser {
     public Grp3Parser(BaseInstructionParser instructionParser) : base(instructionParser) {
     }
@@ -32,16 +29,10 @@ public class Grp3Parser : BaseGrpOperationParser {
     }
 }
 
-/// <summary>
-/// Represents the Grp3TestInstructionWithModRmFactory class.
-/// </summary>
 public class Grp3TestInstructionWithModRmFactory : BaseInstructionParser, IInstructionWithModRmFactory {
     public Grp3TestInstructionWithModRmFactory(BaseInstructionParser other) : base(other) {
     }
 
-    /// <summary>
-    /// Parse method.
-    /// </summary>
     public CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, BitWidth bitWidth) {
         return bitWidth switch {
             BitWidth.BYTE_8 => new Grp3TestRmImm8(context.Address, context.OpcodeField, context.Prefixes, modRmContext,

@@ -46,19 +46,10 @@ public class DosFileManager {
             SearchAttributes = searchAttributes;
         }
 
-        /// <summary>
-        /// Gets or sets the FileSpec.
-        /// </summary>
         public string FileSpec { get; set; }
 
-        /// <summary>
-        /// Gets or sets the Index.
-        /// </summary>
         public int Index { get; set; }
 
-        /// <summary>
-        /// Gets or sets the SearchAttributes.
-        /// </summary>
         public ushort SearchAttributes { get; init; }
     }
 
@@ -939,9 +930,6 @@ public class DosFileManager {
     public DosFileOperationResult GetCurrentDir(byte driveNumber, out string currentDir) =>
         _dosPathResolver.GetCurrentDosDirectory(driveNumber, out currentDir);
 
-    /// <summary>
-    /// IoControl method.
-    /// </summary>
     public DosFileOperationResult IoControl(State state) {
         byte handle = 0;
         byte drive = 0;

@@ -142,9 +142,6 @@ public static class Ports {
     /// </list>
     /// </summary>
     public const int InputStatus0Read = 0x03C2;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int MiscOutputWrite = 0x03C2;
 
     /// <summary>
@@ -244,61 +241,19 @@ public static class Ports {
     /// This register is used for accessing the Digital-to-Analog Converter (DAC) memory. It operates in a sequence of three I/O operations, each corresponding to the intensity values of red, green, and blue, respectively. The specific DAC entry to be accessed is initially determined by either the DAC Address Read Mode Register or the DAC Address Write Mode Register, depending on the type of I/O operation being performed. After three I/O operations, the index automatically increments, allowing the next DAC entry to be accessed without the need to manually update the index. It's important to perform I/O operations to this port in groups of three to ensure consistent results, as the outcome can vary based on the DAC implementation if this is not adhered to.
     /// </summary>
     public const int DacData = 0x03C9;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int FeatureControlRead = 0x03CA;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int MiscOutputRead = 0x03CC;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int GraphicsControllerAddress = 0x03CE;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int GraphicsControllerData = 0x03CF;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerAddressAltMirror1 = 0x03D0;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerDataAltMirror1 = 0x03D1;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerAddressAltMirror2 = 0x03D2;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerDataAltMirror2 = 0x03D3;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerAddressAlt = 0x03D4;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CrtControllerDataAlt = 0x03D5;
 
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CgaModeControl = 0x03D8;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int CgaColorSelect = 0x03D9;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int InputStatus1ReadAlt = 0x03DA;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int FeatureControlWriteAlt = 0x03DA;
 }

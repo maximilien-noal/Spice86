@@ -1,8 +1,5 @@
 ﻿namespace Spice86.Core.CLI;
 
-/// <summary>
-/// Specifies the type of headless mode to use when running the emulator without a UI.
-/// </summary>
 public enum HeadlessType {
     /// <summary>
     ///     Use the minimal headless mode, which doesn't render any UI elements

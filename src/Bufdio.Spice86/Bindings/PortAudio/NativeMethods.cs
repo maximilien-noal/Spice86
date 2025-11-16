@@ -11,55 +11,25 @@ using System.Runtime.Versioning;
 /// Platform Invoke bindings to the PortAudio ABI
 /// </summary>
 internal static partial class NativeMethods {
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioInitialize() => _bindings.Initialize();
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioGetDeviceCount() => _bindings.GetDeviceCount();
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioGetDefaultOutputDevice() => _bindings.GetDefaultOutputDevice();
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioStartStream(IntPtr stream) => _bindings.StartStream(stream);
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioOpenStream(IntPtr stream, IntPtr inputParameters, IntPtr outputParameters, double sampleRate, long framesPerBuffer, PaStreamFlags streamFlags, PaStreamCallback? streamCallback, IntPtr userData) => _bindings.OpenStream(stream, inputParameters,
         outputParameters, sampleRate, framesPerBuffer, streamFlags, streamCallback, userData);
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioWriteStream(IntPtr stream, IntPtr buffer, long frames) => _bindings.WriteStream(stream, buffer, frames);
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioCloseStream(IntPtr stream) => _bindings.CloseStream(stream);
 
-    /// <summary>
-    /// IntPtr method.
-    /// </summary>
     public static IntPtr PortAudioGetErrorText(int code) => _bindings.GetErrorText(code);
 
-    /// <summary>
-    /// IntPtr method.
-    /// </summary>
     public static IntPtr PortAudioGetDeviceInfo(int device) => _bindings.GetDeviceInfo(device);
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public static int PortAudioAbortStream(IntPtr stream) => _bindings.AbortStream(stream);
 
     private interface INativeBindings {
@@ -91,9 +61,6 @@ internal static partial class NativeMethods {
         }
     }
 
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string GetPortAudioLibName() {
         if (PlatformInfo.IsWindows) {
             return "libportaudio.dll";
@@ -171,67 +138,31 @@ internal static partial class NativeMethods {
         [LibraryImport("libportaudio.dll")]
         private static partial int Pa_CloseStream(IntPtr stream);
 
-        /// <summary>
-        /// Initialize method.
-        /// </summary>
         public int Initialize() => Pa_Initialize();
 
-        /// <summary>
-        /// Terminate method.
-        /// </summary>
         public int Terminate() => Pa_Terminate();
 
-        /// <summary>
-        /// GetVersionInfo method.
-        /// </summary>
         public IntPtr GetVersionInfo() => Pa_GetVersionInfo();
 
-        /// <summary>
-        /// GetErrorText method.
-        /// </summary>
         public IntPtr GetErrorText(int code) => Pa_GetErrorText(code);
 
-        /// <summary>
-        /// GetDefaultOutputDevice method.
-        /// </summary>
         public int GetDefaultOutputDevice() => Pa_GetDefaultOutputDevice();
 
-        /// <summary>
-        /// GetDeviceInfo method.
-        /// </summary>
         public IntPtr GetDeviceInfo(int device) => Pa_GetDeviceInfo(device);
 
-        /// <summary>
-        /// GetDeviceCount method.
-        /// </summary>
         public int GetDeviceCount() => Pa_GetDeviceCount();
 
-        /// <summary>
-        /// OpenStream method.
-        /// </summary>
         public int OpenStream(IntPtr stream, IntPtr inputParameters, IntPtr outputParameters, double sampleRate,
             long framesPerBuffer,
             PaStreamFlags streamFlags, PaStreamCallback? streamCallback, IntPtr userData)
             => Pa_OpenStream(stream, inputParameters, outputParameters, sampleRate, framesPerBuffer, streamFlags, streamCallback, userData);
 
-        /// <summary>
-        /// StartStream method.
-        /// </summary>
         public int StartStream(IntPtr stream) => Pa_StartStream(stream);
 
-        /// <summary>
-        /// WriteStream method.
-        /// </summary>
         public int WriteStream(IntPtr stream, IntPtr buffer, long frames) => Pa_WriteStream(stream, buffer, frames);
 
-        /// <summary>
-        /// AbortStream method.
-        /// </summary>
         public int AbortStream(IntPtr stream) => Pa_AbortStream(stream);
 
-        /// <summary>
-        /// CloseStream method.
-        /// </summary>
         public int CloseStream(IntPtr stream) => Pa_CloseStream(stream);
     }
 
@@ -281,67 +212,31 @@ internal static partial class NativeMethods {
         [LibraryImport("libportaudio.so.2")]
         private static partial int Pa_CloseStream(IntPtr stream);
 
-        /// <summary>
-        /// Initialize method.
-        /// </summary>
         public int Initialize() => Pa_Initialize();
 
-        /// <summary>
-        /// Terminate method.
-        /// </summary>
         public int Terminate() => Pa_Terminate();
 
-        /// <summary>
-        /// GetVersionInfo method.
-        /// </summary>
         public IntPtr GetVersionInfo() => Pa_GetVersionInfo();
 
-        /// <summary>
-        /// GetErrorText method.
-        /// </summary>
         public IntPtr GetErrorText(int code) => Pa_GetErrorText(code);
 
-        /// <summary>
-        /// GetDefaultOutputDevice method.
-        /// </summary>
         public int GetDefaultOutputDevice() => Pa_GetDefaultOutputDevice();
 
-        /// <summary>
-        /// GetDeviceInfo method.
-        /// </summary>
         public IntPtr GetDeviceInfo(int device) => Pa_GetDeviceInfo(device);
 
-        /// <summary>
-        /// GetDeviceCount method.
-        /// </summary>
         public int GetDeviceCount() => Pa_GetDeviceCount();
 
-        /// <summary>
-        /// OpenStream method.
-        /// </summary>
         public int OpenStream(IntPtr stream, IntPtr inputParameters, IntPtr outputParameters, double sampleRate,
             long framesPerBuffer,
             PaStreamFlags streamFlags, PaStreamCallback? streamCallback, IntPtr userData)
             => Pa_OpenStream(stream, inputParameters, outputParameters, sampleRate, framesPerBuffer, streamFlags, streamCallback, userData);
 
-        /// <summary>
-        /// StartStream method.
-        /// </summary>
         public int StartStream(IntPtr stream) => Pa_StartStream(stream);
 
-        /// <summary>
-        /// WriteStream method.
-        /// </summary>
         public int WriteStream(IntPtr stream, IntPtr buffer, long frames) => Pa_WriteStream(stream, buffer, frames);
 
-        /// <summary>
-        /// AbortStream method.
-        /// </summary>
         public int AbortStream(IntPtr stream) => Pa_AbortStream(stream);
 
-        /// <summary>
-        /// CloseStream method.
-        /// </summary>
         public int CloseStream(IntPtr stream) => Pa_CloseStream(stream);
     }
 
@@ -391,67 +286,31 @@ internal static partial class NativeMethods {
         [LibraryImport("libportaudio.2.dylib")]
         private static partial int Pa_CloseStream(IntPtr stream);
 
-        /// <summary>
-        /// Initialize method.
-        /// </summary>
         public int Initialize() => Pa_Initialize();
 
-        /// <summary>
-        /// Terminate method.
-        /// </summary>
         public int Terminate() => Pa_Terminate();
 
-        /// <summary>
-        /// GetVersionInfo method.
-        /// </summary>
         public IntPtr GetVersionInfo() => Pa_GetVersionInfo();
 
-        /// <summary>
-        /// GetErrorText method.
-        /// </summary>
         public IntPtr GetErrorText(int code) => Pa_GetErrorText(code);
 
-        /// <summary>
-        /// GetDefaultOutputDevice method.
-        /// </summary>
         public int GetDefaultOutputDevice() => Pa_GetDefaultOutputDevice();
 
-        /// <summary>
-        /// GetDeviceInfo method.
-        /// </summary>
         public IntPtr GetDeviceInfo(int device) => Pa_GetDeviceInfo(device);
 
-        /// <summary>
-        /// GetDeviceCount method.
-        /// </summary>
         public int GetDeviceCount() => Pa_GetDeviceCount();
 
-        /// <summary>
-        /// OpenStream method.
-        /// </summary>
         public int OpenStream(IntPtr stream, IntPtr inputParameters, IntPtr outputParameters, double sampleRate,
             long framesPerBuffer,
             PaStreamFlags streamFlags, PaStreamCallback? streamCallback, IntPtr userData)
             => Pa_OpenStream(stream, inputParameters, outputParameters, sampleRate, framesPerBuffer, streamFlags, streamCallback, userData);
 
-        /// <summary>
-        /// StartStream method.
-        /// </summary>
         public int StartStream(IntPtr stream) => Pa_StartStream(stream);
 
-        /// <summary>
-        /// WriteStream method.
-        /// </summary>
         public int WriteStream(IntPtr stream, IntPtr buffer, long frames) => Pa_WriteStream(stream, buffer, frames);
 
-        /// <summary>
-        /// AbortStream method.
-        /// </summary>
         public int AbortStream(IntPtr stream) => Pa_AbortStream(stream);
 
-        /// <summary>
-        /// CloseStream method.
-        /// </summary>
         public int CloseStream(IntPtr stream) => Pa_CloseStream(stream);
     }
 }

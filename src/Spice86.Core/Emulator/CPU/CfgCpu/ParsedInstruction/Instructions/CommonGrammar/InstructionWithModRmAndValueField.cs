@@ -7,9 +7,6 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Numerics;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class InstructionWithModRmAndValueField<T> : InstructionWithModRm, IInstructionWithValueField<T> where T : INumberBase<T> {
     protected InstructionWithModRmAndValueField(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes,
         ModRmContext modRmContext, InstructionField<T> valueField, int? maxSuccessorsCount) : base(address, opcodeField, prefixes, modRmContext, maxSuccessorsCount) {
@@ -17,8 +14,5 @@ public abstract class InstructionWithModRmAndValueField<T> : InstructionWithModR
         AddField(ValueField);
     }
 
-    /// <summary>
-    /// Gets or sets the ValueField.
-    /// </summary>
     public InstructionField<T> ValueField { get; }
 }

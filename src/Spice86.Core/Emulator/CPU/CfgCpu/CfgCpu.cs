@@ -16,9 +16,6 @@ using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
-/// <summary>
-/// Represents the CfgCpu class.
-/// </summary>
 public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     private readonly ILoggerService _loggerService;
     private readonly InstructionExecutionHelper _instructionExecutionHelper;
@@ -54,13 +51,7 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
     /// </summary>
     public ExecutionContextManager ExecutionContextManager => _executionContextManager;
 
-    /// <summary>
-    /// The FunctionHandlerInUse.
-    /// </summary>
     public FunctionHandler FunctionHandlerInUse => ExecutionContextManager.CurrentExecutionContext.FunctionHandler;
-    /// <summary>
-    /// The IsInitialExecutionContext.
-    /// </summary>
     public bool IsInitialExecutionContext => ExecutionContextManager.CurrentExecutionContext.Depth == 0;
     private ExecutionContext CurrentExecutionContext => _executionContextManager.CurrentExecutionContext;
 
@@ -103,9 +94,6 @@ public class CfgCpu : IInstructionExecutor, IFunctionHandlerProvider {
         _executionContextManager.SignalNewExecutionContext(_state.IpSegmentedAddress, SegmentedAddress.ZERO);
     }
 
-    /// <summary>
-    /// SignalEnd method.
-    /// </summary>
     public void SignalEnd() {
         _executionContextManager.CurrentExecutionContext.FunctionHandler.Ret(CallType.MACHINE, null);
     }

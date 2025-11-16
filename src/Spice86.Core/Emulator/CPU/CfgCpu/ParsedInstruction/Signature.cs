@@ -19,9 +19,6 @@ public class Signature : IComparable<Signature> {
     /// </summary>
     public ImmutableList<byte?> SignatureValue { get; private set; }
 
-    /// <summary>
-    /// NullifySignature method.
-    /// </summary>
     public void NullifySignature() {
         SignatureValue = GenerateNullBytes(SignatureValue.Count);
     }

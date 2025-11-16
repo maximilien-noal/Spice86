@@ -12,19 +12,10 @@ namespace Spice86.Views.Behaviors;
 /// </summary>
 public class InstructionPointerBehavior {
     // Attached property for enabling the behavior
-    /// <summary>
-    /// readonly method.
-    /// </summary>
     public static readonly AttachedProperty<bool> IsEnabledProperty = AvaloniaProperty.RegisterAttached<InstructionPointerBehavior, Control, bool>("IsEnabled");
 
     // Helper methods for getting/setting the attached properties
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool GetIsEnabled(Control control) => control.GetValue(IsEnabledProperty);
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void SetIsEnabled(Control control, bool value) => control.SetValue(IsEnabledProperty, value);
 
     // Static constructor to register property changed handlers

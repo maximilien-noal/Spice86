@@ -9,9 +9,6 @@ using Spice86.Views.Behaviors;
 
 using System.Text.Json;
 
-/// <summary>
-/// The partial.
-/// </summary>
 public abstract partial class ViewModelWithErrorDialog : ViewModelBase {
     protected readonly ITextClipboard _textClipboard;
     protected readonly IUIDispatcher _uiDispatcher;

@@ -7,9 +7,6 @@ using Spice86.ViewModels.Services;
 
 namespace Spice86.Views;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class VideoCardView : UserControl {
     private DispatcherTimer? _timer;
     public VideoCardView() {

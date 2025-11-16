@@ -196,16 +196,10 @@ public partial class DisassemblyViewModel : ViewModelWithErrorDialog, IDisassemb
 
     IRegistersViewModel IDisassemblyViewModel.Registers => Registers;
 
-    /// <summary>
-    /// TryGetLineByAddress method.
-    /// </summary>
     public bool TryGetLineByAddress(uint address, [NotNullWhen(true)] out DebuggerLineViewModel? debuggerLine) {
         return DebuggerLines.TryGetValue(address, out debuggerLine);
     }
 
-    /// <summary>
-    /// TryGetLineByAddress method.
-    /// </summary>
     public bool TryGetLineByAddress(SegmentedAddress address, [NotNullWhen(true)] out DebuggerLineViewModel? debuggerLine) {
         return TryGetLineByAddress(address.Linear, out debuggerLine);
     }

@@ -5,16 +5,10 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Sahf class.
-/// </summary>
 public class Sahf : CfgInstruction {
     public Sahf(SegmentedAddress address, InstructionField<ushort> opcodeField) : base(address, opcodeField, 1) {
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         // EFLAGS(SF:ZF:0:AF:0:PF:1:CF) := AH;
         helper.State.SignFlag = (helper.State.AH & Flags.Sign) == Flags.Sign;
@@ -25,9 +19,6 @@ public class Sahf : CfgInstruction {
         helper.MoveIpAndSetNextNode(this);
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.SAHF);
     }

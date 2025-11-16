@@ -7,21 +7,12 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Core.Emulator.CPU.Exceptions;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Cpuid class.
-/// </summary>
 public class Cpuid(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes)
     : CfgInstruction(address, opcodeField, prefixes, 1) {
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         throw new CpuInvalidOpcodeException("Attempted to call CPUID, which is unsupported on CPUs < 486");
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.CPUID);
     }

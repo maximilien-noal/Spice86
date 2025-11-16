@@ -3,9 +3,6 @@ namespace Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the BiosParameterBlock class.
-/// </summary>
 public class BiosParameterBlock : TruncatedBiosParameterBlock {
     public BiosParameterBlock(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
     }

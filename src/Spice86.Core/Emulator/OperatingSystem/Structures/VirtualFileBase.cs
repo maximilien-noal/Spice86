@@ -3,13 +3,7 @@
 using System;
 using System.IO;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class VirtualFileBase : Stream, IVirtualFile {
-    /// <summary>
-    /// Gets or sets the string.
-    /// </summary>
     public virtual string Name { get; set; } = "";
 
     /// <summary>

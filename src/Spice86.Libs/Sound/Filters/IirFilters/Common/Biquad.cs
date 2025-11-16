@@ -4,9 +4,6 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
-/// <summary>
-/// The class.
-/// </summary>
 public sealed class Biquad {
     internal double A0 = 1.0;
     internal double A1;
@@ -221,9 +218,6 @@ internal readonly struct BiquadPoleState {
         Gain = b0 / a0;
     }
 
-    /// <summary>
-    /// implicit method.
-    /// </summary>
     public static implicit operator PoleZeroPair(BiquadPoleState state) {
         return state.Pair;
     }

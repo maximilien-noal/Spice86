@@ -35,9 +35,6 @@ namespace Spice86.Libs.Sound.Devices.NukedOpl3;
  *     uint8_t slot_num;
  * };
  */
-/// <summary>
-/// The class.
-/// </summary>
 public sealed class Opl3Operator {
     /// <summary>
     ///     Effective envelope rate index for current state (after KSR/KSL computations).

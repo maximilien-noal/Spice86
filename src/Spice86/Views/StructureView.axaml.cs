@@ -6,9 +6,6 @@ using Avalonia.Controls;
 using Spice86.ViewModels;
 using Spice86.ViewModels.Messages;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class StructureView : Window {
     public StructureView() {
         InitializeComponent();

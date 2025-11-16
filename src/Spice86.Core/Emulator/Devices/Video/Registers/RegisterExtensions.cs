@@ -2,13 +2,7 @@ namespace Spice86.Core.Emulator.Devices.Video.Registers;
 
 using Spice86.Core.Emulator.Devices.Video.Registers.Enums;
 
-/// <summary>
-/// The class.
-/// </summary>
 public static class RegisterExtensions {
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string Explain(this GraphicsControllerRegister controllerRegister, byte value) {
         switch (controllerRegister) {
             case GraphicsControllerRegister.SetReset:
@@ -68,9 +62,6 @@ public static class RegisterExtensions {
         return "(explanation not yet implemented)";
     }
 
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string Explain(this SequencerRegister register, byte value) {
         switch (register) {
             case SequencerRegister.Reset:
@@ -93,9 +84,6 @@ public static class RegisterExtensions {
         return "(explanation not yet implemented)";
     }
 
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string Explain(this CrtControllerRegister register, byte value) {
         switch (register) {
             case CrtControllerRegister.HorizontalTotal:
@@ -189,13 +177,7 @@ public static class RegisterExtensions {
     }
 }
 
-/// <summary>
-/// The class.
-/// </summary>
 public static class MiscOutputRegister {
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string Explain(byte value) {
         return string.Format(" [0]I/OAS: {0}, [1]Ram en: {1}, [2-3]Clock Select: {2}, [4]Reserved, [5]O/E Page: {3}, [6]Hsync polarity: {4}, [7]Vsync Polarity: {5}",
             value & 0x01,

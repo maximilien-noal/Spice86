@@ -94,9 +94,6 @@ public sealed class Memory : Indexable.Indexable, IMemory {
     /// <inheritdoc/>
     public int Length => _memoryDevices.Length;
 
-    /// <summary>
-    /// GetSlice method.
-    /// </summary>
     public IList<byte> GetSlice(int address, int length) {
         return UInt8.GetSlice(address, length);
     }

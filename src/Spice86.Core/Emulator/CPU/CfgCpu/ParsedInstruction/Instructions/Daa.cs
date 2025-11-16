@@ -5,17 +5,11 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Ast.Instruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Daa class.
-/// </summary>
 public class Daa : CfgInstruction {
     public Daa(SegmentedAddress address, InstructionField<ushort> opcodeField) :
         base(address, opcodeField, 1) {
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         byte initialAL = helper.State.AL;
         bool initialCF = helper.State.CarryFlag;
@@ -40,9 +34,6 @@ public class Daa : CfgInstruction {
         helper.MoveIpAndSetNextNode(this);
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.DAA);
     }

@@ -13,9 +13,6 @@ public class UInt8HighRegistersIndexer : RegistersIndexer<byte> {
         _uIntArrayReaderWriter = uIntArrayReaderWriter;
     }
 
-    /// <summary>
-    /// The byte.
-    /// </summary>
     public override byte this[uint index] {
         get => ConvertUtils.ReadMsb16(_uIntArrayReaderWriter[index]);
         set {

@@ -6,9 +6,6 @@ using Spice86.Core.Emulator.CPU.CfgCpu.Parser.FieldReader;
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the ModRmParser class.
-/// </summary>
 public class ModRmParser {
     private readonly InstructionReader _instructionReader;
     private readonly State _state;
@@ -19,9 +16,6 @@ public class ModRmParser {
         _state = state;
     }
 
-    /// <summary>
-    /// ParseNext method.
-    /// </summary>
     public ModRmContext ParseNext(ModRmParsingContext context) {
         InstructionField<byte> modRmByteField = _instructionReader.UInt8.NextField(true);
         byte modRmByte = modRmByteField.Value;
@@ -180,9 +174,6 @@ public class ModRmParser {
         };
     }
 
-    /// <summary>
-    /// EnsureNotMode3 method.
-    /// </summary>
     public ModRmContext EnsureNotMode3(ModRmContext context) {
         if (context.MemoryAddressType == MemoryAddressType.NONE) {
             throw new MemoryAddressMandatoryException(_state);

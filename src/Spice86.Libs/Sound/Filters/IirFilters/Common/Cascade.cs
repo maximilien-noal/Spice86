@@ -16,9 +16,6 @@ internal readonly struct CascadeStorage {
     internal Biquad[] StageArray { get; }
 }
 
-/// <summary>
-/// Represents the Cascade class.
-/// </summary>
 public class Cascade {
     private int _maxStages;
     private int _numStages;

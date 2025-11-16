@@ -25,9 +25,6 @@ public class BlockDevice : VirtualDeviceBase {
     [Range(0, 7)]
     public string Signature { get; }
 
-    /// <summary>
-    /// Gets or sets the ushort.
-    /// </summary>
     public override ushort Information { get; }
     /// <inheritdoc/>
     public override bool CanRead { get; }

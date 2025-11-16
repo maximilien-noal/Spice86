@@ -14,18 +14,9 @@ using System.Collections.Immutable;
 /// </summary>
 /// <param name="Instruction">The Iced assembly instruction</param>
 public record EnrichedInstruction(Instruction Instruction) {
-    /// <summary>
-    /// Gets or sets the Bytes.
-    /// </summary>
     public byte[] Bytes { get; init; } = [];
     public FunctionInformation? Function { get; init; }
-    /// <summary>
-    /// Gets or sets the SegmentedAddress.
-    /// </summary>
     public SegmentedAddress SegmentedAddress { get; init; }
-    /// <summary>
-    /// Gets or sets the Breakpoints.
-    /// </summary>
     public ImmutableList<BreakpointViewModel> Breakpoints { get; init; } = [];
 
     /// <summary>

@@ -18,17 +18,8 @@ using Spice86.Shared.Interfaces;
 /// </summary>
 public class MouseDriver : IMouseDriver {
     private class MouseButtonPressCount {
-        /// <summary>
-        /// Gets or sets the PressCount.
-        /// </summary>
         public int PressCount { get; set; }
-        /// <summary>
-        /// Gets or sets the LastPressedX.
-        /// </summary>
         public double LastPressedX { get; set; }
-        /// <summary>
-        /// Gets or sets the LastPressedY.
-        /// </summary>
         public double LastPressedY { get; set; }
     }
 

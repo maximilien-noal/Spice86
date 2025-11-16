@@ -9,9 +9,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class AddressAndValueParser {
 
     [GeneratedRegex(@"^0x[0-9A-Fa-f]+$")]
@@ -48,9 +45,6 @@ public partial class AddressAndValueParser {
         return address != null;
     }
 
-    /// <summary>
-    /// SegmentedAddress method.
-    /// </summary>
     public static SegmentedAddress? ParseSegmentedAddress(string value, State? state) {
         string trimmedValue = value.Trim();
         Match segmentedMatch = SegmentedAddressRegex()
@@ -70,9 +64,6 @@ public partial class AddressAndValueParser {
         return null;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public static ushort? TryParseSegmentOrRegister(string value, State? state) {
         // Try a property of the CPU state first (there is no collision with hex values)
         ushort? res = GetUshortStateProperty(value, state);
@@ -88,9 +79,6 @@ public partial class AddressAndValueParser {
         return null;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public static ushort? GetUshortStateProperty(string value, State? state) {
         if (state is null) {
             return null;
@@ -105,16 +93,10 @@ public partial class AddressAndValueParser {
         return null;
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool IsValidHex(string value) {
         return HexUintRegex().Match(value).Success;
     }
 
-    /// <summary>
-    /// uint method.
-    /// </summary>
     public static uint? ParseHex(string value) {
         if (!IsValidHex(value)) {
             return null;
@@ -132,9 +114,6 @@ public partial class AddressAndValueParser {
         return null;
     }
 
-    /// <summary>
-    /// byte method.
-    /// </summary>
     public static byte[]? ParseHexAsArray(string? value) {
         if (value == null) {
             return null;
@@ -152,9 +131,6 @@ public partial class AddressAndValueParser {
     }
 
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool TryValidateAddress(string? value, State state, out string message) {
         if (string.IsNullOrWhiteSpace(value)) {
             message = "Address is required";

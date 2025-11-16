@@ -21,9 +21,6 @@ using Spice86.Views;
 
 using System.Text;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class MemoryViewModel : ViewModelWithErrorDialog {
     private readonly IMemory _memory;
     private readonly IStructureViewModelFactory _structureViewModelFactory;
@@ -64,17 +61,11 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
         CanCloseTab = canCloseTab;
         TryUpdateHeaderAndMemoryDocument();
     }
-    /// <summary>
-    /// The State.
-    /// </summary>
     public State State => _state;
 
     [ObservableProperty]
     private string? _title;
 
-    /// <summary>
-    /// MemorySearchDataType enumeration.
-    /// </summary>
     public enum MemorySearchDataType {
         Binary,
         Ascii,
@@ -83,14 +74,8 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private MemorySearchDataType _searchDataType;
 
-    /// <summary>
-    /// The SearchDataTypeIsBinary.
-    /// </summary>
     public bool SearchDataTypeIsBinary => SearchDataType == MemorySearchDataType.Binary;
 
-    /// <summary>
-    /// The SearchDataTypeIsAscii.
-    /// </summary>
     public bool SearchDataTypeIsAscii => SearchDataType == MemorySearchDataType.Ascii;
 
     [RelayCommand]
@@ -239,9 +224,6 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private BreakPointType _selectedBreakpointType = BreakPointType.MEMORY_WRITE;
 
-    /// <summary>
-    /// The BreakpointTypes.
-    /// </summary>
     public BreakPointType[] BreakpointTypes => [
         BreakPointType.MEMORY_WRITE, BreakPointType.MEMORY_READ, BreakPointType.MEMORY_ACCESS
     ];
@@ -434,9 +416,6 @@ public partial class MemoryViewModel : ViewModelWithErrorDialog {
     [ObservableProperty]
     private BitRange? _selectionRange;
 
-    /// <summary>
-    /// The IsStructureInfoPresent.
-    /// </summary>
     public bool IsStructureInfoPresent => _structureViewModelFactory.IsInitialized;
 
     private readonly IHostStorageProvider _storageProvider;

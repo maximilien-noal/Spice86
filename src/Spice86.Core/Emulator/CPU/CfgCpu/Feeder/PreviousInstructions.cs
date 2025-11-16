@@ -22,9 +22,6 @@ public class PreviousInstructions : InstructionReplacer {
         _memoryInstructionMatcher = new MemoryInstructionMatcher(memory);
     }
 
-    /// <summary>
-    /// GetAll method.
-    /// </summary>
     public List<CfgInstruction> GetAll() {
         return _previousInstructionsAtAddress.Values.SelectMany(x => x).ToList();
     }
@@ -42,9 +39,6 @@ public class PreviousInstructions : InstructionReplacer {
         return _memoryInstructionMatcher.MatchExistingInstructionWithMemory(previousInstructionsAtAddress);
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         SegmentedAddress instructionAddress = newInstruction.Address;
 
@@ -55,9 +49,6 @@ public class PreviousInstructions : InstructionReplacer {
         }
     }
 
-    /// <summary>
-    /// AddInstructionInPrevious method.
-    /// </summary>
     public void AddInstructionInPrevious(CfgInstruction instruction) {
         SegmentedAddress instructionAddress = instruction.Address;
 

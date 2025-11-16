@@ -326,18 +326,12 @@ internal class DosPathResolver {
     }
 
 
-    /// <summary>
-    /// FindFilesUsingWildCmp method.
-    /// </summary>
     public IEnumerable<string> FindFilesUsingWildCmp(string searchFolder, string searchPattern,
         EnumerationOptions enumerationOptions) {
         return Directory.EnumerateFileSystemEntries(searchFolder, "*", enumerationOptions)
             .Where(path => WildFileCmp(Path.GetFileName(path), searchPattern));
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool WildFileCmp(string? filename, string? pattern) {
         if (filename is null || pattern is null) {
             return false;

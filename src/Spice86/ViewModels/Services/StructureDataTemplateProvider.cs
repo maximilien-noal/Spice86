@@ -12,13 +12,7 @@ using Structurizer.Types;
 
 using System.Text;
 
-/// <summary>
-/// The class.
-/// </summary>
 public static class StructureDataTemplateProvider {
-    /// <summary>
-    /// FuncDataTemplate method.
-    /// </summary>
     public static FuncDataTemplate<StructureMember> StructureMemberValueTemplate { get; } = new(BuildStructureMemberValuePresenter);
 
     private static Control? BuildStructureMemberValuePresenter(StructureMember? structureMember, INameScope scope) {

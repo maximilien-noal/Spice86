@@ -48,9 +48,6 @@ public class ExecutionFlowRecorder : IExecutionDumpFactory {
         _executionDump = executionDump;
     }
 
-    /// <summary>
-    /// Dump method.
-    /// </summary>
     public ExecutionDump Dump() {
         return _executionDump;
     }
@@ -227,9 +224,6 @@ public class ExecutionFlowRecorder : IExecutionDumpFactory {
     }
 
     private readonly record struct CallRecord(ushort Depth, ushort FromCs, ushort FromIp, ushort ToCs, ushort ToIp) {
-        /// <summary>
-        /// string method.
-        /// </summary>
         public override string ToString() => $"{new string('.', Depth)}{FromCs:X4}:{FromIp:X4} -> {ToCs:X4}:{ToIp:X4}";
     }
 }

@@ -10,9 +10,6 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
-/// <summary>
-/// Represents the ExecutionContextManager class.
-/// </summary>
 public class ExecutionContextManager : InstructionReplacer {
     private readonly ILoggerService _loggerService;
     private readonly CfgNodeFeeder _cfgNodeFeeder;
@@ -53,14 +50,8 @@ public class ExecutionContextManager : InstructionReplacer {
     /// </summary>
     public Dictionary<SegmentedAddress, ISet<CfgInstruction>> ExecutionContextEntryPoints { get; } = new();
 
-    /// <summary>
-    /// Gets or sets the CurrentExecutionContext.
-    /// </summary>
     public ExecutionContext CurrentExecutionContext { get; private set; }
 
-    /// <summary>
-    /// SignalEntry method.
-    /// </summary>
     public void SignalEntry() {
         CurrentExecutionContext = NewExecutionContext(_state.IpSegmentedAddress);
     }
@@ -69,9 +60,6 @@ public class ExecutionContextManager : InstructionReplacer {
         return new(entryPoint, CurrentDepth, new(_memory, _state, null, _functionCatalogue, _useCodeOverride, _loggerService));
     }
 
-    /// <summary>
-    /// SignalNewExecutionContext method.
-    /// </summary>
     public void SignalNewExecutionContext(SegmentedAddress entryAddress, SegmentedAddress expectedReturnAddress) {
         // Save current execution context to be restored when expectedReturnAddress is reached
         _executionContextReturns.PushContextToRestore(expectedReturnAddress, CurrentExecutionContext);
@@ -87,9 +75,6 @@ public class ExecutionContextManager : InstructionReplacer {
         }
     }
 
-    /// <summary>
-    /// RestoreExecutionContextIfNeeded method.
-    /// </summary>
     public void RestoreExecutionContextIfNeeded(SegmentedAddress returnAddress) {
         ExecutionContext? previousExecutionContext = _executionContextReturns.TryRestoreContext(returnAddress);
         if (previousExecutionContext != null) {
@@ -122,9 +107,6 @@ public class ExecutionContextManager : InstructionReplacer {
         nodes.Add(toExecute);
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         if (ExecutionContextEntryPoints.TryGetValue(newInstruction.Address, out ISet<CfgInstruction>? entriesAtAddress)
             && entriesAtAddress.Remove(oldInstruction)) {

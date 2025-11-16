@@ -11,9 +11,6 @@ using Spice86.ViewModels.Services;
 
 using System;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class PerformanceViewModel : ViewModelBase {
     private readonly IPerformanceMeasureReader _cpuPerformanceReader;
     private readonly State _state;

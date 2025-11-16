@@ -3,9 +3,6 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the JccParser class.
-/// </summary>
 public class JccParser : BaseInstructionParser {
     private readonly Jcc8SpecificParser _jcc8SpecificParser;
     private readonly Jcc16SpecificParser _jcc16SpecificParser;
@@ -17,9 +14,6 @@ public class JccParser : BaseInstructionParser {
         _jcc32SpecificParser = new Jcc32SpecificParser(this);
     }
 
-    /// <summary>
-    /// Parse method.
-    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         bool is8 = context.OpcodeField.Value <= 0xFF;
         // For near Jcc (0F 80..0F 8F), the displacement width is selected by operand-size (66h),

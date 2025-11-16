@@ -21,9 +21,6 @@ using Spice86.ViewModels.Services;
 
 using System.Diagnostics;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class CfgCpuViewModel : ViewModelBase {
     private readonly List<NodeTableEntry> _tableNodesList = new();
     private readonly IUIDispatcher _uiDispatcher;
@@ -83,9 +80,6 @@ public partial class CfgCpuViewModel : ViewModelBase {
         };
     }
 
-    /// <summary>
-    /// NodeFilter method.
-    /// </summary>
     public AutoCompleteFilterPredicate<object?> NodeFilter => (search, item) =>
         string.IsNullOrWhiteSpace(search) ||
         item is string nodeText && nodeText.Contains(search, StringComparison.OrdinalIgnoreCase);
@@ -413,34 +407,13 @@ public partial class CfgCpuViewModel : ViewModelBase {
         };
     }
 
-    /// <summary>
-    /// Represents the NodeTableEntry record.
-    /// </summary>
     public record NodeTableEntry {
-        /// <summary>
-        /// Gets or sets the Address.
-        /// </summary>
         public string Address { get; init; } = string.Empty;
-        /// <summary>
-        /// Gets or sets the Assembly.
-        /// </summary>
         public string Assembly { get; init; } = string.Empty;
-        /// <summary>
-        /// Gets or sets the Type.
-        /// </summary>
         public string Type { get; init; } = string.Empty;
-        /// <summary>
-        /// Predecessors method.
-        /// </summary>
         public AvaloniaList<NodeTableEntry> Predecessors { get; init; } = new();
-        /// <summary>
-        /// Successors method.
-        /// </summary>
         public AvaloniaList<NodeTableEntry> Successors { get; init; } = new();
 
-        /// <summary>
-        /// Gets or sets the IsLastExecuted.
-        /// </summary>
         public bool IsLastExecuted { get; init; }
         public ICfgNode? Node { get; init; }
     }

@@ -4,9 +4,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class FunctionInfo : ObservableObject {
     [ObservableProperty] private string? _name;
     [ObservableProperty] private SegmentedAddress _address;

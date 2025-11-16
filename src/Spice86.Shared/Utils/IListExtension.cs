@@ -1,8 +1,5 @@
 namespace Spice86.Shared.Utils;
 
-/// <summary>
-/// The class.
-/// </summary>
 public static class IListExtension {
     /// <summary>
     /// Performs a shallow copy of elements from the <paramref name="source"/> list to the <paramref name="destination"/> list.

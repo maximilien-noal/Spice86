@@ -12,9 +12,6 @@ public class Fwait : Nop {
     public Fwait(SegmentedAddress address, InstructionField<ushort> opcodeField) : base(address, opcodeField) {
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.FWAIT);
     }

@@ -15,9 +15,6 @@ using Spice86.ViewModels.ValueViewModels.Debugging;
 using System.ComponentModel;
 using System.Reflection;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class CpuViewModel : ViewModelBase, IEmulatorObjectViewModel {
     private readonly State _cpuState;
     private readonly IMemory _memory;
@@ -41,14 +38,8 @@ public partial class CpuViewModel : ViewModelBase, IEmulatorObjectViewModel {
         DispatcherTimerStarter.StartNewDispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, UpdateValues);
     }
 
-    /// <summary>
-    /// Gets or sets the IsVisible.
-    /// </summary>
     public bool IsVisible { get; set; }
 
-    /// <summary>
-    /// UpdateValues method.
-    /// </summary>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;

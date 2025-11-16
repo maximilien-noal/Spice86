@@ -4,9 +4,6 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.Interfaces
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class InstructionWithSegmentRegisterIndex : CfgInstruction, IInstructionWithSegmentRegisterIndex {
     protected InstructionWithSegmentRegisterIndex(
         SegmentedAddress address,
@@ -17,8 +14,5 @@ public abstract class InstructionWithSegmentRegisterIndex : CfgInstruction, IIns
         SegmentRegisterIndex = segmentRegisterIndex;
     }
 
-    /// <summary>
-    /// Gets or sets the SegmentRegisterIndex.
-    /// </summary>
     public int SegmentRegisterIndex { get; }
 }

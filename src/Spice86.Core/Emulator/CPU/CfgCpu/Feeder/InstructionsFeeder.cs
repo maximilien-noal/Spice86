@@ -27,13 +27,7 @@ public class InstructionsFeeder {
         _signatureReducer = new(replacerRegistry);
     }
 
-    /// <summary>
-    /// Gets or sets the CurrentInstructions.
-    /// </summary>
     public CurrentInstructions CurrentInstructions { get; }
-    /// <summary>
-    /// Gets or sets the PreviousInstructions.
-    /// </summary>
     public PreviousInstructions PreviousInstructions { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -38,9 +38,6 @@ internal readonly struct RegisterValueSet {
     private static readonly byte[] GraphicsControllerRegisterValueSet5 = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x0f, 0xff };
     private static readonly byte[] GraphicsControllerRegisterValueSet6 = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x05, 0x0f, 0xff };
 
-    /// <summary>
-    /// readonly method.
-    /// </summary>
     public static readonly Dictionary<int, VideoMode> VgaModes = new() {
         [0x00] = new VideoMode(new VgaMode(MemoryModel.Text, 40, 25, 4, 9, 16, VgaConstants.ColorTextSegment), 0xFF, Palettes.Ega, SequencerRegisterValueSet1, 0x67, CrtControllerRegisterValueSet1, AttributeControllerRegisterValueSet1, GraphicsControllerRegisterValueSet1),
         [0x01] = new VideoMode(new VgaMode(MemoryModel.Text, 40, 25, 4, 9, 16, VgaConstants.ColorTextSegment), 0xFF, Palettes.Ega, SequencerRegisterValueSet1, 0x67, CrtControllerRegisterValueSet1, AttributeControllerRegisterValueSet1, GraphicsControllerRegisterValueSet1),

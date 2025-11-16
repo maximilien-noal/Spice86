@@ -2,9 +2,6 @@ namespace Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
-/// <summary>
-/// Represents the LayoutBase class.
-/// </summary>
 public class LayoutBase {
     private int _maxPoles;
     private double _normalGain = 1.0;

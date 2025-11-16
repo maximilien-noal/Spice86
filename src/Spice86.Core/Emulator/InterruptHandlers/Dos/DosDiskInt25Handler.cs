@@ -7,9 +7,6 @@ using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
-/// <summary>
-/// Represents the DosDiskInt25Handler class.
-/// </summary>
 public class DosDiskInt25Handler : InterruptHandler {
     private readonly DosDriveManager _dosDriveManager;
 
@@ -20,14 +17,8 @@ public class DosDiskInt25Handler : InterruptHandler {
         _dosDriveManager = dosDriveManager;
     }
 
-    /// <summary>
-    /// The byte.
-    /// </summary>
     public override byte VectorNumber => 0x25;
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Run() {
         byte driveNumber = State.AL;
         ushort sectorToRead = State.CX;

@@ -662,57 +662,18 @@ public sealed class PcSpeaker : DefaultIOPortHandler, IDisposable, IPitSpeaker {
     }
 
     private sealed class PitState {
-        /// <summary>
-        /// The Amplitude.
-        /// </summary>
         public float Amplitude;
-        /// <summary>
-        /// The HalfMilliseconds.
-        /// </summary>
         public float HalfMilliseconds;
-        /// <summary>
-        /// The Index.
-        /// </summary>
         public float Index;
-        /// <summary>
-        /// The LastIndex.
-        /// </summary>
         public float LastIndex;
-        /// <summary>
-        /// The MaxMilliseconds.
-        /// </summary>
         public float MaxMilliseconds;
-        /// <summary>
-        /// The Mode.
-        /// </summary>
         public PitMode Mode;
-        /// <summary>
-        /// The Mode1PendingMax.
-        /// </summary>
         public float Mode1PendingMax;
-        /// <summary>
-        /// The Mode1WaitingForCounter.
-        /// </summary>
         public bool Mode1WaitingForCounter;
-        /// <summary>
-        /// The Mode1WaitingForTrigger.
-        /// </summary>
         public bool Mode1WaitingForTrigger = true;
-        /// <summary>
-        /// The Mode3Counting.
-        /// </summary>
         public bool Mode3Counting;
-        /// <summary>
-        /// The NewHalfMilliseconds.
-        /// </summary>
         public float NewHalfMilliseconds;
-        /// <summary>
-        /// The NewMaxMilliseconds.
-        /// </summary>
         public float NewMaxMilliseconds;
-        /// <summary>
-        /// The PreviousAmplitude.
-        /// </summary>
         public float PreviousAmplitude;
     }
 }

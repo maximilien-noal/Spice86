@@ -6,9 +6,6 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Numerics;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class InstructionWithOffsetField<T> : CfgInstruction, IInstructionWithOffsetField<T> where T : INumberBase<T> {
     public InstructionWithOffsetField(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes, InstructionField<T> offsetField, int? maxSuccessorsCount) :
         base(address, opcodeField, prefixes, maxSuccessorsCount) {
@@ -16,8 +13,5 @@ public abstract class InstructionWithOffsetField<T> : CfgInstruction, IInstructi
         AddField(OffsetField);
     }
 
-    /// <summary>
-    /// Gets or sets the OffsetField.
-    /// </summary>
     public InstructionField<T> OffsetField { get; }
 }

@@ -32,38 +32,17 @@ public class PS2Keyboard : IDisposable {
 
     // Key repetition (ms-based), DOSBox-style
     private struct RepeatData {
-        /// <summary>
-        /// The Key.
-        /// </summary>
         public KbdKey Key;     // key which went typematic
-        /// <summary>
-        /// The WaitMs.
-        /// </summary>
         public int WaitMs;     // ms until next event
-        /// <summary>
-        /// PauseMs method.
-        /// </summary>
         public int PauseMs;    // initial delay (ms)
-        /// <summary>
-        /// RateMs method.
-        /// </summary>
         public int RateMs;     // repeat rate (ms)
     }
     private RepeatData _repeat = new() { Key = KbdKey.None, WaitMs = 0, PauseMs = 500, RateMs = 33 };
 
     // Set3-specific code info
     private class Set3CodeInfoEntry {
-        /// <summary>
-        /// The IsEnabledTypematic.
-        /// </summary>
         public bool IsEnabledTypematic = true;
-        /// <summary>
-        /// The IsEnabledMake.
-        /// </summary>
         public bool IsEnabledMake = true;
-        /// <summary>
-        /// The IsEnabledBreak.
-        /// </summary>
         public bool IsEnabledBreak = true;
     }
     private readonly Dictionary<byte, Set3CodeInfoEntry> _set3CodeInfo = new();

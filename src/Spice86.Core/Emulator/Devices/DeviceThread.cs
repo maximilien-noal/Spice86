@@ -34,9 +34,6 @@ public class DeviceThread : IDisposable {
         _loopBody = loopBody;
     }
 
-    /// <summary>
-    /// The Active.
-    /// </summary>
     public bool Active => _thread != null && !_deviceStopRequested;
 
     /// <summary>

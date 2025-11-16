@@ -6,25 +6,16 @@ using Spice86.Core.Emulator.CPU.CfgCpu.InstructionExecutor;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the PushF16 class.
-/// </summary>
 public class PushF16 : CfgInstruction {
     public PushF16(SegmentedAddress address, InstructionField<ushort> opcodeField, List<InstructionPrefix> prefixes) :
         base(address, opcodeField, prefixes, 1) {
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         helper.Stack.Push16((ushort)helper.State.Flags.FlagRegister);
         helper.MoveIpAndSetNextNode(this);
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.PUSHF);
     }

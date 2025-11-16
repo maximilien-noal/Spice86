@@ -10,9 +10,6 @@ using Spice86.Shared.Emulator.VM.Breakpoint;
 using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.ValueViewModels.Debugging;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class DisassemblyViewModel {
     [RelayCommand(CanExecute = nameof(CanCloseTab))]
     private void CloseTab() {

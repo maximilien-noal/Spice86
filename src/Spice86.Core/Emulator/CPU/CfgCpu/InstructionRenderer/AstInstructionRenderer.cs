@@ -10,22 +10,13 @@ using Spice86.Shared.Emulator.Memory;
 using System.Globalization;
 using System.Linq;
 
-/// <summary>
-/// Represents the AstInstructionRenderer class.
-/// </summary>
 public class AstInstructionRenderer : IAstVisitor<string> {
     private readonly RegisterRenderer _registerRenderer = new();
 
-    /// <summary>
-    /// VisitSegmentRegisterNode method.
-    /// </summary>
     public string VisitSegmentRegisterNode(SegmentRegisterNode node) {
         return _registerRenderer.ToStringSegmentRegister(node.RegisterIndex);
     }
 
-    /// <summary>
-    /// VisitSegmentedPointer method.
-    /// </summary>
     public string VisitSegmentedPointer(SegmentedPointerNode node) {
         string offset = node.Offset.Accept(this);
         string segment = node.Segment.Accept(this);
@@ -33,24 +24,15 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         return PointerDataTypeToString(node.DataType) + " " + segment + ":[" + offset + "]";
     }
 
-    /// <summary>
-    /// VisitRegisterNode method.
-    /// </summary>
     public string VisitRegisterNode(RegisterNode node) {
         return _registerRenderer.ToStringRegister(node.DataType.BitWidth, node.RegisterIndex);
     }
 
-    /// <summary>
-    /// VisitAbsolutePointerNode method.
-    /// </summary>
     public string VisitAbsolutePointerNode(AbsolutePointerNode node) {
         string absoluteAddress = node.AbsoluteAddress.Accept(this);
         return PointerDataTypeToString(node.DataType) + " [" + absoluteAddress + "]";
     }
 
-    /// <summary>
-    /// VisitConstantNode method.
-    /// </summary>
     public string VisitConstantNode(ConstantNode node) {
         if (IsNegative(node)) {
             int valueSigned = SignExtend(node.Value, node.DataType.BitWidth);
@@ -89,16 +71,10 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         };
     }
 
-    /// <summary>
-    /// VisitSegmentedAddressConstantNode method.
-    /// </summary>
     public string VisitSegmentedAddressConstantNode(SegmentedAddressConstantNode node) {
         return node.Value.ToString();
     }
 
-    /// <summary>
-    /// VisitBinaryOperationNode method.
-    /// </summary>
     public string VisitBinaryOperationNode(BinaryOperationNode node) {
         string left = node.Left.Accept(this);
         if (IsZero(node.Right) && node.BinaryOperation == BinaryOperation.PLUS) {
@@ -111,9 +87,6 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         return left + OperationToString(node.BinaryOperation) + right;
     }
 
-    /// <summary>
-    /// VisitUnaryOperationNode method.
-    /// </summary>
     public string VisitUnaryOperationNode(UnaryOperationNode node) {
         string value = node.Value.Accept(this);
         return OperationToString(node.UnaryOperation) + value;
@@ -127,9 +100,6 @@ public class AstInstructionRenderer : IAstVisitor<string> {
         return valueNode is ConstantNode constantNode && IsNegative(constantNode);
     }
 
-    /// <summary>
-    /// VisitInstructionNode method.
-    /// </summary>
     public string VisitInstructionNode(InstructionNode node) {
         RepPrefix? repPrefix = node.RepPrefix;
         string prefix = "";

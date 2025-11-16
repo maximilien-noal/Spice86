@@ -3,9 +3,6 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class InstructionWithSegmentedAddressField : CfgInstruction {
     public InstructionWithSegmentedAddressField(
         SegmentedAddress address,
@@ -18,8 +15,5 @@ public abstract class InstructionWithSegmentedAddressField : CfgInstruction {
         AddField(segmentedAddressField);
     }
 
-    /// <summary>
-    /// Gets or sets the SegmentedAddressField.
-    /// </summary>
     public InstructionField<SegmentedAddress> SegmentedAddressField { get; }
 }

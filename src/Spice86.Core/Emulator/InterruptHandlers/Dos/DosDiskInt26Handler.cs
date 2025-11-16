@@ -6,9 +6,6 @@ using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Shared.Interfaces;
 
-/// <summary>
-/// Represents the DosDiskInt26Handler class.
-/// </summary>
 public class DosDiskInt26Handler : InterruptHandler {
     private readonly DosDriveManager _dosDriveManager;
 
@@ -19,14 +16,8 @@ public class DosDiskInt26Handler : InterruptHandler {
         _dosDriveManager = dosDriveManager;
     }
 
-    /// <summary>
-    /// The byte.
-    /// </summary>
     public override byte VectorNumber => 0x26;
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Run() {
         if (LoggerService.IsEnabled(Serilog.Events.LogEventLevel.Warning)) {
             LoggerService.Warning("DOS INT26H was called, hope for the best!");

@@ -8,9 +8,6 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// Real implementation of MS-DOS SDA has way more fields than this, but DOSBox doesn't emulate it, so we don't either.
 /// </summary>
 public sealed class DosSwappableDataArea : MemoryBasedDataStructure {
-    /// <summary>
-    /// The ushort.
-    /// </summary>
     public const ushort BaseSegment = 0xB2;
 
     /// <summary>

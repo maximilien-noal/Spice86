@@ -22,9 +22,6 @@ public sealed class TimerInt8Handler : IInterruptHandler {
         _biosDataArea = biosDataArea;
     }
 
-    /// <summary>
-    /// WriteAssemblyInRam method.
-    /// </summary>
     public SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
         // Write ASM
         SegmentedAddress interruptHandlerAddress = memoryAsmWriter.CurrentAddress;
@@ -55,8 +52,5 @@ public sealed class TimerInt8Handler : IInterruptHandler {
         _dualPic.AcknowledgeInterrupt(0);
     }
 
-    /// <summary>
-    /// The VectorNumber.
-    /// </summary>
     public byte VectorNumber => 0x8;
 }

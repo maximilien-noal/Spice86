@@ -17,9 +17,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
     public Alu16(State state) : base(state) {
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Add(ushort value1, ushort value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         ushort res = (ushort)(value1 + value2 + carry);
@@ -32,9 +29,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort And(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 & value2);
         UpdateFlags(res);
@@ -57,9 +51,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return (ushort)res;
     }
 
-    /// <summary>
-    /// short method.
-    /// </summary>
     public override short Idiv(int value1, short value2) {
         if (value2 == 0) {
             throw new CpuDivisionErrorException($"Division by zero");
@@ -75,9 +66,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return (short)res;
     }
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public override int Imul(short value1, short value2) {
         int res = value1 * value2;
         bool doesNotFitInWord = res != (short)res;
@@ -86,9 +74,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// uint method.
-    /// </summary>
     public override uint Mul(ushort value1, ushort value2) {
         uint res = (uint)(value1 * value2);
         bool upperHalfNonZero = (res & 0xFFFF0000) != 0;
@@ -98,9 +83,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Or(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 | value2);
         UpdateFlags(res);
@@ -111,9 +93,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Rcl(ushort value, byte count) {
         count = (byte)((count & ShiftCountMask) % 17);
         if (count == 0) {
@@ -135,9 +114,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Rcr(ushort value, int count) {
         count = (count & ShiftCountMask) % 17;
         if (count == 0) {
@@ -158,9 +134,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Rol(ushort value, byte count) {
         count = (byte)((count & ShiftCountMask) % 16);
         if (count == 0) {
@@ -176,9 +149,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         _state.OverflowFlag = msb ^ lsb;
         return res;
     }
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Ror(ushort value, int count) {
         count = (count & ShiftCountMask) % 16;
         if (count == 0) {
@@ -194,9 +164,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Sar(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -211,9 +178,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return (ushort)res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Shl(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -228,9 +192,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Shld(ushort destination, ushort source, byte count) {
         count &= ShiftCountMask;
         switch (count) {
@@ -250,9 +211,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Shrd(ushort destination, ushort source, byte count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -281,9 +239,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Shr(ushort value, int count) {
         count &= ShiftCountMask;
         if (count == 0) {
@@ -298,9 +253,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Sub(ushort value1, ushort value2, bool useCarry) {
         int carry = useCarry && _state.CarryFlag ? 1 : 0;
         ushort res = (ushort)(value1 - value2 - carry);
@@ -313,9 +265,6 @@ public class Alu16 : Alu<ushort, short, uint, int> {
         return res;
     }
 
-    /// <summary>
-    /// ushort method.
-    /// </summary>
     public override ushort Xor(ushort value1, ushort value2) {
         ushort res = (ushort)(value1 ^ value2);
         UpdateFlags(res);

@@ -22,9 +22,6 @@ public class BenchmarkTest {
     public SegmentedAddress Cached() => _instance.CachedSegmentedAddress;
 }
 internal class Program {
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void Main() {
 #if RELEASE
         BenchmarkDotNet.Reports.Summary summary = BenchmarkRunner.Run<BenchmarkTest>();
@@ -35,17 +32,11 @@ internal class Program {
     }
 }
 
-/// <summary>
-/// Represents the StateLikeClass class.
-/// </summary>
 public class StateLikeClass {
     private ushort _ss;
     private ushort _sp;
     private SegmentedAddress? _cachedSegmentedAddress;
 
-    /// <summary>
-    /// The SS.
-    /// </summary>
     public ushort SS {
         get => _ss;
         set {
@@ -53,9 +44,6 @@ public class StateLikeClass {
         }
     }
 
-    /// <summary>
-    /// The SP.
-    /// </summary>
     public ushort SP {
         get => _sp;
         set {
@@ -63,13 +51,7 @@ public class StateLikeClass {
         }
     }
 
-    /// <summary>
-    /// StackSegmentedAddress method.
-    /// </summary>
     public SegmentedAddress StackSegmentedAddress => new(SS, SP);
 
-    /// <summary>
-    /// CachedSegmentedAddress method.
-    /// </summary>
     public SegmentedAddress CachedSegmentedAddress => _cachedSegmentedAddress ??= new SegmentedAddress(SS, SP);
 }

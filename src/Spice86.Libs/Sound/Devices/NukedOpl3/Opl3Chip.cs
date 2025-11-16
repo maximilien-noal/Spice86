@@ -3,18 +3,12 @@
 
 namespace Spice86.Libs.Sound.Devices.NukedOpl3;
 
-/// <summary>
-/// The partial.
-/// </summary>
 public sealed partial class Opl3Chip {
     private const int WriteBufferSize = 1024;
     private const int WriteBufferDelay = 2;
     private const int ResampleFractionBits = 10;
 
     private Opl3Channel[] Channels { get; } = new Opl3Channel[18];
-    /// <summary>
-    /// Gets or sets the Slots.
-    /// </summary>
     public Opl3Operator[] Slots { get; } = new Opl3Operator[36];
     internal ushort Timer;
     internal ulong EgTimer;
@@ -80,73 +74,46 @@ public sealed partial class Opl3Chip {
 
 
     /* Original C: void OPL3_Reset(opl3_chip *chip, uint32_t samplerate); */
-    /// <summary>
-    /// Reset method.
-    /// </summary>
     public void Reset(uint sampleRate) {
         ResetInternal(sampleRate);
     }
 
     /* Original C: void OPL3_WriteReg(opl3_chip *chip, uint16_t reg, uint8_t v); */
-    /// <summary>
-    /// WriteRegister method.
-    /// </summary>
     public void WriteRegister(ushort register, byte value) {
         WriteRegisterInternal(register, value);
     }
 
     /* Original C: void OPL3_WriteRegBuffered(opl3_chip *chip, uint16_t reg, uint8_t v); */
-    /// <summary>
-    /// WriteRegisterBuffered method.
-    /// </summary>
     public void WriteRegisterBuffered(ushort register, byte value) {
         WriteRegisterBufferedInternal(register, value);
     }
 
     /* Original C: void OPL3_Generate4Ch(opl3_chip *chip, int16_t *buf4); */
-    /// <summary>
-    /// Generate4Channels method.
-    /// </summary>
     public void Generate4Channels(Span<short> buffer) {
         Generate4ChCore(buffer);
     }
 
     /* Original C: void OPL3_Generate(opl3_chip *chip, int16_t *buf); */
-    /// <summary>
-    /// Generate method.
-    /// </summary>
     public void Generate(Span<short> buffer) {
         GenerateCore(buffer);
     }
 
     /* Original C: void OPL3_Generate4ChResampled(opl3_chip *chip, int16_t *buf4); */
-    /// <summary>
-    /// Generate4ChannelsResampled method.
-    /// </summary>
     public void Generate4ChannelsResampled(Span<short> buffer) {
         Generate4ChResampledCore(buffer);
     }
 
     /* Original C: void OPL3_GenerateResampled(opl3_chip *chip, int16_t *buf); */
-    /// <summary>
-    /// GenerateResampled method.
-    /// </summary>
     public void GenerateResampled(Span<short> buffer) {
         GenerateResampledCore(buffer);
     }
 
     /* Original C: void OPL3_Generate4ChStream(opl3_chip *chip, int16_t *sndptr1, int16_t *sndptr2, uint32_t numsamples); */
-    /// <summary>
-    /// Generate4ChannelStream method.
-    /// </summary>
     public void Generate4ChannelStream(Span<short> stream1, Span<short> stream2) {
         Generate4ChStreamCore(stream1, stream2);
     }
 
     /* Original C: void OPL3_GenerateStream(opl3_chip *chip, int16_t *sndptr, uint32_t numsamples); */
-    /// <summary>
-    /// GenerateStream method.
-    /// </summary>
     public void GenerateStream(Span<short> stream) {
         GenerateStreamCore(stream);
     }
@@ -199,9 +166,6 @@ internal enum EnvelopeKeyType : byte {
     Drum = 0x02
 }
 
-/// <summary>
-/// EnvelopeGeneratorStage enumeration.
-/// </summary>
 public enum EnvelopeGeneratorStage : byte {
     Attack = 0,
     Decay = 1,

@@ -66,78 +66,48 @@ public class LoggerService : ILoggerService {
         return logger;
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write(LogEventLevel level, string messageTemplate) {
         GetLoggerForLevel(level)?.Write(level, messageTemplate);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T>(LogEventLevel level, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(level)?.Write(level, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T0, T1>(LogEventLevel level, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(level)?.Write(level, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T0, T1, T2>(LogEventLevel level, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(level)
             ?.Write(level, messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write(LogEventLevel level, string messageTemplate, params object?[]? propertyValues) {
         GetLoggerForLevel(level)?.Write(level, messageTemplate, Normalize(propertyValues));
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write(LogEventLevel level, Exception? exception, string messageTemplate) {
         GetLoggerForLevel(level)?.Write(level, exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T>(LogEventLevel level, Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(level)?.Write(level, exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T0, T1>(LogEventLevel level, Exception? exception, string messageTemplate, T0 propertyValue0,
         T1 propertyValue1) {
         GetLoggerForLevel(level)
             ?.Write(level, exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write<T0, T1, T2>(LogEventLevel level, Exception? exception, string messageTemplate, T0 propertyValue0,
         T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(level)
             ?.Write(level, exception, messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Write method.
-    /// </summary>
     public void Write(LogEventLevel level, Exception? exception, string messageTemplate,
         params object?[]? propertyValues) {
         GetLoggerForLevel(level)?.Write(level, exception, messageTemplate, Normalize(propertyValues));
@@ -172,70 +142,43 @@ public class LoggerService : ILoggerService {
     }
 
 #pragma warning disable Serilog004
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose(string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Verbose(messageTemplate);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Verbose(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Verbose(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Verbose(messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Verbose(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Verbose(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Verbose(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Verbose(exception, messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Verbose method.
-    /// </summary>
     public void Verbose(Exception? exception, string messageTemplate, params object?[]? propertyValues) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Verbose(exception, messageTemplate, Normalize(propertyValues));
@@ -246,69 +189,42 @@ public class LoggerService : ILoggerService {
         GetLoggerForLevel(LogEventLevel.Information)?.Verbose(messageTemplate, Normalize(properties));
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug(Exception? exception, string messageTemplate, params object?[]? propertyValues) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Debug(exception, messageTemplate, Normalize(propertyValues));
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug(string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Debug(messageTemplate);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Debug(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Debug(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Debug(messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Debug(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Debug(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Debug(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Debug method.
-    /// </summary>
     public void Debug<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
@@ -320,32 +236,20 @@ public class LoggerService : ILoggerService {
         GetLoggerForLevel(LogEventLevel.Information)?.Debug(messageTemplate, Normalize(properties));
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0,
         T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Information(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0,
         T1 propertyValue1,
         T2 propertyValue2) {
@@ -353,38 +257,23 @@ public class LoggerService : ILoggerService {
             ?.Information(exception, messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information(Exception? exception, string messageTemplate, params object?[]? propertyValues) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Information(exception, messageTemplate, Normalize(propertyValues));
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information(string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(messageTemplate);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Information method.
-    /// </summary>
     public void Information<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
@@ -396,54 +285,33 @@ public class LoggerService : ILoggerService {
         GetLoggerForLevel(LogEventLevel.Information)?.Information(messageTemplate, Normalize(properties));
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Warning(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Warning(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Warning(messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Warning(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Warning(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Warning(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Warning method.
-    /// </summary>
     public void Warning<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
@@ -470,61 +338,37 @@ public class LoggerService : ILoggerService {
         }
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error(string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Error(messageTemplate);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Error(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Error(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Error(messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Error(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Error(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Error(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Error method.
-    /// </summary>
     public void Error<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
@@ -546,61 +390,37 @@ public class LoggerService : ILoggerService {
         }
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal(string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Fatal(messageTemplate);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T>(string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Fatal(messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T0, T1>(string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Fatal(messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T0, T1, T2>(string messageTemplate, T0 propertyValue0, T1 propertyValue1, T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Fatal(messageTemplate, propertyValue0, propertyValue1, propertyValue2);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal(Exception? exception, string messageTemplate) {
         GetLoggerForLevel(LogEventLevel.Information)?.Fatal(exception, messageTemplate);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T>(Exception? exception, string messageTemplate, T propertyValue) {
         GetLoggerForLevel(LogEventLevel.Information)?.Fatal(exception, messageTemplate, propertyValue);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T0, T1>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1) {
         GetLoggerForLevel(LogEventLevel.Information)
             ?.Fatal(exception, messageTemplate, propertyValue0, propertyValue1);
     }
 
-    /// <summary>
-    /// Fatal method.
-    /// </summary>
     public void Fatal<T0, T1, T2>(Exception? exception, string messageTemplate, T0 propertyValue0, T1 propertyValue1,
         T2 propertyValue2) {
         GetLoggerForLevel(LogEventLevel.Information)

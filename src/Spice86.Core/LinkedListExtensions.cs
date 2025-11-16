@@ -1,8 +1,5 @@
 ﻿namespace Spice86.Core;
 
-/// <summary>
-/// Extension methods for <see cref="LinkedList{T}"/> to support node replacement operations.
-/// </summary>
 public static class LinkedListExtensions {
     /// <summary>
     /// Replaces an existing linked list node with zero or more new nodes.

@@ -1399,18 +1399,12 @@ public class SoundBlaster : DefaultIOPortHandler, IRequestInterrupt,
 
     private struct BufferStatus() {
         // Bits 0-6: Reserved (always set to 1 when reading)
-        /// <summary>
-        /// The Reserved.
-        /// </summary>
         public byte Reserved {
             get => (byte)(Data & 0b0111_1111);
             set => Data = (byte)((Data & 0b1000_0000) | (value & 0b0111_1111));
         }
 
         // Bit 7: HasData
-        /// <summary>
-        /// The HasData.
-        /// </summary>
         public bool HasData {
             set {
                 if (value) {
@@ -1421,9 +1415,6 @@ public class SoundBlaster : DefaultIOPortHandler, IRequestInterrupt,
             }
         }
 
-        /// <summary>
-        /// Gets or sets the Data.
-        /// </summary>
         public byte Data { get; private set; } = 0b1111_1111;
     }
 
@@ -1438,61 +1429,19 @@ public class SoundBlaster : DefaultIOPortHandler, IRequestInterrupt,
     }
 
     private sealed class DmaPlaybackState {
-        /// <summary>
-        /// Gets or sets the Mode.
-        /// </summary>
         public DmaPlaybackMode Mode { get; set; } = DmaPlaybackMode.None;
-        /// <summary>
-        /// Gets or sets the AutoInit.
-        /// </summary>
         public bool AutoInit { get; set; }
-        /// <summary>
-        /// Gets or sets the Stereo.
-        /// </summary>
         public bool Stereo { get; set; }
-        /// <summary>
-        /// Gets or sets the RateBytesPerSecond.
-        /// </summary>
         public double RateBytesPerSecond { get; set; }
-        /// <summary>
-        /// Gets or sets the MinChunkBytes.
-        /// </summary>
         public uint MinChunkBytes { get; set; }
-        /// <summary>
-        /// Gets or sets the RemainingBytes.
-        /// </summary>
         public uint RemainingBytes { get; set; }
-        /// <summary>
-        /// Gets or sets the AutoSizeBytes.
-        /// </summary>
         public uint AutoSizeBytes { get; set; }
-        /// <summary>
-        /// Gets or sets the IrqRaisedForCurrentBlock.
-        /// </summary>
         public bool IrqRaisedForCurrentBlock { get; set; }
-        /// <summary>
-        /// Gets or sets the DmaMasked.
-        /// </summary>
         public bool DmaMasked { get; set; }
-        /// <summary>
-        /// Gets or sets the SpeakerEnabled.
-        /// </summary>
         public bool SpeakerEnabled { get; set; }
-        /// <summary>
-        /// Gets or sets the WarmupRemainingFrames.
-        /// </summary>
         public int WarmupRemainingFrames { get; set; }
-        /// <summary>
-        /// Gets or sets the ColdWarmupFrames.
-        /// </summary>
         public int ColdWarmupFrames { get; set; }
-        /// <summary>
-        /// Gets or sets the HotWarmupFrames.
-        /// </summary>
         public int HotWarmupFrames { get; set; }
-        /// <summary>
-        /// Gets or sets the LastPumpTimeMs.
-        /// </summary>
         public double LastPumpTimeMs { get; set; }
     }
 }

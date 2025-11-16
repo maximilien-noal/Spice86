@@ -22,22 +22,13 @@ public abstract class VirtualDeviceBase : VirtualFileBase, IVirtualDevice {
     /// <inheritdoc />
     public uint DeviceNumber { get; set; }
 
-    /// <summary>
-    /// byte method.
-    /// </summary>
     public virtual byte GetStatus(bool inputFlag) => 0;
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public virtual bool TryReadFromControlChannel(uint address, ushort size,
         [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public virtual bool TryWriteToControlChannel(uint address, ushort size,
         [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
@@ -57,8 +48,5 @@ public abstract class VirtualDeviceBase : VirtualFileBase, IVirtualDevice {
     [Range(0, 8)]
     public override string Name => Header.Name;
 
-    /// <summary>
-    /// Gets or sets the string.
-    /// </summary>
     public virtual string? Alias { get; init; }
 }

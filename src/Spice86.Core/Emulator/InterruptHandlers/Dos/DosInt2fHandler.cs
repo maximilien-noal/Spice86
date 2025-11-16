@@ -62,9 +62,6 @@ public class DosInt2fHandler : InterruptHandler {
         AddAction(0x4A, HighMemoryAreaServices);
     }
 
-    /// <summary>
-    /// ShareExeServices method.
-    /// </summary>
     public void ShareExeServices() {
         switch (State.AL) {
             case 0x0:
@@ -79,9 +76,6 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
-    /// <summary>
-    /// AnsiConsoleServices method.
-    /// </summary>
     public void AnsiConsoleServices() {
         switch (State.AL) {
             case 0x0:
@@ -96,9 +90,6 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
-    /// <summary>
-    /// XmsServices method.
-    /// </summary>
     public void XmsServices(bool calledFromVm) {
         switch (State.AL) {
             //Is XMS Driver installed
@@ -120,9 +111,6 @@ public class DosInt2fHandler : InterruptHandler {
         SetCarryFlag(false, calledFromVm);
     }
 
-    /// <summary>
-    /// HighMemoryAreaServices method.
-    /// </summary>
     public void HighMemoryAreaServices() {
         switch (State.AL) {
             case 0x1 or 0x2: // Query Free HMA Space or Allocate HMA Space
@@ -148,9 +136,6 @@ public class DosInt2fHandler : InterruptHandler {
         }
     }
 
-    /// <summary>
-    /// WindowsVirtualMachineServices method.
-    /// </summary>
     public void WindowsVirtualMachineServices() {
         switch (State.AL) {
             case 0x80: //MS Windows v3.0 - INSTALLATION CHECK {undocumented} (AX: 4680h)

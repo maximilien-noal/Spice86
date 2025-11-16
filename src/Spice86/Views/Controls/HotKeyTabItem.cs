@@ -18,18 +18,12 @@ public class HotKeyTabItem : TabItem, ICommandSource {
         CommandParameter = null;
     }
 
-    /// <summary>
-    /// CanExecuteChanged method.
-    /// </summary>
     public void CanExecuteChanged(object sender, EventArgs e) {
     }
 
     public ICommand? Command { get; }
     public object? CommandParameter { get; }
 
-    /// <summary>
-    /// Represents the TabItemSelectCommand class.
-    /// </summary>
     public class TabItemSelectCommand : ICommand {
         private readonly TabItem _tabItem;
 
@@ -38,23 +32,14 @@ public class HotKeyTabItem : TabItem, ICommandSource {
             _tabItem.PropertyChanged += OnTabItemPropertyChanged;
         }
 
-        /// <summary>
-        /// CanExecute method.
-        /// </summary>
         public bool CanExecute(object? parameter) {
             return _tabItem.IsEffectivelyEnabled;
         }
 
-        /// <summary>
-        /// Execute method.
-        /// </summary>
         public void Execute(object? parameter) {
             _tabItem.IsSelected = true;
         }
 
-        /// <summary>
-        /// The EventHandler.
-        /// </summary>
         public event EventHandler? CanExecuteChanged;
 
         private void OnTabItemPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs changeArgs) {

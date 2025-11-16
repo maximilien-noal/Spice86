@@ -4,16 +4,10 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class BaseOperationModRmFactory : BaseInstructionParser, IInstructionWithModRmFactory {
     protected BaseOperationModRmFactory(BaseInstructionParser other) : base(other) {
     }
 
-    /// <summary>
-    /// Parse method.
-    /// </summary>
     public CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, BitWidth bitWidth) {
         return bitWidth switch {
             BitWidth.BYTE_8 => BuildOperandSize8(context, modRmContext),

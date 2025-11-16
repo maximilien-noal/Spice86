@@ -61,58 +61,22 @@ public class DosFile : VirtualFileBase {
     /// </summary>
     public IList<MemoryRange> LoadedMemoryRanges => _loadedMemoryRanges;
 
-    /// <summary>
-    /// Gets or sets the bool.
-    /// </summary>
     public virtual bool IsOnReadOnlyMedium { get; }
 
-    /// <summary>
-    /// Gets or sets the Time.
-    /// </summary>
     public ushort Time { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Date.
-    /// </summary>
     public ushort Date { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Flags.
-    /// </summary>
     public byte Flags { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Drive.
-    /// </summary>
     public byte Drive { get; set; } = 0xff; //unset
-    /// <summary>
-    /// Gets or sets the DeviceInformation.
-    /// </summary>
     public ushort DeviceInformation { get; set; }
-    /// <summary>
-    /// Gets or sets the string.
-    /// </summary>
     public override string Name { get; set; }
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanRead => _randomAccessStream.CanRead;
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanSeek => _randomAccessStream.CanSeek;
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanWrite => _randomAccessStream.CanWrite;
-    /// <summary>
-    /// The long.
-    /// </summary>
     public override long Length => _randomAccessStream.Length;
 
-    /// <summary>
-    /// The long.
-    /// </summary>
     public override long Position {
         get => _randomAccessStream.Position;
         set => _randomAccessStream.Position = value;
@@ -124,37 +88,22 @@ public class DosFile : VirtualFileBase {
         _randomAccessStream.Close();
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Flush() {
         _randomAccessStream.Flush();
     }
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public override int Read(byte[] buffer, int offset, int count) {
         return _randomAccessStream.Read(buffer, offset, count);
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void SetLength(long value) {
         _randomAccessStream.SetLength(value);
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Write(byte[] buffer, int offset, int count) {
         _randomAccessStream.Write(buffer, offset, count);
     }
 
-    /// <summary>
-    /// long method.
-    /// </summary>
     public override long Seek(long offset, SeekOrigin origin) {
         return _randomAccessStream.Seek(offset, origin);
     }

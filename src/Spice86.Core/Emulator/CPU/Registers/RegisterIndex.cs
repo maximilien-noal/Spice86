@@ -1,8 +1,5 @@
 namespace Spice86.Core.Emulator.CPU.Registers;
 
-/// <summary>
-/// RegisterIndex enumeration.
-/// </summary>
 public enum RegisterIndex {
     /// <summary>
     /// The index of the AX register.

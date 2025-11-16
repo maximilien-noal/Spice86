@@ -3,9 +3,6 @@
 using Spice86.Core.Emulator.CPU.CfgCpu.ControlFlowGraph;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Defines the contract for ICfgInstruction.
-/// </summary>
 public interface ICfgInstruction : ICfgNode {
     /// <summary>
     /// Cache of Successors property per address.

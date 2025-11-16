@@ -15,9 +15,6 @@ public abstract class OperationRegIndexParser : BaseInstructionParser {
     public OperationRegIndexParser(BaseInstructionParser other) : base(other) {
     }
 
-    /// <summary>
-    /// Parse method.
-    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         int regIndex = ComputeRegIndex(context.OpcodeField);
         BitWidth bitWidth = GetBitWidth(false, context.HasOperandSize32);

@@ -38,115 +38,43 @@ public abstract class Instructions {
         ModRM = modRm;
     }
     // Add
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AddRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AddRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AddAccImm();
 
     // Or
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void OrRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void OrRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void OrAccImm();
 
     // Adc
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AdcRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AdcRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AdcAccImm();
 
     // Sbb
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SbbRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SbbRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SbbAccImm();
 
     // And
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AndRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AndRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void AndAccImm();
 
     // Sub
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SubRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SubRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void SubAccImm();
 
     // Xor
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XorRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XorRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XorAccImm();
 
     // Cmp
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void CmpRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void CmpRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void CmpAccImm();
 
     /// <summary>
@@ -196,69 +124,24 @@ public abstract class Instructions {
     }
 
     // Test
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void TestRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void TestAccImm();
 
     // String ops
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Stos();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Lods();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Scas();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Ins();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Outs();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XchgRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XaddRm();
 
     // Mov
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovRmReg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovRegRm();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovRegImm(int regIndex);
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovAccMoffs();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovMoffsAcc();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovRmImm();
     protected byte ComputeGrp2Count(Grp2CountSource countSource) {
         return countSource switch {
@@ -269,14 +152,8 @@ public abstract class Instructions {
         };
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Grp2(Grp2CountSource countSource);
 
-    /// <summary>
-    /// Grp3 method.
-    /// </summary>
     public void Grp3() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -316,20 +193,8 @@ public abstract class Instructions {
     protected abstract void Grp3IdivRmAcc();
     protected abstract void Grp45RmInc();
     protected abstract void Grp45RmDec();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void InImm8();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void OutImm8();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void InDx();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void OutDx();
 }

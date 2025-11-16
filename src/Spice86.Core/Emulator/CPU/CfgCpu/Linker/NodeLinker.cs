@@ -11,9 +11,6 @@ using Spice86.Shared.Emulator.Memory;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-/// <summary>
-/// Represents the NodeLinker class.
-/// </summary>
 public class NodeLinker : InstructionReplacer {
     private readonly NodeToString _nodeToString = new();
 
@@ -152,9 +149,6 @@ public class NodeLinker : InstructionReplacer {
         }
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void ReplaceInstruction(CfgInstruction oldInstruction, CfgInstruction newInstruction) {
         // Switch predecessors and successors of old to new
         SwitchPredecessorsToNew(oldInstruction, newInstruction);

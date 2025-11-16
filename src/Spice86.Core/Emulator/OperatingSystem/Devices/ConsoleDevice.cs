@@ -24,13 +24,7 @@ using System.IO;
 public class ConsoleDevice : CharacterDevice {
     private const string CON = "CON";
     private byte _readCache = 0;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int InputAvailable = 0x80D3;
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int NoInputAvailable = 0x8093;
     private readonly ILoggerService _loggerService;
     private readonly BiosDataArea _biosDataArea;
@@ -40,45 +34,15 @@ public class ConsoleDevice : CharacterDevice {
     private readonly State _state;
     private readonly Ansi _ansi = new Ansi();
     private class Ansi {
-        /// <summary>
-        /// The int.
-        /// </summary>
         public const int ANSI_DATA_LENGTH = 10;
-        /// <summary>
-        /// Gets or sets the Esc.
-        /// </summary>
         public bool Esc { get; set; }
-        /// <summary>
-        /// Gets or sets the Sci.
-        /// </summary>
         public bool Sci { get; set; }
-        /// <summary>
-        /// Gets or sets the IsEnabled.
-        /// </summary>
         public bool IsEnabled { get; set; }
-        /// <summary>
-        /// Gets or sets the Attribute.
-        /// </summary>
         public byte Attribute { get; set; } = 0x7;
-        /// <summary>
-        /// Gets or sets the Data.
-        /// </summary>
         public byte[] Data { get; } = new byte[ANSI_DATA_LENGTH];
-        /// <summary>
-        /// Gets or sets the NumberOfArg.
-        /// </summary>
         public byte NumberOfArg { get; set; }
-        /// <summary>
-        /// Gets or sets the SaveColumn.
-        /// </summary>
         public sbyte SaveColumn { get; set; }
-        /// <summary>
-        /// Gets or sets the SaveRow.
-        /// </summary>
         public sbyte SaveRow { get; set; }
-        /// <summary>
-        /// Gets or sets the WasWarned.
-        /// </summary>
         public bool WasWarned { get; set; }
     }
 
@@ -111,78 +75,39 @@ public class ConsoleDevice : CharacterDevice {
         return _currentMode.MemoryModel == MemoryModel.Text;
     }
 
-    /// <summary>
-    /// Gets or sets the InternalOutput.
-    /// </summary>
     public bool InternalOutput { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Echo.
-    /// </summary>
     public bool Echo { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the DirectOutput.
-    /// </summary>
     public bool DirectOutput { get; set; }
 
-    /// <summary>
-    /// The string.
-    /// </summary>
     public override string Name => CON;
 
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanSeek => false;
 
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanRead => _biosKeybardBuffer.IsEmpty is false;
 
-    /// <summary>
-    /// The bool.
-    /// </summary>
     public override bool CanWrite => true;
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Flush() {
         // No operation needed for console device flush
     }
 
-    /// <summary>
-    /// long method.
-    /// </summary>
     public override long Seek(long offset, SeekOrigin origin) {
         throw new NotSupportedException("Console device does not support seeking.");
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void SetLength(long value) {
         throw new NotSupportedException();
     }
 
-    /// <summary>
-    /// long method.
-    /// </summary>
     public override long Length => throw new NotSupportedException("Console device does not have a length.");
 
-    /// <summary>
-    /// The long.
-    /// </summary>
     public override long Position {
         get => throw new NotSupportedException("Console device does not support getting position.");
         set => throw new NotSupportedException("Console device does not support setting position.");
     }
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public override int Read(byte[] buffer, int offset, int count) {
         if (count == 0 || offset > buffer.Length || buffer.Length == 0) {
             return 0;
@@ -277,9 +202,6 @@ public class ConsoleDevice : CharacterDevice {
         return readCount;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Write(byte[] buffer, int offset, int count) {
         byte page = _biosDataArea.CurrentVideoPage;
         byte col, row;
@@ -585,9 +507,6 @@ public class ConsoleDevice : CharacterDevice {
         }
     }
 
-    /// <summary>
-    /// The ushort.
-    /// </summary>
     public override ushort Information {
         get {
             if (_biosKeybardBuffer.IsEmpty && _readCache is 0) {
@@ -603,17 +522,11 @@ public class ConsoleDevice : CharacterDevice {
         }
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public override bool TryReadFromControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public override bool TryWriteToControlChannel(uint address, ushort size, [NotNullWhen(true)] out ushort? returnCode) {
         returnCode = null;
         return false;

@@ -5,9 +5,6 @@ using Spice86.Shared.Emulator.Memory;
 
 using System.Collections.Frozen;
 
-/// <summary>
-/// Represents the RegisterRenderer class.
-/// </summary>
 public class RegisterRenderer {
     private static readonly FrozenDictionary<int, string> _registersNames = new Dictionary<int, string>() {
         { (int)RegisterIndex.AxIndex, "AX" },
@@ -43,9 +40,6 @@ public class RegisterRenderer {
     private string Reg32Name(int regIndex) {
         return "E" + Reg16Name(regIndex);
     }
-    /// <summary>
-    /// ToStringRegister method.
-    /// </summary>
     public string ToStringRegister(BitWidth bitWidth, int registerIndex) {
         return bitWidth switch {
             BitWidth.BYTE_8 => Reg8Name(registerIndex),
@@ -56,9 +50,6 @@ public class RegisterRenderer {
     }
 
 
-    /// <summary>
-    /// ToStringSegmentRegister method.
-    /// </summary>
     public string ToStringSegmentRegister(int registerIndex) {
         return _segmentRegistersNames[registerIndex];
     }

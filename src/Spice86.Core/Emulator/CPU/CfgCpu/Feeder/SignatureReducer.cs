@@ -4,9 +4,6 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 
 using System.Linq;
 
-/// <summary>
-/// Represents the SignatureReducer class.
-/// </summary>
 public class SignatureReducer {
     private readonly InstructionReplacerRegistry _replacerRegistry;
 
@@ -31,9 +28,6 @@ public class SignatureReducer {
         return null;
     }
 
-    /// <summary>
-    /// ReduceAll method.
-    /// </summary>
     public IList<CfgInstruction> ReduceAll(List<CfgInstruction> instructions) {
         IDictionary<Type, List<CfgInstruction>> groupByType =
             GroupByType(instructions);

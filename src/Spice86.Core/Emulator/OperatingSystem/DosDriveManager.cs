@@ -85,9 +85,6 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
         return true;
     }
 
-    /// <summary>
-    /// The NumberOfPotentiallyValidDriveLetters.
-    /// </summary>
     public byte NumberOfPotentiallyValidDriveLetters {
         get {
             // At least A: and B:
@@ -95,96 +92,51 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
         }
     }
 
-    /// <summary>
-    /// Keys method.
-    /// </summary>
     public ICollection<char> Keys => ((IDictionary<char, VirtualDrive>)_driveMap).Keys;
 
-    /// <summary>
-    /// Values method.
-    /// </summary>
     public ICollection<VirtualDrive> Values => ((IDictionary<char, VirtualDrive>)_driveMap).Values;
 
-    /// <summary>
-    /// Count method.
-    /// </summary>
     public int Count => ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).Count;
 
-    /// <summary>
-    /// IsReadOnly method.
-    /// </summary>
     public bool IsReadOnly => ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).IsReadOnly;
 
-    /// <summary>
-    /// this method.
-    /// </summary>
     public VirtualDrive this[char key] { get => ((IDictionary<char, VirtualDrive>)_driveMap)[key]; set => ((IDictionary<char, VirtualDrive>)_driveMap)[key] = value; }
 
 
-    /// <summary>
-    /// The int.
-    /// </summary>
     public const int MaxDriveCount = 26;
 
-    /// <summary>
-    /// Add method.
-    /// </summary>
     public void Add(char key, VirtualDrive value) {
         ((IDictionary<char, VirtualDrive>)_driveMap).Add(key, value);
     }
 
-    /// <summary>
-    /// ContainsKey method.
-    /// </summary>
     public bool ContainsKey(char key) {
         return ((IDictionary<char, VirtualDrive>)_driveMap).ContainsKey(key);
     }
 
-    /// <summary>
-    /// Remove method.
-    /// </summary>
     public bool Remove(char key) {
         return ((IDictionary<char, VirtualDrive>)_driveMap).Remove(key);
     }
 
-    /// <summary>
-    /// TryGetValue method.
-    /// </summary>
     public bool TryGetValue(char key, [MaybeNullWhen(false)] out VirtualDrive value) {
         return ((IDictionary<char, VirtualDrive>)_driveMap).TryGetValue(key, out value);
     }
 
-    /// <summary>
-    /// Add method.
-    /// </summary>
     public void Add(KeyValuePair<char, VirtualDrive> item) {
         ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).Add(item);
     }
 
-    /// <summary>
-    /// Clear method.
-    /// </summary>
     public void Clear() {
         ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).Clear();
     }
 
-    /// <summary>
-    /// Contains method.
-    /// </summary>
     public bool Contains(KeyValuePair<char, VirtualDrive> item) {
         return ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).Contains(item);
     }
 
-    /// <summary>
-    /// CopyTo method.
-    /// </summary>
     public void CopyTo(KeyValuePair<char, VirtualDrive>[] array, int arrayIndex) {
         ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).CopyTo(array, arrayIndex);
     }
 
-    /// <summary>
-    /// Remove method.
-    /// </summary>
     public bool Remove(KeyValuePair<char, VirtualDrive> item) {
         return ((ICollection<KeyValuePair<char, VirtualDrive>>)_driveMap).Remove(item);
     }

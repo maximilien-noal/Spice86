@@ -5,9 +5,6 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 using Spice86.Libs.Sound.Filters.IirFilters.Common.State;
 using Spice86.Libs.Sound.Filters.IirFilters.Common.Transforms;
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthFilterBase<TAnalog, TState>(int maxOrder, int maxDigitalPoles, TAnalog analogPrototype)
     : PoleFilterBase<TAnalog, TState>(maxOrder, maxDigitalPoles, analogPrototype)
     where TAnalog : LayoutBase
@@ -21,9 +18,6 @@ public abstract class ButterworthFilterBase<TAnalog, TState>(int maxOrder, int m
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthLowPassBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -35,9 +29,6 @@ public abstract class ButterworthLowPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthHighPassBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -49,9 +40,6 @@ public abstract class ButterworthHighPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthBandPassBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder * 2, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -63,9 +51,6 @@ public abstract class ButterworthBandPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthBandStopBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder * 2, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -77,9 +62,6 @@ public abstract class ButterworthBandStopBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthLowShelfBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder, new AnalogLowShelf())
     where TState : struct, ISectionState {
@@ -91,9 +73,6 @@ public abstract class ButterworthLowShelfBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthHighShelfBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder, new AnalogLowShelf())
     where TState : struct, ISectionState {
@@ -105,9 +84,6 @@ public abstract class ButterworthHighShelfBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ButterworthBandShelfBase<TState>(int maxOrder)
     : ButterworthFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder * 2, new AnalogLowShelf())
     where TState : struct, ISectionState {

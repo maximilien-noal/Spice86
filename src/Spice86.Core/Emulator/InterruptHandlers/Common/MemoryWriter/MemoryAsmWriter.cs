@@ -84,33 +84,21 @@ public class MemoryAsmWriter : MemoryWriter {
         WriteUInt8(vectorNumber);
     }
 
-    /// <summary>
-    /// WriteJumpNear method.
-    /// </summary>
     public void WriteJumpNear(short offset) {
         WriteUInt8(0xE9);
         WriteInt16(offset);
     }
 
-    /// <summary>
-    /// WriteJumpShort method.
-    /// </summary>
     public void WriteJumpShort(sbyte offset) {
         WriteUInt8(0xEB);
         WriteInt8(offset);
     }
 
-    /// <summary>
-    /// WriteJz method.
-    /// </summary>
     public void WriteJz(sbyte delta) {
         WriteUInt8(0x74);
         WriteInt8(delta);
     }
 
-    /// <summary>
-    /// WriteJnz method.
-    /// </summary>
     public void WriteJnz(sbyte delta) {
         WriteUInt8(0x75);
         WriteInt8(delta);

@@ -24,30 +24,15 @@ internal class MemoryReadOnlyBitRangeUnion : IReadOnlyBitRangeUnion {
         EnclosingRange = new BitRange(startAddress, endAddress);
     }
 
-    /// <summary>
-    /// Gets or sets the EnclosingRange.
-    /// </summary>
     public BitRange EnclosingRange { get; }
-    /// <summary>
-    /// Count method.
-    /// </summary>
     public int Count => (int)(_endAddress - _startAddress);
 
-    /// <summary>
-    /// The IsFragmented.
-    /// </summary>
     public bool IsFragmented => false;
 
 #pragma warning disable CS0067 // Event intentionally unused - read-only union never raises changes
-    /// <summary>
-    /// The NotifyCollectionChangedEventHandler.
-    /// </summary>
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
 #pragma warning restore CS0067
 
-    /// <summary>
-    /// Contains method.
-    /// </summary>
     public bool Contains(BitLocation location) {
         return location.CompareTo(EnclosingRange.Start) >= 0 && location.CompareTo(EnclosingRange.End) < 0;
     }
@@ -59,22 +44,13 @@ internal class MemoryReadOnlyBitRangeUnion : IReadOnlyBitRangeUnion {
         return bitRangeUnion.GetEnumerator();
     }
 
-    /// <summary>
-    /// IntersectsWith method.
-    /// </summary>
     public bool IntersectsWith(BitRange range) {
         return EnclosingRange.Start < range.End && EnclosingRange.End > range.Start;
     }
 
-    /// <summary>
-    /// IsSuperSetOf method.
-    /// </summary>
     public bool IsSuperSetOf(BitRange range) {
         return EnclosingRange.Start <= range.Start && EnclosingRange.End >= range.End;
     }
-    /// <summary>
-    /// GetOverlappingRanges method.
-    /// </summary>
     public int GetOverlappingRanges(BitRange range, Span<BitRange> output) {
         // For a non-fragmented union, if there's any overlap, return the entire range
         if (IntersectsWith(range)) {
@@ -86,9 +62,6 @@ internal class MemoryReadOnlyBitRangeUnion : IReadOnlyBitRangeUnion {
         return 0;
     }
 
-    /// <summary>
-    /// GetIntersectingRanges method.
-    /// </summary>
     public int GetIntersectingRanges(BitRange range, Span<BitRange> output) {
         // Return the actual intersection, not the entire range
         if (IntersectsWith(range)) {

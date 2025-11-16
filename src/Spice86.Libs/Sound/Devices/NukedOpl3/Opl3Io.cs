@@ -42,9 +42,6 @@ public sealed class Opl3Io {
         _adLibGold = adLibGold;
     }
 
-    /// <summary>
-    /// Reset method.
-    /// </summary>
     public void Reset(uint sampleRate) {
         _chip.Reset(sampleRate);
         _timers.Reset();
@@ -58,9 +55,6 @@ public sealed class Opl3Io {
         UpdateIrqState(false);
     }
 
-    /// <summary>
-    /// WritePort method.
-    /// </summary>
     public Opl3WriteResult WritePort(ushort port, byte value) {
         bool isDataPort = (port & 0x01) != 0;
 
@@ -100,9 +94,6 @@ public sealed class Opl3Io {
         return Opl3WriteResult.None;
     }
 
-    /// <summary>
-    /// ReadPort method.
-    /// </summary>
     public byte ReadPort(ushort port) {
         switch (_adLibGold) {
             case { Active: true } when port == IOplPort.AdLibGoldAddressPortNumber:
@@ -122,9 +113,6 @@ public sealed class Opl3Io {
         return _registerCache[index & 0x1FF];
     }
 
-    /// <summary>
-    /// FlushDueWritesUpTo method.
-    /// </summary>
     public void FlushDueWritesUpTo(double currentTick) {
         if (_timingInitialized) {
             ulong inclusiveSample = ConvertTicksToSample(currentTick);
@@ -134,9 +122,6 @@ public sealed class Opl3Io {
         UpdateTimerStatus(currentTick);
     }
 
-    /// <summary>
-    /// AdvanceTimersOnly method.
-    /// </summary>
     public void AdvanceTimersOnly(double currentTick) {
         UpdateTimerStatus(currentTick);
     }

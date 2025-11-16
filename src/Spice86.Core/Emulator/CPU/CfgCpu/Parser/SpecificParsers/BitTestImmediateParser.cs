@@ -4,9 +4,6 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
-/// <summary>
-/// Represents the BitTestImmediateParser class.
-/// </summary>
 public class BitTestImmediateParser(BaseInstructionParser other) : BaseGrpOperationParser(other) {
     protected override CfgInstruction Parse(ParsingContext context, ModRmContext modRmContext, int groupIndex) {
         InstructionField<byte> immediate = _instructionReader.UInt8.NextField(false);

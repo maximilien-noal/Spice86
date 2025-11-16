@@ -15,24 +15,12 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-/// <summary>
-/// The partial.
-/// </summary>
 public abstract partial class ViewModelBase : ObservableObject, INotifyDataErrorInfo {
     protected readonly Dictionary<string, List<string>> _validationErrors = new();
-    /// <summary>
-    /// The HasErrors.
-    /// </summary>
     public bool HasErrors => _validationErrors.Count > 0;
 
-    /// <summary>
-    /// The EventHandler.
-    /// </summary>
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
-    /// <summary>
-    /// GetErrors method.
-    /// </summary>
     public IEnumerable GetErrors(string? propertyName) {
         if (propertyName is not null &&
             _validationErrors.TryGetValue(propertyName, out List<string>? value)) {

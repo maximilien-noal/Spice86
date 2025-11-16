@@ -3,91 +3,46 @@ using Spice86.Core.Emulator.VM;
 
 namespace Spice86.Core.Emulator.CPU.InstructionsImpl;
 
-/// <summary>
-/// The class.
-/// </summary>
 public abstract class Instructions16Or32 : Instructions {
     protected Instructions16Or32(Cpu cpu, Memory.IMemory memory, ModRM modRm)
         : base(cpu, memory, modRm) {
     }
 
     // Inc Reg
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void IncReg(int regIndex);
 
     // Dec Reg
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void DecReg(int regIndex);
 
     // Push Reg
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void PushReg(int regIndex);
 
     // Pop Reg
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void PopReg(int regIndex);
 
     // Pusha
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Pusha();
 
     // Popa
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Popa();
 
     // Push immediate value
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void PushImm();
 
     // Push Sign extended 8bit immediate value
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void PushImm8SignExtended();
 
     // IMUL R <- Rm x Imm8
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void ImulRmImm8();
 
     // IMUL R <- Rm x Imm16 / 32
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void ImulRmImm16Or32();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void ImulRmReg16Or32();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovRmSreg();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Lea();
 
-    /// <summary>
-    /// ExtractLeaMemoryOffset16 method.
-    /// </summary>
     public ushort ExtractLeaMemoryOffset16() {
         ModRM.Read();
         ushort? memoryOffset = ModRM.MemoryOffset;
@@ -99,43 +54,19 @@ public abstract class Instructions16Or32 : Instructions {
         return (ushort)memoryOffset;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void PopRm();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void XchgAcc(int regIndex);
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Cbw();
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Cwd();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Pushf();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Popf();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Grp1(bool signExtendOp2);
 
-    /// <summary>
-    /// Grp5 method.
-    /// </summary>
     public void Grp5() {
         ModRM.Read();
         uint groupIndex = ModRM.RegisterIndex;
@@ -214,30 +145,18 @@ public abstract class Instructions16Or32 : Instructions {
         return (uint)memoryAddress;
     }
 
-    /// <summary>
-    /// Lds method.
-    /// </summary>
     public void Lds() {
         State.DS = DoLxsAndReturnSegmentValue();
     }
 
-    /// <summary>
-    /// Les method.
-    /// </summary>
     public void Les() {
         State.ES = DoLxsAndReturnSegmentValue();
     }
 
-    /// <summary>
-    /// Lfs method.
-    /// </summary>
     public void Lfs() {
         State.FS = DoLxsAndReturnSegmentValue();
     }
 
-    /// <summary>
-    /// Lgs method.
-    /// </summary>
     public void Lgs() {
         State.GS = DoLxsAndReturnSegmentValue();
     }
@@ -247,23 +166,11 @@ public abstract class Instructions16Or32 : Instructions {
     /// </summary>
     public abstract void Enter();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Leave();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void Shld(Grp2CountSource countSource);
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovzxByte();
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public abstract void MovsxByte();
 }

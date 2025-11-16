@@ -10,9 +10,6 @@ using Spice86.ViewModels.ValueViewModels.Debugging;
 
 using System.Text.Json;
 
-/// <summary>
-/// The class.
-/// </summary>
 public partial class VideoCardViewModel : ViewModelBase, IEmulatorObjectViewModel {
     [ObservableProperty]
     private VideoCardInfo _videoCard = new();
@@ -27,9 +24,6 @@ public partial class VideoCardViewModel : ViewModelBase, IEmulatorObjectViewMode
         _storageProvider = storageProvider;
     }
 
-    /// <summary>
-    /// Gets or sets the IsVisible.
-    /// </summary>
     public bool IsVisible { get; set; }
 
     [RelayCommand]
@@ -37,9 +31,6 @@ public partial class VideoCardViewModel : ViewModelBase, IEmulatorObjectViewMode
         await _storageProvider.SaveVideoCardInfoFile(JsonSerializer.Serialize(VideoCard));
     }
 
-    /// <summary>
-    /// UpdateValues method.
-    /// </summary>
     public void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;

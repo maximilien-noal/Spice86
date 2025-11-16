@@ -239,9 +239,6 @@ public static partial class ConvertUtils {
         return $"{ToHex16(ToAbsoluteSegment(physical))}:{ToHex16(ToAbsoluteOffset(physical))}";
     }
 
-    /// <summary>
-    /// string method.
-    /// </summary>
     public static string ToBin32(uint value) {
         return $"0b{value:B}";
     }

@@ -1,8 +1,5 @@
 namespace Spice86.Core.Emulator.CPU.Registers;
 
-/// <summary>
-/// SegmentRegisterIndex enumeration.
-/// </summary>
 public enum SegmentRegisterIndex {
     /// <summary>
     /// The index of the ES (extra segment) register.

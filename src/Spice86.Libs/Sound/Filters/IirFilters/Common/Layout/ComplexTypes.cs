@@ -2,9 +2,6 @@ namespace Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 
 using System.Numerics;
 
-/// <summary>
-/// Represents the ComplexPair structure.
-/// </summary>
 public struct ComplexPair {
     internal Complex First;
     internal Complex Second;
@@ -47,9 +44,6 @@ public struct ComplexPair {
     }
 }
 
-/// <summary>
-/// Represents the PoleZeroPair structure.
-/// </summary>
 public struct PoleZeroPair {
     internal ComplexPair Poles;
     internal ComplexPair Zeros;

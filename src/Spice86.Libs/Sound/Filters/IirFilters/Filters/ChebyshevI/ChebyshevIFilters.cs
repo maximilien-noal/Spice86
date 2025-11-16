@@ -5,9 +5,6 @@ using Spice86.Libs.Sound.Filters.IirFilters.Common.Layout;
 using Spice86.Libs.Sound.Filters.IirFilters.Common.State;
 using Spice86.Libs.Sound.Filters.IirFilters.Common.Transforms;
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIFilterBase<TAnalog, TState>(int maxOrder, int maxDigitalPoles, TAnalog analog)
     : PoleFilterBase<TAnalog, TState>(maxOrder, maxDigitalPoles, analog)
     where TAnalog : LayoutBase
@@ -21,9 +18,6 @@ public abstract class ChebyshevIFilterBase<TAnalog, TState>(int maxOrder, int ma
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevILowPassBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -35,9 +29,6 @@ public abstract class ChebyshevILowPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIHighPassBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -49,9 +40,6 @@ public abstract class ChebyshevIHighPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIBandPassBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder * 2, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -63,9 +51,6 @@ public abstract class ChebyshevIBandPassBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIBandStopBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowPass, TState>(maxOrder, maxOrder * 2, new AnalogLowPass())
     where TState : struct, ISectionState {
@@ -77,9 +62,6 @@ public abstract class ChebyshevIBandStopBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevILowShelfBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder, new AnalogLowShelf())
     where TState : struct, ISectionState {
@@ -91,9 +73,6 @@ public abstract class ChebyshevILowShelfBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIHighShelfBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder, new AnalogLowShelf())
     where TState : struct, ISectionState {
@@ -105,9 +84,6 @@ public abstract class ChebyshevIHighShelfBase<TState>(int maxOrder)
     }
 }
 
-/// <summary>
-/// class method.
-/// </summary>
 public abstract class ChebyshevIBandShelfBase<TState>(int maxOrder)
     : ChebyshevIFilterBase<AnalogLowShelf, TState>(maxOrder, maxOrder * 2, new AnalogLowShelf())
     where TState : struct, ISectionState {

@@ -2,38 +2,14 @@ namespace Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.ModRm;
 
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the ModRmContext class.
-/// </summary>
 public class ModRmContext {
 
-    /// <summary>
-    /// Gets or sets the ModRmField.
-    /// </summary>
     public InstructionField<byte> ModRmField { get; }
-    /// <summary>
-    /// Gets or sets the Mode.
-    /// </summary>
     public uint Mode { get; }
-    /// <summary>
-    /// Gets or sets the RegisterIndex.
-    /// </summary>
     public int RegisterIndex { get; }
-    /// <summary>
-    /// Gets or sets the RegisterMemoryIndex.
-    /// </summary>
     public int RegisterMemoryIndex { get; }
-    /// <summary>
-    /// The AddressSize.
-    /// </summary>
     public BitWidth AddressSize;
-    /// <summary>
-    /// Gets or sets the MemoryOffsetType.
-    /// </summary>
     public MemoryOffsetType MemoryOffsetType { get; }
-    /// <summary>
-    /// Gets or sets the MemoryAddressType.
-    /// </summary>
     public MemoryAddressType MemoryAddressType { get; }
     public SibContext? SibContext { get; }
     public DisplacementType? DisplacementType { get; }
@@ -42,9 +18,6 @@ public class ModRmContext {
     public InstructionField<ushort>? ModRmOffsetField { get; }
     public int? SegmentIndex { get; }
 
-    /// <summary>
-    /// FieldsInOrder method.
-    /// </summary>
     public List<FieldWithValue> FieldsInOrder { get; } = new();
 
     public ModRmContext(

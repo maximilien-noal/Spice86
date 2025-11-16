@@ -5,13 +5,7 @@ using Spice86.Core.Emulator.Devices.Sound.Midi;
 using Spice86.Core.Emulator.Devices.Video;
 using Spice86.ViewModels.ValueViewModels.Debugging;
 
-/// <summary>
-/// The class.
-/// </summary>
 public static class MapperExtensions {
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void CopyToStateInfo(this State state, StateInfo stateInfo) {
         stateInfo.AH = state.AH;
         stateInfo.AL = state.AL;
@@ -50,9 +44,6 @@ public static class MapperExtensions {
         stateInfo.SegmentOverrideIndex = state.SegmentOverrideIndex;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void CopyFlagsToStateInfo(this State state, CpuFlagsInfo cpuFlagsInfo) {
         cpuFlagsInfo.AuxiliaryFlag = state.AuxiliaryFlag;
         cpuFlagsInfo.CarryFlag = state.CarryFlag;
@@ -64,18 +55,12 @@ public static class MapperExtensions {
         cpuFlagsInfo.ContinueZeroFlag = state.ContinueZeroFlagValue;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void CopyToMidiInfo(this Midi midi, MidiInfo midiInfo) {
         midiInfo.LastPortRead = midi.LastPortRead;
         midiInfo.LastPortWritten = midi.LastPortWritten;
         midiInfo.LastPortWrittenValue = midi.LastPortWrittenValue;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void CopyToVideoCardInfo(this IVgaRenderer vgaRenderer, VideoCardInfo videoCardInfo) {
         videoCardInfo.RendererWidth = vgaRenderer.Width;
         videoCardInfo.RendererHeight = vgaRenderer.Height;
@@ -83,9 +68,6 @@ public static class MapperExtensions {
         videoCardInfo.LastFrameRenderTime = vgaRenderer.LastFrameRenderTime;
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public static void CopyToVideoCardInfo(this IVideoState videoState, VideoCardInfo videoCardInfo) {
         try {
             videoCardInfo.GeneralMiscellaneousOutputRegister = videoState.GeneralRegisters.MiscellaneousOutput.Value;

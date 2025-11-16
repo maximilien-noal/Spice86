@@ -8,30 +8,12 @@ using Spice86.Shared.Emulator.Memory;
 using System.Linq;
 using System.Numerics;
 
-/// <summary>
-/// Represents the ParsingContext class.
-/// </summary>
 public class ParsingContext : ModRmParsingContext {
-    /// <summary>
-    /// Gets or sets the Address.
-    /// </summary>
     public SegmentedAddress Address { get; }
-    /// <summary>
-    /// Gets or sets the OpcodeField.
-    /// </summary>
     public InstructionField<ushort> OpcodeField { get; }
-    /// <summary>
-    /// Gets or sets the Prefixes.
-    /// </summary>
     public List<InstructionPrefix> Prefixes { get; }
-    /// <summary>
-    /// Gets or sets the AddressWidthFromPrefixes.
-    /// </summary>
     public BitWidth AddressWidthFromPrefixes { get; }
     public int? SegmentOverrideFromPrefixes { get; }
-    /// <summary>
-    /// Gets or sets the HasOperandSize32.
-    /// </summary>
     public bool HasOperandSize32 { get; }
 
     public ParsingContext(SegmentedAddress address, InstructionField<ushort> opcodeField,

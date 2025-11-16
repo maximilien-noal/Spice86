@@ -5,9 +5,6 @@ using Avalonia.Xaml.Interactivity;
 
 namespace Spice86.Views.Behaviors;
 
-/// <summary>
-/// Represents the UpdateBindingOnEnterBehavior class.
-/// </summary>
 public class UpdateBindingOnEnterBehavior : Behavior<TextBox> {
     protected override void OnAttached() {
         base.OnAttached();

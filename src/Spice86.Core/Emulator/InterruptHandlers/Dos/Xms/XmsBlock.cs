@@ -30,9 +30,6 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
     /// </summary>
     public bool IsFree { get; }
 
-    /// <summary>
-    /// string method.
-    /// </summary>
     public override string ToString() {
         if (!IsFree) {
             return $"{Handle:X4}: {Offset:X8} to {Offset + Length:X8}";
@@ -41,19 +38,10 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
         }
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public override bool Equals(object? obj) => obj is XmsBlock b && Equals(b);
 
-    /// <summary>
-    /// int method.
-    /// </summary>
     public override int GetHashCode() => Handle ^ (int)Offset ^ (int)Length;
 
-    /// <summary>
-    /// Equals method.
-    /// </summary>
     public bool Equals(XmsBlock other) => Handle == other.Handle && Offset == other.Offset && Length == other.Length && !IsFree == !other.IsFree;
 
     /// <summary>
@@ -106,23 +94,14 @@ public readonly struct XmsBlock : IEquatable<XmsBlock> {
         return new XmsBlock(0, Offset, Length + other.Length, true);
     }
 
-    /// <summary>
-    /// CanBeJoinedWith method.
-    /// </summary>
     public bool CanBeJoinedWith(XmsBlock other) {
         return IsFree && other.IsFree && Offset + Length == other.Offset;
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool operator ==(XmsBlock left, XmsBlock right) {
         return left.Equals(right);
     }
 
-    /// <summary>
-    /// bool method.
-    /// </summary>
     public static bool operator !=(XmsBlock left, XmsBlock right) {
         return !(left == right);
     }

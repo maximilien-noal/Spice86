@@ -7,9 +7,6 @@ using Spice86.Core.Emulator.VM;
 
 using System.Runtime.InteropServices;
 
-/// <summary>
-/// Defines the contract for IExceptionHandler.
-/// </summary>
 public interface IExceptionHandler {
     void Handle(Exception e);
 }
@@ -22,9 +19,6 @@ public interface IExceptionHandler {
 ///     Otherwise, it terminates the application with an exit code.
 /// </remarks>
 public class HeadlessModeExceptionHandler(IUIDispatcher uiDispatcher) : IExceptionHandler {
-    /// <summary>
-    /// Handle method.
-    /// </summary>
     public void Handle(Exception e) {
         int resultCode = Marshal.GetHRForException(e);
         if (Application.Current?.ApplicationLifetime is IControlledApplicationLifetime lifetime) {
@@ -35,13 +29,7 @@ public class HeadlessModeExceptionHandler(IUIDispatcher uiDispatcher) : IExcepti
     }
 }
 
-/// <summary>
-/// Represents the MainWindowExceptionHandler class.
-/// </summary>
 public class MainWindowExceptionHandler(IPauseHandler pauseHandler) : IExceptionHandler {
-    /// <summary>
-    /// Handle method.
-    /// </summary>
     public void Handle(Exception e) {
         pauseHandler.RequestPause("Inspect emulator error");
     }

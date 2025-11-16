@@ -4,13 +4,7 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction;
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the LoopParser class.
-/// </summary>
 public class LoopParser(BaseInstructionParser instructionParser) : BaseInstructionParser(instructionParser) {
-    /// <summary>
-    /// Parse method.
-    /// </summary>
     public CfgInstruction Parse(ParsingContext context) {
         BitWidth addressWidth = context.AddressWidthFromPrefixes;
         ushort opcode = context.OpcodeField.Value;

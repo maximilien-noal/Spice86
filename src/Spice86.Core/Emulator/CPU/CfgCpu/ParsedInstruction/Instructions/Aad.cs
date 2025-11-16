@@ -7,17 +7,11 @@ using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Instructions.CommonGram
 using Spice86.Core.Emulator.CPU.CfgCpu.ParsedInstruction.Prefix;
 using Spice86.Shared.Emulator.Memory;
 
-/// <summary>
-/// Represents the Aad class.
-/// </summary>
 public class Aad : InstructionWithValueField<byte> {
     public Aad(SegmentedAddress address, InstructionField<ushort> opcodeField, InstructionField<byte> valueField) :
         base(address, opcodeField, new List<InstructionPrefix>(), valueField, 1) {
     }
 
-    /// <summary>
-    /// void method.
-    /// </summary>
     public override void Execute(InstructionExecutionHelper helper) {
         byte v2 = helper.InstructionFieldValueRetriever.GetFieldValue(ValueField);
         helper.State.AL = (byte)(helper.State.AL + (helper.State.AH * v2));
@@ -30,9 +24,6 @@ public class Aad : InstructionWithValueField<byte> {
         helper.MoveIpAndSetNextNode(this);
     }
 
-    /// <summary>
-    /// InstructionNode method.
-    /// </summary>
     public override InstructionNode ToInstructionAst(AstBuilder builder) {
         return new InstructionNode(InstructionOperation.AAD);
     }

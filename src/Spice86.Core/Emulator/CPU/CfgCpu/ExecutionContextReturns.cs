@@ -13,9 +13,6 @@ using Spice86.Shared.Emulator.Memory;
 public class ExecutionContextReturns {
     private readonly Dictionary<SegmentedAddress, Stack<ExecutionContext>> _executionContextReturns = new();
 
-    /// <summary>
-    /// PushContextToRestore method.
-    /// </summary>
     public void PushContextToRestore(SegmentedAddress expectedReturn, ExecutionContext contextToRestore) {
         // Save current execution context
         if (!_executionContextReturns.TryGetValue(expectedReturn, out Stack<ExecutionContext>? contextsToRestoreAtAddress)) {
