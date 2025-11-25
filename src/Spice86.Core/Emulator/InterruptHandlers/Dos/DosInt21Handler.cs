@@ -1111,7 +1111,9 @@ public class DosInt21Handler : InterruptHandler {
     /// </para>
     /// <para>
     /// DS:DX → ASCIZ program name (must include extension)<br/>
-    /// ES:BX → parameter block (DosExecParameterBlock or DosExecOverlayParameterBlock for AL=03h)
+    /// ES:BX → parameter block:
+    ///   - AL=00h/01h: DosExecParameterBlock (environment, command tail, FCBs, entry point info)
+    ///   - AL=03h: DosExecOverlayParameterBlock (load segment, relocation factor)
     /// </para>
     /// <para>
     /// Returns:<br/>

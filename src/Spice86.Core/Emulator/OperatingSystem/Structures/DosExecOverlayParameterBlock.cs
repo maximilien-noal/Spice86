@@ -44,8 +44,8 @@ public class DosExecOverlayParameterBlock : MemoryBasedDataStructure {
 
     /// <summary>
     /// Gets or sets the relocation factor for EXE overlays.
-    /// For COM files, this is typically the same as the load segment.
-    /// For EXE files, this is used when applying relocations.
+    /// This value is only used when loading EXE files with relocations.
+    /// For COM files, this field is ignored since COM files have no relocations.
     /// </summary>
     /// <remarks>Offset 0x02, 2 bytes.</remarks>
     public ushort RelocationFactor { get => UInt16[0x02]; set => UInt16[0x02] = value; }
