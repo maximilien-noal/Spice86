@@ -34,7 +34,6 @@ public class CommandCom {
     /// </remarks>
     public const ushort CommandComSegment = 0x60;
 
-    private readonly IMemory _memory;
     private readonly ILoggerService _loggerService;
 
     /// <summary>
@@ -54,7 +53,6 @@ public class CommandCom {
     /// <param name="memory">The emulator memory.</param>
     /// <param name="loggerService">The logger service.</param>
     public CommandCom(IMemory memory, ILoggerService loggerService) {
-        _memory = memory;
         _loggerService = loggerService;
 
         uint pspAddress = MemoryUtils.ToPhysicalAddress(CommandComSegment, 0);
