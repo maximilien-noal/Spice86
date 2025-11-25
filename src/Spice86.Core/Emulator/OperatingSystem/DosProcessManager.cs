@@ -138,6 +138,93 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
+    /// Loads an overlay using DOS EXEC semantics (INT 21h, AH=4Bh, AL=03h).
+    /// This loads program code at a specified segment without creating a PSP.
+    /// </summary>
+    /// <param name="programPath">The DOS path to the overlay file.</param>
+    /// <param name="loadSegment">The segment at which to load the overlay.</param>
+    /// <param name="relocationFactor">The relocation factor for EXE overlays.</param>
+    /// <returns>The result of the EXEC operation.</returns>
+    /// <remarks>
+    /// Overlay loading is used by programs that manage their own code overlays.
+    /// No PSP is created and no environment is set up.
+    /// </remarks>
+    public DosExecResult ExecOverlay(string programPath, ushort loadSegment, ushort relocationFactor) {
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information(
+                "EXEC OVERLAY: Loading '{Program}' at segment {Segment:X4}, reloc={Reloc:X4}",
+                programPath, loadSegment, relocationFactor);
+        }
+
+        // Resolve the program path to a host file path
+        string? hostPath = ResolveToHostPath(programPath);
+        if (hostPath is null || !File.Exists(hostPath)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("EXEC OVERLAY: File not found: {Program}", programPath);
+            }
+            return DosExecResult.Failed(DosErrorCode.FileNotFound);
+        }
+
+        // Read the program file
+        byte[] fileBytes;
+        try {
+            fileBytes = ReadFile(hostPath);
+        } catch (IOException ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("EXEC OVERLAY: Failed to read file: {Error}", ex.Message);
+            }
+            return DosExecResult.Failed(DosErrorCode.PathNotFound);
+        }
+
+        // Determine if this is an EXE or COM file
+        bool isExe = false;
+        DosExeFile? exeFile = null;
+
+        if (fileBytes.Length >= DosExeFile.MinExeSize) {
+            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
+            isExe = exeFile.IsValid;
+        }
+
+        // Load the overlay at the specified segment
+        if (isExe && exeFile is not null) {
+            LoadExeOverlay(exeFile, loadSegment, relocationFactor);
+        } else {
+            LoadComOverlay(fileBytes, loadSegment);
+        }
+
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+            _loggerService.Debug(
+                "EXEC OVERLAY: Loaded {Size} bytes at segment {Segment:X4}",
+                fileBytes.Length, loadSegment);
+        }
+
+        return DosExecResult.Succeeded();
+    }
+
+    /// <summary>
+    /// Loads a COM file as an overlay at the specified segment.
+    /// </summary>
+    private void LoadComOverlay(byte[] comData, ushort loadSegment) {
+        uint physicalAddress = MemoryUtils.ToPhysicalAddress(loadSegment, 0);
+        _memory.LoadData(physicalAddress, comData);
+    }
+
+    /// <summary>
+    /// Loads an EXE file as an overlay at the specified segment with relocations.
+    /// </summary>
+    private void LoadExeOverlay(DosExeFile exeFile, ushort loadSegment, ushort relocationFactor) {
+        uint physicalAddress = MemoryUtils.ToPhysicalAddress(loadSegment, 0);
+        _memory.LoadData(physicalAddress, exeFile.ProgramImage, (int)exeFile.ProgramSize);
+
+        // Apply relocations using the relocation factor
+        foreach (SegmentedAddress address in exeFile.RelocationTable) {
+            uint addressToEdit = MemoryUtils.ToPhysicalAddress(address.Segment, address.Offset)
+                + physicalAddress;
+            _memory.UInt16[addressToEdit] += relocationFactor;
+        }
+    }
+
+    /// <summary>
     /// Resolves a DOS path to a host file path.
     /// </summary>
     private string? ResolveToHostPath(string dosPath) {

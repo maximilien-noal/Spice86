@@ -1111,7 +1111,7 @@ public class DosInt21Handler : InterruptHandler {
     /// </para>
     /// <para>
     /// DS:DX → ASCIZ program name (must include extension)<br/>
-    /// ES:BX → parameter block (DosExecParameterBlock)
+    /// ES:BX → parameter block (DosExecParameterBlock or DosExecOverlayParameterBlock for AL=03h)
     /// </para>
     /// <para>
     /// Returns:<br/>
@@ -1133,44 +1133,63 @@ public class DosInt21Handler : InterruptHandler {
 
         // Read the parameter block from ES:BX
         uint paramBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
-        DosExecParameterBlock paramBlock = new(Memory, paramBlockAddress);
 
-        // Get command tail from parameter block
-        uint cmdTailAddress = MemoryUtils.ToPhysicalAddress(
-            paramBlock.CommandTailSegment, paramBlock.CommandTailOffset);
-        byte cmdLength = Memory.UInt8[cmdTailAddress];
-        string commandTail = "";
-        if (cmdLength > 0) {
-            byte[] cmdBytes = new byte[cmdLength];
-            for (int i = 0; i < cmdLength; i++) {
-                cmdBytes[i] = Memory.UInt8[cmdTailAddress + 1 + (uint)i];
-            }
-            commandTail = Encoding.ASCII.GetString(cmdBytes).TrimEnd('\r');
-        }
+        DosExecResult result;
 
-        if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-            LoggerService.Debug(
-                "EXEC param block: EnvSeg={EnvSeg:X4}, CmdTail='{CmdTail}'",
-                paramBlock.EnvironmentSegment, commandTail);
-        }
-
-        // Call the process manager's EXEC function
-        DosExecResult result = _dosProcessManager.Exec(
-            programName, 
-            commandTail, 
-            loadType, 
-            paramBlock.EnvironmentSegment);
-
-        if (result.Success) {
-            SetCarryFlag(false, calledFromVm);
+        if (loadType == DosExecLoadType.LoadOverlay) {
+            // For overlay mode, use the overlay-specific parameter block
+            DosExecOverlayParameterBlock overlayParamBlock = new(Memory, paramBlockAddress);
             
+            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                LoggerService.Debug(
+                    "EXEC overlay param block: LoadSeg={LoadSeg:X4}, RelocFactor={RelocFactor:X4}",
+                    overlayParamBlock.LoadSegment, overlayParamBlock.RelocationFactor);
+            }
+
+            result = _dosProcessManager.ExecOverlay(
+                programName,
+                overlayParamBlock.LoadSegment,
+                overlayParamBlock.RelocationFactor);
+        } else {
+            // For load/execute and load-only modes, use the standard parameter block
+            DosExecParameterBlock paramBlock = new(Memory, paramBlockAddress);
+
+            // Get command tail from parameter block
+            uint cmdTailAddress = MemoryUtils.ToPhysicalAddress(
+                paramBlock.CommandTailSegment, paramBlock.CommandTailOffset);
+            byte cmdLength = Memory.UInt8[cmdTailAddress];
+            string commandTail = "";
+            if (cmdLength > 0) {
+                byte[] cmdBytes = new byte[cmdLength];
+                for (int i = 0; i < cmdLength; i++) {
+                    cmdBytes[i] = Memory.UInt8[cmdTailAddress + 1 + (uint)i];
+                }
+                commandTail = Encoding.ASCII.GetString(cmdBytes).TrimEnd('\r');
+            }
+
+            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                LoggerService.Debug(
+                    "EXEC param block: EnvSeg={EnvSeg:X4}, CmdTail='{CmdTail}'",
+                    paramBlock.EnvironmentSegment, commandTail);
+            }
+
+            result = _dosProcessManager.Exec(
+                programName, 
+                commandTail, 
+                loadType, 
+                paramBlock.EnvironmentSegment);
+
             // For LoadOnly mode, fill in the entry point info in the parameter block
-            if (loadType == DosExecLoadType.LoadOnly) {
+            if (result.Success && loadType == DosExecLoadType.LoadOnly) {
                 paramBlock.InitialSS = result.InitialSS;
                 paramBlock.InitialSP = result.InitialSP;
                 paramBlock.InitialCS = result.InitialCS;
                 paramBlock.InitialIP = result.InitialIP;
             }
+        }
+
+        if (result.Success) {
+            SetCarryFlag(false, calledFromVm);
         } else {
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
