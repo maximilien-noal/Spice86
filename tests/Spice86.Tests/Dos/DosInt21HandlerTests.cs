@@ -45,6 +45,7 @@ public class DosInt21HandlerTests {
             null!,
             dosFileManager,
             driveManager,
+            null!,  // dosProcessManager
             null!,  // ioPortDispatcher
             null!,  // dosTables
             logger);
