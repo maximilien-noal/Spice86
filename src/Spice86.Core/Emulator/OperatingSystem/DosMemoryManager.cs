@@ -84,7 +84,7 @@ public class DosMemoryManager {
         if (!SplitBlock(block, requestedSizeInParagraphs)) {
             // An issue occurred while splitting the block
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
-                _loggerService.Error("Could not spit block {Block}", block);
+                _loggerService.Error("Could not split block {Block}", block);
             }
             return null;
         }

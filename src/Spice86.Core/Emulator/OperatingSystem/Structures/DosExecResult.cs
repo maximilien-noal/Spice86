@@ -47,19 +47,26 @@ public readonly struct DosExecResult {
     /// <summary>
     /// Creates a successful EXEC result.
     /// </summary>
-    public static DosExecResult Succeeded() => new(true, DosErrorCode.NoError, 0, 0, 0, 0, 0);
+    public static DosExecResult Succeeded() => new(
+        success: true,
+        errorCode: DosErrorCode.NoError,
+        childPspSegment: 0,
+        cs: 0, ip: 0, ss: 0, sp: 0);
 
     /// <summary>
     /// Creates a successful EXEC result with child process information (for LoadOnly).
     /// </summary>
     public static DosExecResult Succeeded(ushort childPspSegment, ushort cs, ushort ip, ushort ss, ushort sp) =>
-        new(true, DosErrorCode.NoError, childPspSegment, cs, ip, ss, sp);
+        new(success: true, errorCode: DosErrorCode.NoError, childPspSegment, cs, ip, ss, sp);
 
     /// <summary>
     /// Creates a failed EXEC result.
     /// </summary>
-    public static DosExecResult Failed(DosErrorCode errorCode) => 
-        new(false, errorCode, 0, 0, 0, 0, 0);
+    public static DosExecResult Failed(DosErrorCode errorCode) => new(
+        success: false,
+        errorCode: errorCode,
+        childPspSegment: 0,
+        cs: 0, ip: 0, ss: 0, sp: 0);
 
     private DosExecResult(bool success, DosErrorCode errorCode, ushort childPspSegment, 
         ushort cs, ushort ip, ushort ss, ushort sp) {
