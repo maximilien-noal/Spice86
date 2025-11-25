@@ -26,12 +26,22 @@ public class DosProcessManager : DosFileLoader {
     private readonly DosDriveManager _driveManager;
 
     /// <summary>
+    /// The simulated COMMAND.COM that serves as the root of the PSP chain.
+    /// </summary>
+    private readonly CommandCom _commandCom;
+
+    /// <summary>
     /// The master environment block that all DOS PSPs inherit.
     /// </summary>
     /// <remarks>
     /// Not stored in emulated memory, so no one can modify it.
     /// </remarks>
     private readonly EnvironmentVariables _environmentVariables;
+
+    /// <summary>
+    /// Gets the simulated COMMAND.COM instance.
+    /// </summary>
+    public CommandCom CommandCom => _commandCom;
 
     public DosProcessManager(IMemory memory, State state,
         DosProgramSegmentPrefixTracker dosPspTracker, DosMemoryManager dosMemoryManager,
@@ -43,6 +53,9 @@ public class DosProcessManager : DosFileLoader {
         _fileManager = dosFileManager;
         _driveManager = dosDriveManager;
         _environmentVariables = new();
+
+        // Initialize COMMAND.COM as the root of the PSP chain
+        _commandCom = new CommandCom(memory, loggerService);
 
         envVars.Add("PATH", $"{_driveManager.CurrentDrive.DosVolume}{DosPathResolver.DirectorySeparatorChar}");
 
@@ -93,6 +106,10 @@ public class DosProcessManager : DosFileLoader {
         psp.Exit[1] = 0x20;
 
         psp.NextSegment = DosMemoryManager.LastFreeSegment;
+
+        // Set parent PSP to COMMAND.COM - establishing the PSP chain
+        // This is how DOS programs know their parent process
+        psp.ParentProgramSegmentPrefix = _commandCom.PspSegment;
 
         // Load the command-line arguments into the PSP's command tail.
         byte[] commandLineBytes = ArgumentsToDosBytes(arguments);
