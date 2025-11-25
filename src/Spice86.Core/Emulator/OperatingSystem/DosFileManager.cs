@@ -695,6 +695,13 @@ public class DosFileManager {
         return DosFileOperationResult.Error(DosErrorCode.TooManyOpenFiles);
     }
 
+    /// <summary>
+    /// Resolves a DOS path to a host file system path.
+    /// </summary>
+    /// <param name="dosPath">The DOS path to resolve.</param>
+    /// <returns>The resolved host path, or null if the path cannot be resolved.</returns>
+    public string? GetHostPath(string dosPath) => _dosPathResolver.GetFullHostPathFromDosOrDefault(dosPath);
+
     internal string? TryGetFullHostPathFromDos(string dosPath) => _dosPathResolver.
         GetFullHostPathFromDosOrDefault(dosPath);
 

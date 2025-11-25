@@ -94,6 +94,77 @@ public class DosMemoryManager {
     }
 
     /// <summary>
+    /// Allocates a memory block for an environment block and copies the environment data into it.
+    /// </summary>
+    /// <param name="environmentData">The environment block data to copy.</param>
+    /// <param name="ownerPspSegment">The PSP segment that owns this environment block.</param>
+    /// <returns>The segment of the allocated environment block, or 0 if allocation failed.</returns>
+    /// <remarks>
+    /// This allocates an MCB for the environment block, which is the correct DOS behavior.
+    /// The environment block contains null-terminated strings of KEY=VALUE pairs,
+    /// followed by an additional null byte, then a word count and the program path.
+    /// </remarks>
+    public ushort AllocateEnvironmentBlock(byte[] environmentData, ushort ownerPspSegment) {
+        // Calculate size in paragraphs (round up)
+        ushort sizeInParagraphs = (ushort)((environmentData.Length + 15) / 16);
+        
+        DosMemoryControlBlock? block = AllocateMemoryBlockForPsp(sizeInParagraphs, ownerPspSegment);
+        if (block is null) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Failed to allocate environment block of {Size} bytes", environmentData.Length);
+            }
+            return 0;
+        }
+
+        // Copy environment data to the allocated block
+        uint dataAddress = MemoryUtils.ToPhysicalAddress(block.DataBlockSegment, 0);
+        _memory.LoadData(dataAddress, environmentData);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose(
+                "Allocated environment block at segment {Segment:X4} ({Size} paragraphs) for PSP {Psp:X4}",
+                block.DataBlockSegment, sizeInParagraphs, ownerPspSegment);
+        }
+
+        return block.DataBlockSegment;
+    }
+
+    /// <summary>
+    /// Allocates a memory block and assigns it to a specific PSP segment.
+    /// </summary>
+    /// <param name="requestedSizeInParagraphs">The requested size in paragraphs.</param>
+    /// <param name="pspSegment">The PSP segment to assign as owner.</param>
+    /// <returns>The allocated MCB, or null if allocation failed.</returns>
+    public DosMemoryControlBlock? AllocateMemoryBlockForPsp(ushort requestedSizeInParagraphs, ushort pspSegment) {
+        IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
+
+        // take the smallest
+        DosMemoryControlBlock? blockOptional = null;
+        foreach (DosMemoryControlBlock currentElement in candidates) {
+            if (blockOptional is null || currentElement.Size < blockOptional.Size) {
+                blockOptional = currentElement;
+            }
+        }
+        if (blockOptional is null) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Could not find any MCB to fit {RequestedSize}", requestedSizeInParagraphs);
+            }
+            return null;
+        }
+
+        DosMemoryControlBlock block = blockOptional;
+        if (!SplitBlock(block, requestedSizeInParagraphs)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Could not split block {Block}", block);
+            }
+            return null;
+        }
+
+        block.PspSegment = pspSegment;
+        return block;
+    }
+
+    /// <summary>
     /// Finds the largest free <see cref="DosMemoryControlBlock"/>.
     /// </summary>
     /// <returns>The largest free <see cref="DosMemoryControlBlock"/></returns>
