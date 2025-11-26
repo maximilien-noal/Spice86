@@ -54,7 +54,7 @@ public class DosProgramSegmentPrefixTracker {
         _loadedPsps = new();
 
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
-            _loggerService.Information("Initial program entry point at segment: {Segment}",
+            _loggerService.Information("Initial program entry point at segment: {EntryPointSegment}",
                 ConvertUtils.ToHex16(_initialProgramEntryPointSegment));
         }
 
@@ -64,7 +64,7 @@ public class DosProgramSegmentPrefixTracker {
         if (pspSegment <= MemoryMap.FreeMemoryStartSegment) {
             if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
                 _loggerService.Warning(
-                    "WARNING: Initial PSP segment {PspSegment:X4} is at or below FreeMemoryStartSegment {FreeMemory:X4}. " +
+                    "Initial PSP segment {PspSegment:X4} is at or below FreeMemoryStartSegment {FreeMemory:X4}. " +
                     "This may overwrite BIOS data or interrupt vectors!",
                     pspSegment, MemoryMap.FreeMemoryStartSegment);
             }
