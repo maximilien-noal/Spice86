@@ -1156,18 +1156,11 @@ public class DosInt21Handler : InterruptHandler {
             // For load/execute and load-only modes, use the standard parameter block
             DosExecParameterBlock paramBlock = new(Memory, paramBlockAddress);
 
-            // Get command tail from parameter block
+            // Get command tail from parameter block using the DosCommandTail structure
             uint cmdTailAddress = MemoryUtils.ToPhysicalAddress(
                 paramBlock.CommandTailSegment, paramBlock.CommandTailOffset);
-            byte cmdLength = Memory.UInt8[cmdTailAddress];
-            string commandTail = "";
-            if (cmdLength > 0) {
-                byte[] cmdBytes = new byte[cmdLength];
-                for (int i = 0; i < cmdLength; i++) {
-                    cmdBytes[i] = Memory.UInt8[cmdTailAddress + 1 + (uint)i];
-                }
-                commandTail = Encoding.ASCII.GetString(cmdBytes).TrimEnd('\r');
-            }
+            DosCommandTail cmdTail = new(Memory, cmdTailAddress);
+            string commandTail = cmdTail.Length > 0 ? cmdTail.Command.TrimEnd('\r') : "";
 
             if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                 LoggerService.Debug(
@@ -1177,7 +1170,7 @@ public class DosInt21Handler : InterruptHandler {
 
             result = _dosProcessManager.Exec(
                 programName, 
-                commandTail, 
+                commandTail,
                 loadType, 
                 paramBlock.EnvironmentSegment);
 
