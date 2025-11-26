@@ -237,6 +237,13 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
+    /// Size of memory allocation for COM files in paragraphs (~64KB).
+    /// COM files are loaded at CS:0100h and have a maximum size of 64KB - 256 bytes (for PSP).
+    /// This value (0xFFF paragraphs = 65,520 bytes) provides sufficient space for maximum COM file size.
+    /// </summary>
+    private const ushort ComFileMemoryParagraphs = 0xFFF;
+
+    /// <summary>
     /// Loads the program into memory and sets up the PSP.
     /// </summary>
     private DosExecResult LoadProgram(byte[] fileBytes, string hostPath, string? arguments,
@@ -261,8 +268,7 @@ public class DosProcessManager : DosFileLoader {
             if (isExe && exeFile is not null) {
                 memBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
             } else {
-                // For COM files, allocate 64KB (or less if not available)
-                memBlock = _memoryManager.AllocateMemoryBlock(0xFFF);  // ~64KB in paragraphs
+                memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
             }
             pspSegment = _pspTracker.InitialPspSegment;
         } else {
@@ -271,7 +277,7 @@ public class DosProcessManager : DosFileLoader {
                 // Pass 0 to let memory manager find the best available block
                 memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
             } else {
-                memBlock = _memoryManager.AllocateMemoryBlock(0xFFF);
+                memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
             }
             
             if (memBlock is null) {
@@ -280,7 +286,7 @@ public class DosProcessManager : DosFileLoader {
             pspSegment = memBlock.DataBlockSegment;
         }
 
-        if (memBlock is null && isExe) {
+        if (memBlock is null) {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
                 _loggerService.Error("Failed to allocate memory for program at segment {Segment:X4}", pspSegment);
             }
