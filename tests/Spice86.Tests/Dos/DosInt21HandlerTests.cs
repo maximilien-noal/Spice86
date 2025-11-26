@@ -30,7 +30,8 @@ public class DosInt21HandlerTests {
         ILoggerService logger = Substitute.For<ILoggerService>();
         IFunctionHandlerProvider functionHandlerProvider = Substitute.For<IFunctionHandlerProvider>();
         string cDrivePath = Path.GetTempPath();
-        DosDriveManager driveManager = new(logger, cDrivePath, null);
+        string executablePath = Path.Combine(cDrivePath, "test.exe");
+        DosDriveManager driveManager = new(logger, cDrivePath, executablePath);
         DosStringDecoder stringDecoder = new(memory, state);
         IList<IVirtualDevice> virtualDevices = new List<IVirtualDevice>();
         DosFileManager dosFileManager = new(memory, stringDecoder, driveManager, logger, virtualDevices);

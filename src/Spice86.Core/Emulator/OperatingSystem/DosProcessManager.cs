@@ -251,10 +251,44 @@ public class DosProcessManager : DosFileLoader {
             isExe = exeFile.IsValid;
         }
 
-        // TODO: For now, we still use the existing PSP allocation logic
-        // This should be updated to use MCB-based allocation
-        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(_pspTracker.InitialPspSegment);
-        ushort pspSegment = MemoryUtils.ToSegment(psp.BaseAddress);
+        // Allocate memory for the program using MCB-based allocation
+        // For the first program, we use InitialPspSegment; for child processes, we use MCB allocation
+        ushort pspSegment;
+        DosMemoryControlBlock? memBlock;
+        
+        if (_pspTracker.PspCount == 0) {
+            // First program - use the configured initial PSP segment
+            if (isExe && exeFile is not null) {
+                memBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
+            } else {
+                // For COM files, allocate 64KB (or less if not available)
+                memBlock = _memoryManager.AllocateMemoryBlock(0xFFF);  // ~64KB in paragraphs
+            }
+            pspSegment = _pspTracker.InitialPspSegment;
+        } else {
+            // Child process - use MCB allocation to find free memory
+            if (isExe && exeFile is not null) {
+                // Pass 0 to let memory manager find the best available block
+                memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
+            } else {
+                memBlock = _memoryManager.AllocateMemoryBlock(0xFFF);
+            }
+            
+            if (memBlock is null) {
+                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+            }
+            pspSegment = memBlock.DataBlockSegment;
+        }
+
+        if (memBlock is null && isExe) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("Failed to allocate memory for program at segment {Segment:X4}", pspSegment);
+            }
+            return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+        }
+
+        // Create and register the PSP
+        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
 
         // Initialize PSP
         InitializePsp(psp, parentPspSegment, envSegment, arguments);
@@ -266,7 +300,9 @@ public class DosProcessManager : DosFileLoader {
         ushort cs, ip, ss, sp;
         
         if (isExe && exeFile is not null) {
-            LoadExeFileInternal(exeFile, pspSegment, out cs, out ip, out ss, out sp);
+            // For EXE files, memory was already reserved by ReserveSpaceForExe
+            // Load directly without re-reserving
+            LoadExeFileIntoReservedMemory(exeFile, memBlock!, out cs, out ip, out ss, out sp);
         } else {
             LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
         }
@@ -287,6 +323,36 @@ public class DosProcessManager : DosFileLoader {
         }
 
         return DosExecResult.Succeeded();
+    }
+
+    /// <summary>
+    /// Loads an EXE file into already-reserved memory and returns entry point information.
+    /// </summary>
+    /// <remarks>
+    /// This method is used when memory has already been reserved by ReserveSpaceForExe.
+    /// It avoids the double-reservation issue that occurs when LoadExeFileInternal
+    /// is called with a pre-determined PSP segment.
+    /// </remarks>
+    private void LoadExeFileIntoReservedMemory(DosExeFile exeFile, DosMemoryControlBlock block,
+        out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
+        
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("Loading EXE into reserved memory: {Header}", exeFile);
+        }
+
+        ushort programEntryPointSegment = (ushort)(block.DataBlockSegment + 0x10);
+        
+        if (exeFile.MinAlloc == 0 && exeFile.MaxAlloc == 0) {
+            ushort programEntryPointOffset = (ushort)(block.Size - exeFile.ProgramSizeInParagraphsPerHeader);
+            programEntryPointSegment = (ushort)(block.DataBlockSegment + programEntryPointOffset);
+        }
+
+        LoadExeFileInMemoryAndApplyRelocations(exeFile, programEntryPointSegment);
+
+        cs = (ushort)(exeFile.InitCS + programEntryPointSegment);
+        ip = exeFile.InitIP;
+        ss = (ushort)(exeFile.InitSS + programEntryPointSegment);
+        sp = exeFile.InitSP;
     }
 
     /// <summary>
