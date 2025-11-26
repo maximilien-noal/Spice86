@@ -231,7 +231,9 @@ public class DosProcessManager : DosFileLoader {
         // Try to resolve through the file manager
         try {
             return _fileManager.GetHostPath(dosPath);
-        } catch {
+        } catch (IOException) {
+            return null;
+        } catch (UnauthorizedAccessException) {
             return null;
         }
     }
