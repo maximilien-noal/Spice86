@@ -130,6 +130,64 @@ public class DosMemoryManager {
     }
 
     /// <summary>
+    /// Allocates a memory block for an environment block at a specific segment and copies the environment data into it.
+    /// </summary>
+    /// <param name="environmentData">The environment block data to copy.</param>
+    /// <param name="ownerPspSegment">The PSP segment that owns this environment block.</param>
+    /// <param name="targetSegment">The specific segment where the environment block should be allocated.</param>
+    /// <returns>The segment of the allocated environment block, or 0 if allocation failed.</returns>
+    /// <remarks>
+    /// This method is used when loading the first process where the environment block location
+    /// should match a specific segment derived from Configuration.ProgramEntryPointSegment.
+    /// This ensures consistent memory layout for reverse engineering purposes.
+    /// </remarks>
+    public ushort AllocateEnvironmentBlockAtSegment(byte[] environmentData, ushort ownerPspSegment, ushort targetSegment) {
+        // Calculate size in paragraphs (round up)
+        ushort sizeInParagraphs = (ushort)((environmentData.Length + 15) / 16);
+
+        // Get the MCB at the target segment (MCB is 1 paragraph before the data block)
+        DosMemoryControlBlock block = GetDosMemoryControlBlockFromSegment((ushort)(targetSegment - 1));
+        
+        if (!block.IsValid || !block.IsFree) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error(
+                    "Cannot allocate environment block at segment {Segment:X4}: block is {Status}",
+                    targetSegment, block.IsValid ? "not free" : "invalid");
+            }
+            return 0;
+        }
+
+        if (block.Size < sizeInParagraphs) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error(
+                    "Cannot allocate environment block at segment {Segment:X4}: need {Needed} paragraphs, have {Have}",
+                    targetSegment, sizeInParagraphs, block.Size);
+            }
+            return 0;
+        }
+
+        // Split the block if it's larger than needed
+        if (block.Size > sizeInParagraphs) {
+            SplitBlock(block, sizeInParagraphs);
+        }
+
+        // Mark the block as owned by the PSP
+        block.PspSegment = ownerPspSegment;
+
+        // Copy environment data to the allocated block
+        uint dataAddress = MemoryUtils.ToPhysicalAddress(block.DataBlockSegment, 0);
+        _memory.LoadData(dataAddress, environmentData);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose(
+                "Allocated environment block at specific segment {Segment:X4} ({Size} paragraphs) for PSP {Psp:X4}",
+                block.DataBlockSegment, sizeInParagraphs, ownerPspSegment);
+        }
+
+        return block.DataBlockSegment;
+    }
+
+    /// <summary>
     /// Allocates a memory block and assigns it to a specific PSP segment.
     /// </summary>
     /// <param name="requestedSizeInParagraphs">The requested size in paragraphs.</param>
