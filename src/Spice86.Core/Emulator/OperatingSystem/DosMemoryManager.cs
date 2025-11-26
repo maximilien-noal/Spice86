@@ -168,7 +168,14 @@ public class DosMemoryManager {
 
         // Split the block if it's larger than needed
         if (block.Size > sizeInParagraphs) {
-            SplitBlock(block, sizeInParagraphs);
+            if (!SplitBlock(block, sizeInParagraphs)) {
+                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                    _loggerService.Error(
+                        "Failed to split block at segment {Segment:X4} for environment allocation (requested {Requested} paragraphs, block size {BlockSize})",
+                        targetSegment, sizeInParagraphs, block.Size);
+                }
+                return 0;
+            }
         }
 
         // Mark the block as owned by the PSP

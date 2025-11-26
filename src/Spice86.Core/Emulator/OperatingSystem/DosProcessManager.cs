@@ -526,36 +526,6 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
-    /// Loads an EXE file and returns entry point information.
-    /// </summary>
-    private void LoadExeFileInternal(DosExeFile exeFile, ushort pspSegment,
-        out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
-        
-        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-            _loggerService.Verbose("Loading EXE: {Header}", exeFile);
-        }
-
-        DosMemoryControlBlock? block = _memoryManager.ReserveSpaceForExe(exeFile, pspSegment);
-        if (block is null) {
-            throw new UnrecoverableException($"Failed to reserve space for EXE file at {pspSegment}");
-        }
-
-        ushort programEntryPointSegment = (ushort)(block.DataBlockSegment + 0x10);
-        
-        if (exeFile.MinAlloc == 0 && exeFile.MaxAlloc == 0) {
-            ushort programEntryPointOffset = (ushort)(block.Size - exeFile.ProgramSizeInParagraphsPerHeader);
-            programEntryPointSegment = (ushort)(block.DataBlockSegment + programEntryPointOffset);
-        }
-
-        LoadExeFileInMemoryAndApplyRelocations(exeFile, programEntryPointSegment);
-
-        cs = (ushort)(exeFile.InitCS + programEntryPointSegment);
-        ip = exeFile.InitIP;
-        ss = (ushort)(exeFile.InitSS + programEntryPointSegment);
-        sp = exeFile.InitSP;
-    }
-
-    /// <summary>
     /// Loads a COM file and returns entry point information.
     /// </summary>
     private void LoadComFileInternal(byte[] com, out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
