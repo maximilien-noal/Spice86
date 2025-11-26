@@ -122,6 +122,36 @@ public class DosProcessManager : DosFileLoader {
             parentPspSegment = _commandCom.PspSegment;
         }
 
+        // For the first program, we need to reserve program memory FIRST before allocating
+        // the environment block, otherwise the environment block will take the memory at
+        // InitialPspSegment and the program reservation will fail.
+        // For child processes, this order doesn't matter as both use MCB-based allocation.
+        bool isFirstProgram = _pspTracker.PspCount == 0;
+        DosMemoryControlBlock? programMemBlock = null;
+        bool isExe = false;
+        DosExeFile? exeFile = null;
+        
+        if (isFirstProgram) {
+            // For first program, determine EXE/COM and reserve memory BEFORE allocating env block
+            if (fileBytes.Length >= DosExeFile.MinExeSize) {
+                exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
+                isExe = exeFile.IsValid;
+            }
+            
+            if (isExe && exeFile is not null) {
+                programMemBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
+            } else {
+                programMemBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
+            }
+            
+            if (programMemBlock is null) {
+                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                    _loggerService.Error("Failed to reserve memory for first program at segment {Segment:X4}", _pspTracker.InitialPspSegment);
+                }
+                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+            }
+        }
+
         // Create environment block using MCB
         byte[] envBlockData = CreateEnvironmentBlock(programPath);
         ushort envSegment = environmentSegment;
@@ -129,12 +159,19 @@ public class DosProcessManager : DosFileLoader {
             // Allocate new environment block
             envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
             if (envSegment == 0) {
+                // Free the program memory if we allocated it
+                if (programMemBlock is not null) {
+                    _memoryManager.FreeMemoryBlock(programMemBlock);
+                }
                 return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
             }
         }
 
         // Allocate memory for the program and create PSP
-        DosExecResult result = LoadProgram(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType);
+        // For first program, pass the pre-allocated memory block
+        DosExecResult result = isFirstProgram 
+            ? LoadProgramWithPreallocatedMemory(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType, programMemBlock!, exeFile, isExe)
+            : LoadProgram(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType);
 
         if (!result.Success) {
             // Free the environment block if we allocated it
@@ -324,6 +361,56 @@ public class DosProcessManager : DosFileLoader {
         if (isExe && exeFile is not null) {
             // For EXE files, memory was already reserved by ReserveSpaceForExe
             // Load directly without re-reserving
+            LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
+        } else {
+            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
+        }
+
+        if (loadType == DosExecLoadType.LoadAndExecute) {
+            // Set up CPU state for execution
+            _state.DS = pspSegment;
+            _state.ES = pspSegment;
+            _state.SS = ss;
+            _state.SP = sp;
+            SetEntryPoint(cs, ip);
+            _state.InterruptFlag = true;
+            
+            return DosExecResult.Succeeded();
+        } else if (loadType == DosExecLoadType.LoadOnly) {
+            // Return entry point info without executing
+            return DosExecResult.Succeeded(pspSegment, cs, ip, ss, sp);
+        }
+
+        return DosExecResult.Succeeded();
+    }
+
+    /// <summary>
+    /// Loads the first program using pre-allocated memory block.
+    /// </summary>
+    /// <remarks>
+    /// This is used for the first program where memory was reserved BEFORE allocating the environment
+    /// block to prevent the environment from taking the memory at InitialPspSegment.
+    /// </remarks>
+    private DosExecResult LoadProgramWithPreallocatedMemory(byte[] fileBytes, string hostPath, string? arguments,
+        ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType, 
+        DosMemoryControlBlock memBlock, DosExeFile? exeFile, bool isExe) {
+        
+        ushort pspSegment = _pspTracker.InitialPspSegment;
+        
+        // Create and register the PSP
+        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
+
+        // Initialize PSP
+        InitializePsp(psp, parentPspSegment, envSegment, arguments);
+
+        // Set the disk transfer area address
+        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
+
+        // Load the program
+        ushort cs, ip, ss, sp;
+        
+        if (isExe && exeFile is not null) {
+            // For EXE files, memory was already reserved
             LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
         } else {
             LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
