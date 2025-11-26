@@ -2,9 +2,7 @@ namespace Spice86.Core.Emulator.OperatingSystem;
 
 using Serilog.Events;
 
-using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Memory;
-using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
@@ -22,6 +20,11 @@ using Spice86.Shared.Utils;
 /// <para>
 /// This implementation is non-interactive. We don't support an interactive
 /// shell since Spice86 is focused on reverse engineering specific DOS programs.
+/// </para>
+/// <para>
+/// The initial program is launched via <see cref="DosProcessManager.LoadFile"/>,
+/// which converts the Configuration.Exe path to a DOS path and calls the EXEC API
+/// to simulate COMMAND.COM launching the program.
 /// </para>
 /// <para>
 /// See https://github.com/FDOS/freecom for FreeDOS COMMAND.COM reference.
@@ -43,8 +46,6 @@ public class CommandCom : DosProgramSegmentPrefix {
     /// </summary>
     private const ushort JftOffset = 0x18;
 
-    private readonly ILoggerService _loggerService;
-
     /// <summary>
     /// Gets the segment address of COMMAND.COM's PSP.
     /// </summary>
@@ -58,7 +59,6 @@ public class CommandCom : DosProgramSegmentPrefix {
     /// <param name="loggerService">The logger service.</param>
     public CommandCom(IMemory memory, ILoggerService loggerService)
         : base(memory, MemoryUtils.ToPhysicalAddress(CommandComSegment, 0)) {
-        _loggerService = loggerService;
         InitializePsp();
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
@@ -66,54 +66,6 @@ public class CommandCom : DosProgramSegmentPrefix {
                 "COMMAND.COM PSP initialized at segment {Segment:X4}",
                 CommandComSegment);
         }
-    }
-
-    /// <summary>
-    /// Launches the initial program specified in the configuration.
-    /// This simulates COMMAND.COM executing "autoexec.bat" or the initial program.
-    /// </summary>
-    /// <param name="configuration">The emulator configuration containing Exe and ExeArgs.</param>
-    /// <param name="processManager">The DOS process manager to use for execution.</param>
-    /// <param name="fileManager">The DOS file manager for path resolution.</param>
-    /// <returns>The program bytes for checksum verification.</returns>
-    /// <remarks>
-    /// This method parses the Configuration.Exe and Configuration.ExeArgs properties
-    /// to construct a DOS path and command line, then calls the DOS EXEC function
-    /// to load and execute the program. This replaces the previous direct loading
-    /// approach and properly integrates with the DOS process management.
-    /// </remarks>
-    public byte[] LaunchProgram(Configuration configuration, DosProcessManager processManager,
-        DosFileManager fileManager) {
-        string? hostPath = configuration.Exe;
-        if (string.IsNullOrEmpty(hostPath)) {
-            throw new InvalidOperationException("No executable specified in configuration");
-        }
-
-        // Convert host path to DOS path
-        string dosPath = fileManager.GetDosProgramPath(hostPath);
-        string? arguments = configuration.ExeArgs;
-
-        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
-            _loggerService.Information(
-                "COMMAND.COM: Launching program '{DosPath}' with args '{Args}'",
-                dosPath, arguments ?? "");
-        }
-
-        // Call the DOS EXEC function to load and execute the program
-        // This is what COMMAND.COM does when running a program
-        DosExecResult result = processManager.Exec(
-            dosPath,
-            arguments,
-            DosExecLoadType.LoadAndExecute,
-            environmentSegment: 0);  // Use parent's environment
-
-        if (!result.Success) {
-            throw new InvalidOperationException(
-                $"COMMAND.COM: Failed to launch program '{dosPath}': {result.ErrorCode}");
-        }
-
-        // Read and return the file bytes for checksum verification
-        return System.IO.File.ReadAllBytes(hostPath);
     }
 
     /// <summary>

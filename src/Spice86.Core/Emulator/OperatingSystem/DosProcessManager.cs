@@ -374,7 +374,7 @@ public class DosProcessManager : DosFileLoader {
         }
 
         res[index + 1] = 0x0D;
-        int endIndex = index + 1;
+        int endIndex = index + 2;  // Include the carriage return byte
         return res[0..endIndex];
     }
 
