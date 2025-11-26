@@ -380,74 +380,40 @@ public class DosProcessManager : DosFileLoader {
 
     /// <summary>
     /// Legacy LoadFile implementation - used by ProgramExecutor for initial program loading.
-    /// This accepts a host path and loads the program directly.
+    /// This accepts a host path and loads the program via the EXEC API, simulating
+    /// how COMMAND.COM would launch a program.
     /// </summary>
+    /// <remarks>
+    /// This method converts the host path to a DOS path and calls the internal EXEC
+    /// implementation. The program is launched as a child of COMMAND.COM, properly
+    /// establishing the PSP chain.
+    /// </remarks>
     public override byte[] LoadFile(string hostPath, string? arguments) {
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information(
-                "LoadFile: Loading program from host path '{HostPath}' with args '{Args}'",
+                "LoadFile: COMMAND.COM launching program from host path '{HostPath}' with args '{Args}'",
                 hostPath, arguments ?? "");
         }
 
-        // Read the program file
-        byte[] fileBytes;
-        try {
-            fileBytes = ReadFile(hostPath);
-        } catch (IOException ex) {
-            throw new UnrecoverableException($"Failed to read program file: {hostPath}", ex);
+        // Convert host path to DOS path for the EXEC call
+        string dosPath = _fileManager.GetDosProgramPath(hostPath);
+        
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+            _loggerService.Debug("LoadFile: Resolved DOS path: {DosPath}", dosPath);
         }
 
-        // Get parent PSP (COMMAND.COM)
-        ushort parentPspSegment = _commandCom.PspSegment;
-
-        // Create environment block using MCB
-        byte[] envBlockData = CreateEnvironmentBlock(hostPath);
-        ushort envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
-        if (envSegment == 0) {
-            throw new UnrecoverableException("Failed to allocate environment block");
+        // Call the EXEC API - this is how COMMAND.COM launches programs
+        // The EXEC method handles all the PSP setup, environment block allocation,
+        // and program loading internally
+        DosExecResult result = Exec(dosPath, arguments, DosExecLoadType.LoadAndExecute, environmentSegment: 0);
+        
+        if (!result.Success) {
+            throw new UnrecoverableException(
+                $"COMMAND.COM: Failed to launch program '{dosPath}': {result.ErrorCode}");
         }
 
-        // Determine if this is an EXE or COM file
-        bool isExe = false;
-        DosExeFile? exeFile = null;
-
-        if (fileBytes.Length >= DosExeFile.MinExeSize) {
-            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
-            isExe = exeFile.IsValid;
-        }
-
-        // Create PSP
-        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(_pspTracker.InitialPspSegment);
-        ushort pspSegment = MemoryUtils.ToSegment(psp.BaseAddress);
-
-        // Initialize PSP
-        InitializePsp(psp, parentPspSegment, envSegment, arguments);
-
-        // Set the disk transfer area address
-        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
-
-        // Load the program
-        ushort cs, ip, ss, sp;
-
-        if (isExe && exeFile is not null) {
-            LoadExeFileInternal(exeFile, pspSegment, out cs, out ip, out ss, out sp);
-        } else {
-            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
-        }
-
-        // Set up CPU state for execution
-        _state.DS = pspSegment;
-        _state.ES = pspSegment;
-        _state.SS = ss;
-        _state.SP = sp;
-        SetEntryPoint(cs, ip);
-        _state.InterruptFlag = true;
-
-        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
-            _loggerService.Information("Initial CPU State: {CpuState}", _state);
-        }
-
-        return fileBytes;
+        // Return file bytes for checksum verification
+        return ReadFile(hostPath);
     }
 
     /// <summary>
