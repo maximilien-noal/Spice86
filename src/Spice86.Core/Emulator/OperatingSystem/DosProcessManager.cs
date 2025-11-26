@@ -122,35 +122,11 @@ public class DosProcessManager : DosFileLoader {
             parentPspSegment = _commandCom.PspSegment;
         }
 
-        // For the first program, we need to reserve program memory FIRST before allocating
-        // the environment block, otherwise the environment block will take the memory at
-        // InitialPspSegment and the program reservation will fail.
-        // For child processes, this order doesn't matter as both use MCB-based allocation.
+        // For the first program, we use the original loading approach that gives the program
+        // ALL remaining conventional memory (NextSegment = LastFreeSegment). This is how real DOS 
+        // works and ensures programs that resize their memory block via INT 21h 4Ah have room to grow.
+        // For child processes, we use proper MCB-based allocation.
         bool isFirstProgram = _pspTracker.PspCount == 0;
-        DosMemoryControlBlock? programMemBlock = null;
-        bool isExe = false;
-        DosExeFile? exeFile = null;
-        
-        if (isFirstProgram) {
-            // For first program, determine EXE/COM and reserve memory BEFORE allocating env block
-            if (fileBytes.Length >= DosExeFile.MinExeSize) {
-                exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
-                isExe = exeFile.IsValid;
-            }
-            
-            if (isExe && exeFile is not null) {
-                programMemBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
-            } else {
-                programMemBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
-            }
-            
-            if (programMemBlock is null) {
-                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
-                    _loggerService.Error("Failed to reserve memory for first program at segment {Segment:X4}", _pspTracker.InitialPspSegment);
-                }
-                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
-            }
-        }
 
         // Create environment block using MCB
         byte[] envBlockData = CreateEnvironmentBlock(programPath);
@@ -159,18 +135,13 @@ public class DosProcessManager : DosFileLoader {
             // Allocate new environment block
             envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
             if (envSegment == 0) {
-                // Free the program memory if we allocated it
-                if (programMemBlock is not null) {
-                    _memoryManager.FreeMemoryBlock(programMemBlock);
-                }
                 return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
             }
         }
 
         // Allocate memory for the program and create PSP
-        // For first program, pass the pre-allocated memory block
         DosExecResult result = isFirstProgram 
-            ? LoadProgramWithPreallocatedMemory(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType, programMemBlock!, exeFile, isExe)
+            ? LoadFirstProgram(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType)
             : LoadProgram(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType);
 
         if (!result.Success) {
@@ -362,6 +333,74 @@ public class DosProcessManager : DosFileLoader {
             // For EXE files, memory was already reserved by ReserveSpaceForExe
             // Load directly without re-reserving
             LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
+        } else {
+            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
+        }
+
+        if (loadType == DosExecLoadType.LoadAndExecute) {
+            // Set up CPU state for execution
+            _state.DS = pspSegment;
+            _state.ES = pspSegment;
+            _state.SS = ss;
+            _state.SP = sp;
+            SetEntryPoint(cs, ip);
+            _state.InterruptFlag = true;
+            
+            return DosExecResult.Succeeded();
+        } else if (loadType == DosExecLoadType.LoadOnly) {
+            // Return entry point info without executing
+            return DosExecResult.Succeeded(pspSegment, cs, ip, ss, sp);
+        }
+
+        return DosExecResult.Succeeded();
+    }
+
+    /// <summary>
+    /// Loads the first program using the original approach that gives it ALL remaining memory.
+    /// </summary>
+    /// <remarks>
+    /// This is the approach used in the original code and in real DOS. The first program gets
+    /// all remaining conventional memory (NextSegment = LastFreeSegment), which ensures that
+    /// programs that resize their memory block via INT 21h 4Ah have room to grow.
+    /// This is simpler and more compatible than MCB-based allocation for the initial program.
+    /// </remarks>
+    private DosExecResult LoadFirstProgram(byte[] fileBytes, string hostPath, string? arguments,
+        ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType) {
+        
+        ushort pspSegment = _pspTracker.InitialPspSegment;
+        
+        // Create and register the PSP
+        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
+
+        // Initialize PSP - this sets NextSegment = LastFreeSegment giving the program ALL memory
+        InitializePsp(psp, parentPspSegment, envSegment, arguments);
+
+        // Set the disk transfer area address
+        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
+
+        // Determine if this is an EXE or COM file
+        bool isExe = false;
+        DosExeFile? exeFile = null;
+
+        if (fileBytes.Length >= DosExeFile.MinExeSize) {
+            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
+            isExe = exeFile.IsValid;
+        }
+
+        // Load the program
+        ushort cs, ip, ss, sp;
+        
+        if (isExe && exeFile is not null) {
+            // For EXE files, calculate entry point based on PSP segment
+            // The program entry point is immediately after the PSP (16 paragraphs = 256 bytes)
+            ushort programEntryPointSegment = (ushort)(pspSegment + 0x10);
+            
+            LoadExeFileInMemoryAndApplyRelocations(exeFile, programEntryPointSegment);
+            
+            cs = (ushort)(exeFile.InitCS + programEntryPointSegment);
+            ip = exeFile.InitIP;
+            ss = (ushort)(exeFile.InitSS + programEntryPointSegment);
+            sp = exeFile.InitSP;
         } else {
             LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
         }
