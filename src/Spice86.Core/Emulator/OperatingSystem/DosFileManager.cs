@@ -702,8 +702,7 @@ public class DosFileManager {
     /// <returns>The resolved host path, or null if the path cannot be resolved.</returns>
     public string? GetHostPath(string dosPath) => _dosPathResolver.GetFullHostPathFromDosOrDefault(dosPath);
 
-    internal string? TryGetFullHostPathFromDos(string dosPath) => _dosPathResolver.
-        GetFullHostPathFromDosOrDefault(dosPath);
+    internal string? TryGetFullHostPathFromDos(string dosPath) => GetHostPath(dosPath);
 
     private static ushort ToDosDate(DateTime localDate) {
         int day = localDate.Day;

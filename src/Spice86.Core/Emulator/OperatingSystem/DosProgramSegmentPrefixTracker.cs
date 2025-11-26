@@ -61,13 +61,11 @@ public class DosProgramSegmentPrefixTracker {
         // Warn if the configured segment is too low and could overwrite BIOS data or interrupt vectors
         // The BIOS data area ends at segment 0x50, and the MCB starts at InitialPspSegment - 1
         ushort pspSegment = InitialPspSegment;
-        if (pspSegment <= MemoryMap.FreeMemoryStartSegment) {
-            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                _loggerService.Warning(
-                    "Initial PSP segment {PspSegment:X4} is at or below FreeMemoryStartSegment {FreeMemory:X4}. " +
-                    "This may overwrite BIOS data or interrupt vectors!",
-                    pspSegment, MemoryMap.FreeMemoryStartSegment);
-            }
+        if (pspSegment <= MemoryMap.FreeMemoryStartSegment && _loggerService.IsEnabled(LogEventLevel.Warning)) {
+            _loggerService.Warning(
+                "Initial PSP segment {PspSegment:X4} is at or below FreeMemoryStartSegment {FreeMemory:X4}. " +
+                "This may overwrite BIOS data or interrupt vectors!",
+                pspSegment, MemoryMap.FreeMemoryStartSegment);
         }
     }
 

@@ -59,7 +59,11 @@ public class DosProcessManager : DosFileLoader {
         // Initialize COMMAND.COM as the root of the PSP chain
         _commandCom = new CommandCom(memory, loggerService);
 
-        envVars.Add("PATH", $"{_driveManager.CurrentDrive.DosVolume}{DosPathResolver.DirectorySeparatorChar}");
+        // Use TryAdd to avoid ArgumentException if PATH already exists in envVars
+        string pathValue = $"{_driveManager.CurrentDrive.DosVolume}{DosPathResolver.DirectorySeparatorChar}";
+        if (!envVars.ContainsKey("PATH")) {
+            envVars.Add("PATH", pathValue);
+        }
 
         foreach (KeyValuePair<string, string> envVar in envVars) {
             _environmentVariables.Add(envVar.Key, envVar.Value);
@@ -103,7 +107,12 @@ public class DosProcessManager : DosFileLoader {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
                 _loggerService.Error("EXEC: Failed to read program file: {Error}", ex.Message);
             }
-            return DosExecResult.Failed(DosErrorCode.PathNotFound);
+            return DosExecResult.Failed(DosErrorCode.AccessDenied);
+        } catch (UnauthorizedAccessException ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("EXEC: Access denied reading program file: {Error}", ex.Message);
+            }
+            return DosExecResult.Failed(DosErrorCode.AccessDenied);
         }
 
         // Determine parent PSP
@@ -171,9 +180,14 @@ public class DosProcessManager : DosFileLoader {
             fileBytes = ReadFile(hostPath);
         } catch (IOException ex) {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
-                _loggerService.Error("EXEC OVERLAY: Failed to read file: {Error}", ex.Message);
+                _loggerService.Error("EXEC OVERLAY: IO error: {Error}", ex.Message);
             }
-            return DosExecResult.Failed(DosErrorCode.PathNotFound);
+            return DosExecResult.Failed(DosErrorCode.AccessDenied);
+        } catch (UnauthorizedAccessException ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                _loggerService.Error("EXEC OVERLAY: Access denied: {Error}", ex.Message);
+            }
+            return DosExecResult.Failed(DosErrorCode.AccessDenied);
         }
 
         // Determine if this is an EXE or COM file
@@ -310,7 +324,7 @@ public class DosProcessManager : DosFileLoader {
         if (isExe && exeFile is not null) {
             // For EXE files, memory was already reserved by ReserveSpaceForExe
             // Load directly without re-reserving
-            LoadExeFileIntoReservedMemory(exeFile, memBlock!, out cs, out ip, out ss, out sp);
+            LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
         } else {
             LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
         }
@@ -435,7 +449,7 @@ public class DosProcessManager : DosFileLoader {
     private static byte[] ArgumentsToDosBytes(string? arguments) {
         byte[] res = new byte[128];
         string correctLengthArguments = "";
-        if (string.IsNullOrWhiteSpace(arguments) == false) {
+        if (!string.IsNullOrWhiteSpace(arguments)) {
             correctLengthArguments = arguments.Length > 127 ? arguments[..127] : arguments;
         }
 
