@@ -1217,44 +1217,6 @@ public class DosFileManager {
                 }
                 return DosFileOperationResult.NoValue();
 
-            case IoctlFunction.ReadFromBlockDeviceControlChannel:
-            case IoctlFunction.WriteToBlockDeviceControlChannel:
-                // Block device control channel read/write - not commonly used
-                // Return function not supported for now
-                if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                    _loggerService.Warning("IOCTL: Block device control channel {Function} not implemented for drive {Drive}",
-                        function, drive);
-                }
-                return DosFileOperationResult.Error(DosErrorCode.FunctionNumberInvalid);
-
-            case IoctlFunction.GenericIoctlForCharacterDevices:
-                // Generic IOCTL for character devices (AL=0Ch)
-                // Not commonly used, return function not supported
-                if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                    _loggerService.Warning("IOCTL: Generic IOCTL for character devices not implemented for handle {Handle}", handle);
-                }
-                return DosFileOperationResult.Error(DosErrorCode.FunctionNumberInvalid);
-
-            case IoctlFunction.SetLogicalDriveMap:
-                // Set logical drive map - used for A:/B: swapping
-                // For now, just return success without actually doing anything
-                if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
-                    _loggerService.Verbose("IOCTL: Set Logical Drive Map called for drive {Drive}", drive);
-                }
-                return DosFileOperationResult.NoValue();
-
-            case IoctlFunction.QueryGenericIoctlCapabilityForHandle:
-                // Query if a generic IOCTL is supported by the handle
-                // AL = 0 if supported, AL = 1 if not supported
-                state.AX = 1;  // Not supported
-                return DosFileOperationResult.NoValue();
-
-            case IoctlFunction.QueryGenericIoctlCapabilityForBlockDevice:
-                // Query if a generic IOCTL is supported by the block device
-                // AL = 0 if supported, AL = 1 if not supported
-                state.AX = 1;  // Not supported
-                return DosFileOperationResult.NoValue();
-
             default:
                 if (_loggerService.IsEnabled(LogEventLevel.Error)) {
                     _loggerService.Error("IOCTL: Invalid function number 0x{FunctionCode:X2}", state.AL);
