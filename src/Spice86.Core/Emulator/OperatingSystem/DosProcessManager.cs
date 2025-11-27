@@ -699,9 +699,9 @@ public class DosProcessManager : DosFileLoader {
     /// The termination process:
     /// <list type="number">
     /// <item>Store the return code for retrieval by parent (INT 21h AH=4Dh)</item>
-    /// <item>Close all file handles opened by the process</item>
+    /// <item>Cache interrupt vectors from PSP before freeing memory</item>
     /// <item>Free all memory blocks owned by the process</item>
-    /// <item>Restore interrupt vectors 22h, 23h, 24h from the PSP</item>
+    /// <item>Restore interrupt vectors 22h, 23h, 24h from cached values</item>
     /// <item>Remove the PSP from the tracker</item>
     /// <item>Return control to parent via INT 22h vector</item>
     /// </list>
@@ -711,6 +711,10 @@ public class DosProcessManager : DosFileLoader {
     /// all memory blocks owned by a PSP. This implementation follows the same pattern.
     /// Note that in real DOS, the environment block is also freed since it's a separate
     /// MCB owned by the terminating process's PSP.
+    /// </para>
+    /// <para>
+    /// <strong>Note:</strong> File handle closure is not yet implemented. In a full DOS implementation,
+    /// all file handles in the Job File Table (JFT) should be closed before termination.
     /// </para>
     /// </remarks>
     public bool TerminateProcess(byte exitCode, DosTerminationType terminationType, 
@@ -746,15 +750,21 @@ public class DosProcessManager : DosFileLoader {
         // If this is a child process (not the main program), we have a parent to return to
         bool hasParentToReturnTo = !isRootProcess && _pspTracker.PspCount > 1;
 
+        // Cache interrupt vectors from PSP before freeing memory
+        // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
+        // Must read these BEFORE freeing the PSP memory to avoid accessing freed memory
+        uint terminateAddr = currentPsp.TerminateAddress;
+        uint breakAddr = currentPsp.BreakAddress;
+        uint criticalErrorAddr = currentPsp.CriticalErrorAddress;
+
         // Free all memory blocks owned by this process (including environment block)
         // This follows FreeDOS kernel FreeProcessMem() pattern
         _memoryManager.FreeProcessMemory(currentPspSegment);
 
-        // Restore interrupt vectors from PSP before removing it
-        // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
-        RestoreInterruptVector(0x22, currentPsp.TerminateAddress, interruptVectorTable);
-        RestoreInterruptVector(0x23, currentPsp.BreakAddress, interruptVectorTable);
-        RestoreInterruptVector(0x24, currentPsp.CriticalErrorAddress, interruptVectorTable);
+        // Restore interrupt vectors from cached values
+        RestoreInterruptVector(0x22, terminateAddr, interruptVectorTable);
+        RestoreInterruptVector(0x23, breakAddr, interruptVectorTable);
+        RestoreInterruptVector(0x24, criticalErrorAddr, interruptVectorTable);
 
         // Remove the PSP from the tracker
         _pspTracker.PopCurrentPspSegment();
@@ -794,9 +804,10 @@ public class DosProcessManager : DosFileLoader {
     /// <param name="storedFarPointer">The far pointer stored in the PSP (offset:segment format, 0 means don't restore).</param>
     /// <param name="interruptVectorTable">The interrupt vector table to update.</param>
     /// <remarks>
-    /// The PSP stores far pointers as DWORDs in offset:segment format (little-endian):
-    /// - Low 16 bits = offset
-    /// - High 16 bits = segment
+    /// The PSP stores far pointers as DWORDs where:
+    /// - Low 16 bits (bytes 0-1): offset  
+    /// - High 16 bits (bytes 2-3): segment
+    /// In little-endian byte order in memory: [offset_lo, offset_hi, seg_lo, seg_hi]
     /// </remarks>
     private static void RestoreInterruptVector(byte vectorNumber, uint storedFarPointer, 
         InterruptVectorTable interruptVectorTable) {
@@ -805,5 +816,15 @@ public class DosProcessManager : DosFileLoader {
             ushort segment = (ushort)(storedFarPointer >> 16);
             interruptVectorTable[vectorNumber] = new SegmentedAddress(segment, offset);
         }
+    }
+
+    /// <summary>
+    /// Constructs a far pointer in offset:segment format (low 16 bits = offset, high 16 bits = segment).
+    /// </summary>
+    /// <param name="segment">The segment part of the pointer.</param>
+    /// <param name="offset">The offset part of the pointer.</param>
+    /// <returns>A uint representing the far pointer in offset:segment format.</returns>
+    public static uint MakeFarPointer(ushort segment, ushort offset) {
+        return ((uint)segment << 16) | offset;
     }
 }
