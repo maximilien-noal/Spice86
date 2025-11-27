@@ -1223,30 +1223,30 @@ public class DosFileManager {
     /// </remarks>
     public string GetDosProgramPath(string hostPath) {
         // Normalize the host path once before iterating through drives
-        string normalizedHostPath = hostPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        string normalizedHostPath = ConvertUtils.ToSlashPath(hostPath);
         
         // Try to find a mounted drive that contains this host path
         foreach (VirtualDrive drive in _dosDriveManager.GetDrives()) {
-            string mountedDir = drive.MountedHostDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string mountedDir = ConvertUtils.ToSlashPath(drive.MountedHostDirectory).TrimEnd('/');
             
             // Check if the host path starts with the mounted directory
-            if (normalizedHostPath.StartsWith(mountedDir, StringComparison.OrdinalIgnoreCase)) {
+            // Ensure we match exact directory boundaries to avoid false positives
+            // (e.g., "/home/user/games" should not match "/home/user/gamesdir/file.exe")
+            if (normalizedHostPath.StartsWith(mountedDir, StringComparison.OrdinalIgnoreCase) &&
+                (normalizedHostPath.Length == mountedDir.Length || normalizedHostPath[mountedDir.Length] == '/')) {
                 // Get the relative path from the mount point
                 string relativePath = normalizedHostPath.Length > mountedDir.Length 
-                    ? normalizedHostPath[mountedDir.Length..].TrimStart(Path.DirectorySeparatorChar)
+                    ? normalizedHostPath[(mountedDir.Length + 1)..] // Skip the separator
                     : "";
                 
-                // Convert to DOS path format
-                string dosRelativePath = relativePath.Replace(Path.DirectorySeparatorChar, '\\');
-                string dosPath = $"{drive.DosVolume}\\{dosRelativePath}";
+                // Convert to DOS path format using existing utilities
+                string dosRelativePath = ConvertUtils.ToBackSlashPath(relativePath);
+                string dosPath = string.IsNullOrEmpty(dosRelativePath)
+                    ? $"{drive.DosVolume}\\"
+                    : $"{drive.DosVolume}\\{dosRelativePath}";
                 
-                // Normalize: uppercase, consistent backslashes
-                dosPath = dosPath.Replace('/', '\\').ToUpperInvariant();
-                
-                // Clean up any double backslashes
-                while (dosPath.Contains("\\\\")) {
-                    dosPath = dosPath.Replace("\\\\", "\\");
-                }
+                // Normalize to uppercase for DOS compatibility
+                dosPath = dosPath.ToUpperInvariant();
                 
                 if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
                     _loggerService.Debug("GetDosProgramPath: Converted host path '{HostPath}' to DOS path '{DosPath}'",
