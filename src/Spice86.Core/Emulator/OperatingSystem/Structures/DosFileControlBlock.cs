@@ -270,7 +270,7 @@ public class DosFileControlBlock : MemoryBasedDataStructure {
     private void SetSpacePaddedString(int offset, string value, int length) {
         byte[] bytes = Encoding.ASCII.GetBytes(value.PadRight(length));
         for (int i = 0; i < length; i++) {
-            UInt8[(uint)offset + (uint)i] = i < bytes.Length ? bytes[i] : (byte)' ';
+            UInt8[(uint)offset + (uint)i] = bytes[i];
         }
     }
 }

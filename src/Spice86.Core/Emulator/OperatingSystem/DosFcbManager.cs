@@ -567,12 +567,12 @@ public class DosFcbManager {
                     fcb.RandomRecord += (uint)((bytesRead + recordSize - 1) / recordSize);
                 }
 
+                fcb.NextRecord();
+
                 if (bytesRead < totalSize) {
-                    fcb.NextRecord();
                     return FcbErrorEof;
                 }
 
-                fcb.NextRecord();
                 return FcbSuccess;
             } else {
                 // Write operation
@@ -624,7 +624,7 @@ public class DosFcbManager {
     /// Gets the open file for an FCB operation.
     /// </summary>
     private VirtualFileBase? GetOpenFcbFile(byte sftNumber) {
-        if (sftNumber == 0xFF) {
+        if (sftNumber == 0xFF || sftNumber >= _dosFileManager.OpenFiles.Length) {
             return null;
         }
         return _dosFileManager.OpenFiles[sftNumber];

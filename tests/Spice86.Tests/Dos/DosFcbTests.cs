@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.OperatingSystem;
+using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Core.Emulator.VM.Breakpoint;
 using Spice86.Shared.Interfaces;
@@ -154,7 +155,7 @@ public class DosFcbTests {
         DosDriveManager driveManager = new(_loggerService, cDrivePath, executablePath);
         DosStringDecoder stringDecoder = new(_memory, null!);
         DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-            new List<Spice86.Core.Emulator.OperatingSystem.Devices.IVirtualDevice>());
+            new List<IVirtualDevice>());
         
         DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
         
@@ -192,7 +193,7 @@ public class DosFcbTests {
         DosDriveManager driveManager = new(_loggerService, cDrivePath, executablePath);
         DosStringDecoder stringDecoder = new(_memory, null!);
         DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-            new List<Spice86.Core.Emulator.OperatingSystem.Devices.IVirtualDevice>());
+            new List<IVirtualDevice>());
         
         DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
         
@@ -230,7 +231,7 @@ public class DosFcbTests {
         DosDriveManager driveManager = new(_loggerService, cDrivePath, executablePath);
         DosStringDecoder stringDecoder = new(_memory, null!);
         DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-            new List<Spice86.Core.Emulator.OperatingSystem.Devices.IVirtualDevice>());
+            new List<IVirtualDevice>());
         
         DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
         
