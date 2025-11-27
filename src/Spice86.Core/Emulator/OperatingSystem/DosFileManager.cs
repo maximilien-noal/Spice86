@@ -1257,31 +1257,7 @@ public class DosFileManager {
             }
         }
         
-        // Fallback: if no matching drive found, use current drive and just the filename
-        // This maintains backward compatibility for edge cases
-        string fileName = Path.GetFileName(hostPath);
-        string currentDrive = _dosDriveManager.CurrentDrive.DosVolume;
-        string currentDir = _dosDriveManager.CurrentDrive.CurrentDosDirectory;
-
-        // Ensure current directory has proper format
-        if (!string.IsNullOrEmpty(currentDir)) {
-            if (!currentDir.StartsWith('\\')) {
-                currentDir = '\\' + currentDir;
-            }
-            if (!currentDir.EndsWith('\\')) {
-                currentDir += '\\';
-            }
-        } else {
-            currentDir = "\\";
-        }
-
-        string fallbackPath = $"{currentDrive}{currentDir}{fileName}".ToUpperInvariant();
-        
-        if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-            _loggerService.Warning("GetDosProgramPath: No matching drive found for '{HostPath}', using fallback '{FallbackPath}'",
-                hostPath, fallbackPath);
-        }
-        
-        return fallbackPath;
+        // No matching drive found - this is an error condition
+        throw new InvalidOperationException($"No mounted drive contains the host path '{hostPath}'");
     }
 }
