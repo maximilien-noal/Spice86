@@ -166,6 +166,7 @@ public class DosFcbManager {
                 fcb.DriveNumber = (byte)(_dosDriveManager.CurrentDriveIndex + 1);
             }
             fcb.CurrentBlock = 0;
+            fcb.CurrentRecord = 0;
             fcb.RecordSize = DosFileControlBlock.DefaultRecordSize;
             fcb.FileSize = (uint)fileInfo.Length;
             fcb.Date = ToDosDate(fileInfo.LastWriteTime);
@@ -243,6 +244,7 @@ public class DosFcbManager {
             fcb.DriveNumber = (byte)(_dosDriveManager.CurrentDriveIndex + 1);
         }
         fcb.CurrentBlock = 0;
+        fcb.CurrentRecord = 0;
         fcb.RecordSize = DosFileControlBlock.DefaultRecordSize;
         fcb.FileSize = 0;
         fcb.Date = ToDosDate(DateTime.Now);
@@ -440,10 +442,6 @@ public class DosFcbManager {
             fcb.FileExtension = "   ";
         }
 
-        // Reset record fields per MS-DOS behavior
-        fcb.CurrentBlock = 0;
-        fcb.RecordSize = 0;
-
         // Special case: "." and ".."
         if (pos < filename.Length && filename[pos] == '.') {
             char[] nameChars = "        ".ToCharArray();
@@ -451,7 +449,6 @@ public class DosFcbManager {
             pos++;
             if (pos < filename.Length && filename[pos] == '.') {
                 nameChars[1] = '.';
-                pos++;
             }
             fcb.FileName = new string(nameChars);
             return invalidDrive ? FcbError : FcbSuccess;
@@ -464,7 +461,6 @@ public class DosFcbManager {
             if (c == '*') {
                 hasWildcard = true;
                 while (name.Length < 8) name.Append('?');
-                pos++;
                 break;
             }
             if (c == '?') {
@@ -492,7 +488,6 @@ public class DosFcbManager {
                 if (c == '*') {
                     hasWildcard = true;
                     while (ext.Length < 3) ext.Append('?');
-                    pos++;
                     break;
                 }
                 if (c == '?') {
@@ -565,9 +560,9 @@ public class DosFcbManager {
                 // Update FCB position
                 if (isRandom) {
                     fcb.RandomRecord += (uint)((bytesRead + recordSize - 1) / recordSize);
+                } else {
+                    fcb.NextRecord();
                 }
-
-                fcb.NextRecord();
 
                 if (bytesRead < totalSize) {
                     return FcbErrorEof;
@@ -591,9 +586,10 @@ public class DosFcbManager {
 
                 if (isRandom) {
                     fcb.RandomRecord += recordCount;
+                } else {
+                    fcb.NextRecord();
                 }
 
-                fcb.NextRecord();
                 return FcbSuccess;
             }
         } catch (IOException) {
