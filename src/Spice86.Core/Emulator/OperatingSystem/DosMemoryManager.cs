@@ -82,7 +82,7 @@ public class DosMemoryManager {
         get => _allocationStrategy;
         set {
             // Validate the strategy - only allow valid combinations
-            byte fitType = (byte)((byte)value & 0x03);
+            byte fitType = (byte)(value & 0x03);
             if (fitType > 0x02) {
                 // Invalid fit type, ignore
                 return;
