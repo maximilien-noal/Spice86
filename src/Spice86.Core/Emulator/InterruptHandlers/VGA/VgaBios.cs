@@ -609,6 +609,7 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         AddAction(0x1A, GetSetDisplayCombinationCode);
         AddAction(0x1B, () => GetFunctionalityInfo());
         AddAction(0x4F, VesaFunctions);
+        AddAction(0x70, GetDisplayConnectorInfo);
     }
 
     public void VesaFunctions() {
@@ -617,6 +618,18 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
             // It seems some games can expect that (eg. Rules of Engagement 2)
             //TODO: Implement at least VESA 1.2
             _logger.Warning("Emulated program tried to call VESA functions. Not implemented, moving on!");
+        }
+    }
+
+    /// <summary>
+    /// Stub handler for INT 10h function 0x70 (Get/Set Display Connector Information).
+    /// This is not a standard VGA BIOS function and is undocumented/reserved.
+    /// Some programs may call this expecting it to be a no-op or return specific values.
+    /// </summary>
+    private void GetDisplayConnectorInfo() {
+        if (_logger.IsEnabled(LogEventLevel.Warning)) {
+            _logger.Warning("{ClassName} INT 10 70 {MethodName} - Undocumented function called with AL=0x{Al:X2}. Returning without action.",
+                nameof(VgaBios), nameof(GetDisplayConnectorInfo), State.AL);
         }
     }
 
