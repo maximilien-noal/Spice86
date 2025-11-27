@@ -232,13 +232,8 @@ public class DosMemoryManager {
     public DosMemoryControlBlock? AllocateMemoryBlockForPsp(ushort requestedSizeInParagraphs, ushort pspSegment) {
         IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
 
-        // take the smallest
-        DosMemoryControlBlock? blockOptional = null;
-        foreach (DosMemoryControlBlock currentElement in candidates) {
-            if (blockOptional is null || currentElement.Size < blockOptional.Size) {
-                blockOptional = currentElement;
-            }
-        }
+        // Select block based on allocation strategy
+        DosMemoryControlBlock? blockOptional = SelectBlockByStrategy(candidates, requestedSizeInParagraphs);
         if (blockOptional is null) {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
                 _loggerService.Error("Could not find any MCB to fit {RequestedSize}", requestedSizeInParagraphs);

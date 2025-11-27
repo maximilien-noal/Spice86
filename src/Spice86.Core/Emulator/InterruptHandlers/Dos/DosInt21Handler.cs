@@ -137,6 +137,7 @@ public class DosInt21Handler : InterruptHandler {
         AddAction(0x4E, () => FindFirstMatchingFile(true));
         AddAction(0x4F, () => FindNextMatchingFile(true));
         AddAction(0x51, GetPspAddress);
+        // INT 21h/58h: Get/Set Memory Allocation Strategy (related to memory functions 48h-4Ah)
         AddAction(0x58, () => GetSetMemoryAllocationStrategy(true));
         AddAction(0x62, GetPspAddress);
         AddAction(0x63, GetLeadByteTable);
