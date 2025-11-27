@@ -1108,8 +1108,6 @@ public class DosInt21Handler : InterruptHandler {
     /// AL = subfunction:
     ///   00h = Get allocation strategy
     ///   01h = Set allocation strategy
-    ///   02h = Get UMB link state (DOS 5+)
-    ///   03h = Set UMB link state (DOS 5+)
     /// </para>
     /// <para>
     /// For AL=00h (Get strategy):
@@ -1125,12 +1123,8 @@ public class DosInt21Handler : InterruptHandler {
     ///   BX = new strategy (same values as above)
     /// </para>
     /// <para>
-    /// For AL=02h (Get UMB link state):
-    ///   Returns AL = UMB link state (0 = not linked, 1 = linked)
-    /// </para>
-    /// <para>
-    /// For AL=03h (Set UMB link state):
-    ///   BX = new link state (0 = unlink, 1 = link)
+    /// Note: Subfunctions 02h (Get UMB link state) and 03h (Set UMB link state) 
+    /// are not implemented as UMB support is not available.
     /// </para>
     /// </remarks>
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
@@ -1153,8 +1147,8 @@ public class DosInt21Handler : InterruptHandler {
                 byte fitType = (byte)(newStrategy & 0x03);
                 byte highMemBits = (byte)(newStrategy & 0xC0);
 
-                // Valid fit types are 0, 1, 2; high memory bits can be 0x00, 0x40, or 0x80
-                if (fitType > 0x02 || (highMemBits != 0x00 && highMemBits != 0x40 && highMemBits != 0x80)) {
+                // Bits 2-5 must be zero; valid fit types are 0, 1, 2; high memory bits can be 0x00, 0x40, or 0x80
+                if ((newStrategy & 0x3C) != 0 || fitType > 0x02 || (highMemBits != 0x00 && highMemBits != 0x40 && highMemBits != 0x80)) {
                     SetCarryFlag(true, calledFromVm);
                     State.AX = (ushort)DosErrorCode.FunctionNumberInvalid;
                     return;
@@ -1163,20 +1157,7 @@ public class DosInt21Handler : InterruptHandler {
                 _dosMemoryManager.AllocationStrategy = (DosMemoryAllocationStrategy)(byte)newStrategy;
                 break;
 
-            case 0x02: // Get UMB link state
-                // UMBs are not currently linked in this implementation
-                State.AL = 0x00;
-                break;
-
-            case 0x03: // Set UMB link state
-                // UMB linking is not currently supported - just accept the request without error
-                // In a full implementation, this would link/unlink the UMB chain to the MCB chain
-                if (State.BX > 1) {
-                    SetCarryFlag(true, calledFromVm);
-                    State.AX = (ushort)DosErrorCode.FunctionNumberInvalid;
-                }
-                break;
-
+            // UMB subfunctions 0x02 and 0x03 are not supported - UMBs are not implemented
             default:
                 SetCarryFlag(true, calledFromVm);
                 State.AX = (ushort)DosErrorCode.FunctionNumberInvalid;

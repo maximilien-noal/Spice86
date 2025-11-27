@@ -87,6 +87,11 @@ public class DosMemoryManager {
                 // Invalid fit type, ignore
                 return;
             }
+            byte highMemBits = (byte)((byte)value & 0xC0);
+            if (highMemBits != 0x00 && highMemBits != 0x40 && highMemBits != 0x80) {
+                // Invalid high memory bits, ignore
+                return;
+            }
             _allocationStrategy = value;
         }
     }
@@ -100,7 +105,7 @@ public class DosMemoryManager {
         IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
 
         // Select block based on allocation strategy
-        DosMemoryControlBlock? blockOptional = SelectBlockByStrategy(candidates, requestedSizeInParagraphs);
+        DosMemoryControlBlock? blockOptional = SelectBlockByStrategy(candidates);
         if (blockOptional is null) {
             // Nothing found
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
@@ -233,7 +238,7 @@ public class DosMemoryManager {
         IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
 
         // Select block based on allocation strategy
-        DosMemoryControlBlock? blockOptional = SelectBlockByStrategy(candidates, requestedSizeInParagraphs);
+        DosMemoryControlBlock? blockOptional = SelectBlockByStrategy(candidates);
         if (blockOptional is null) {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
                 _loggerService.Error("Could not find any MCB to fit {RequestedSize}", requestedSizeInParagraphs);
@@ -710,9 +715,14 @@ public class DosMemoryManager {
     /// Selects a memory block based on the current allocation strategy.
     /// </summary>
     /// <param name="candidates">List of candidate blocks that fit the requested size.</param>
-    /// <param name="requestedSize">The requested size in paragraphs.</param>
     /// <returns>The selected block or null if none found.</returns>
-    private DosMemoryControlBlock? SelectBlockByStrategy(IEnumerable<DosMemoryControlBlock> candidates, ushort requestedSize) {
+    /// <remarks>
+    /// Note: High memory bits (bits 6-7) of the allocation strategy are currently not handled.
+    /// This method only implements low memory allocation strategies. UMB (Upper Memory Block)
+    /// support would need to be added to handle strategies like FirstFitHighThenLow (0x40) or
+    /// FirstFitHighOnlyNoFallback (0x80).
+    /// </remarks>
+    private DosMemoryControlBlock? SelectBlockByStrategy(IEnumerable<DosMemoryControlBlock> candidates) {
         // Get the fit type from the lower 2 bits of the strategy
         byte fitType = (byte)((byte)_allocationStrategy & 0x03);
 

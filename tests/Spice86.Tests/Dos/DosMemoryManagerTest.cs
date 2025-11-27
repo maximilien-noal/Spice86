@@ -1056,7 +1056,7 @@ public class DosMemoryManagerTests {
     public void AllocateWithFirstFitStrategy() {
         // Arrange - create some fragmented memory
         DosMemoryControlBlock? block1 = _memoryManager.AllocateMemoryBlock(1000);
-        DosMemoryControlBlock? block2 = _memoryManager.AllocateMemoryBlock(2000);
+        _memoryManager.AllocateMemoryBlock(2000);
         DosMemoryControlBlock? block3 = _memoryManager.AllocateMemoryBlock(1500);
         _memoryManager.FreeMemoryBlock(block1!);
         _memoryManager.FreeMemoryBlock(block3!);
@@ -1080,9 +1080,9 @@ public class DosMemoryManagerTests {
         // Arrange - create some fragmented memory with different sized holes
         // We need to keep some blocks allocated between holes to prevent coalescing
         DosMemoryControlBlock? block1 = _memoryManager.AllocateMemoryBlock(500);  // Will be freed -> small hole
-        DosMemoryControlBlock? block2 = _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
+        _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
         DosMemoryControlBlock? block3 = _memoryManager.AllocateMemoryBlock(2000); // Will be freed -> large hole
-        DosMemoryControlBlock? block4 = _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
+        _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
         
         _memoryManager.FreeMemoryBlock(block1!);  // Creates 500 para hole at start
         _memoryManager.FreeMemoryBlock(block3!);  // Creates 2000 para hole in middle
@@ -1105,9 +1105,9 @@ public class DosMemoryManagerTests {
     public void AllocateWithLastFitStrategy() {
         // Arrange - create some fragmented memory with holes
         DosMemoryControlBlock? block1 = _memoryManager.AllocateMemoryBlock(500);  // Will be freed -> first hole
-        DosMemoryControlBlock? block2 = _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
+        _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
         DosMemoryControlBlock? block3 = _memoryManager.AllocateMemoryBlock(500);  // Will be freed -> second hole
-        DosMemoryControlBlock? block4 = _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
+        _memoryManager.AllocateMemoryBlock(1000); // Keep allocated
         
         _memoryManager.FreeMemoryBlock(block1!);  // Creates hole at start
         _memoryManager.FreeMemoryBlock(block3!);  // Creates hole in middle
@@ -1140,8 +1140,8 @@ public class DosMemoryManagerTests {
     [Fact]
     public void CheckMcbChainValidChain() {
         // Arrange - create some allocations
-        DosMemoryControlBlock? block1 = _memoryManager.AllocateMemoryBlock(1000);
-        DosMemoryControlBlock? block2 = _memoryManager.AllocateMemoryBlock(2000);
+        _memoryManager.AllocateMemoryBlock(1000);
+        _memoryManager.AllocateMemoryBlock(2000);
         
         // Act
         bool isValid = _memoryManager.CheckMcbChain();
@@ -1167,5 +1167,35 @@ public class DosMemoryManagerTests {
         result.Should().BeTrue();
         block1.IsFree.Should().BeTrue();
         block2!.IsFree.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Ensures that setting an invalid allocation strategy (fit type > 2) is ignored.
+    /// </summary>
+    [Fact]
+    public void InvalidAllocationStrategyFitTypeIsIgnored() {
+        // Arrange
+        DosMemoryAllocationStrategy originalStrategy = _memoryManager.AllocationStrategy;
+        
+        // Act - try to set invalid fit type (0x03)
+        _memoryManager.AllocationStrategy = (DosMemoryAllocationStrategy)0x03;
+        
+        // Assert - should remain unchanged
+        _memoryManager.AllocationStrategy.Should().Be(originalStrategy);
+    }
+
+    /// <summary>
+    /// Ensures that setting an invalid allocation strategy (invalid high memory bits) is ignored.
+    /// </summary>
+    [Fact]
+    public void InvalidAllocationStrategyHighMemBitsIsIgnored() {
+        // Arrange
+        DosMemoryAllocationStrategy originalStrategy = _memoryManager.AllocationStrategy;
+        
+        // Act - try to set invalid high memory bits (0xC0 - both bits 6 and 7 set)
+        _memoryManager.AllocationStrategy = (DosMemoryAllocationStrategy)0xC0;
+        
+        // Assert - should remain unchanged
+        _memoryManager.AllocationStrategy.Should().Be(originalStrategy);
     }
 }

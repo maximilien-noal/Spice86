@@ -31,19 +31,19 @@ public enum DosMemoryAllocationStrategy : byte {
     /// First fit, try high memory first, then low.
     /// Used when UMBs are linked to the MCB chain.
     /// </summary>
-    FirstFitHighOnly = 0x40,
+    FirstFitHighThenLow = 0x40,
 
     /// <summary>
     /// Best fit, try high memory first, then low.
     /// Used when UMBs are linked to the MCB chain.
     /// </summary>
-    BestFitHighOnly = 0x41,
+    BestFitHighThenLow = 0x41,
 
     /// <summary>
     /// Last fit, try high memory first, then low.
     /// Used when UMBs are linked to the MCB chain.
     /// </summary>
-    LastFitHighOnly = 0x42,
+    LastFitHighThenLow = 0x42,
 
     /// <summary>
     /// First fit, high memory only (no fallback to low).
