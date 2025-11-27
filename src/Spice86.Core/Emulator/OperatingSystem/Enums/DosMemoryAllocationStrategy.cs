@@ -1,7 +1,7 @@
 namespace Spice86.Core.Emulator.OperatingSystem.Enums;
 
 /// <summary>
-/// Defines the memory allocation strategy used by DOS for INT 21h/48h and INT 21h/4Ah.
+/// Defines the memory allocation strategy used by DOS for INT 21h/48h (Allocate Memory).
 /// Set/Get via INT 21h/58h.
 /// </summary>
 /// <remarks>
