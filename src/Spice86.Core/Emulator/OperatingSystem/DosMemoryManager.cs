@@ -724,7 +724,7 @@ public class DosMemoryManager {
     /// </remarks>
     private DosMemoryControlBlock? SelectBlockByStrategy(IEnumerable<DosMemoryControlBlock> candidates) {
         // Get the fit type from the lower 2 bits of the strategy
-        byte fitType = (byte)((byte)_allocationStrategy & 0x03);
+        byte fitType = (byte)(_allocationStrategy & 0x03);
 
         DosMemoryControlBlock? selectedBlock = null;
 
