@@ -1201,19 +1201,22 @@ public class DosFileManager {
                 // Check if handle refers to a remote file/device
                 // DX bit 15 is set if handle is remote
                 VirtualFileBase? remoteCheckFile = OpenFiles[handle];
-                if (remoteCheckFile is IVirtualDevice remoteDevice) {
+                if (remoteCheckFile is IVirtualDevice) {
                     // Character devices are local
                     state.DX = 0;
                     state.AX = 0;
                 } else if (remoteCheckFile is DosFile remoteFile) {
                     // Check if file is on a remote drive
                     byte fileDrive = remoteFile.Drive == 0xff ? _dosDriveManager.CurrentDriveIndex : remoteFile.Drive;
-                    if (_dosDriveManager.ElementAtOrDefault(fileDrive).Value?.IsRemote == true) {
-                        state.DX = 0x8000;  // Bit 15 set = remote
-                    } else {
-                        state.DX = 0;
-                    }
+                    state.DX = _dosDriveManager.ElementAtOrDefault(fileDrive).Value?.IsRemote == true ? (ushort)0x8000 : (ushort)0;
                     state.AX = 0;
+                } else {
+                    // Unexpected file type or null; set default values and log warning
+                    state.DX = 0;
+                    state.AX = 0;
+                    if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                        _loggerService.Warning("IOCTL: IsHandleRemote called for unexpected file type {Type} at handle {Handle}", remoteCheckFile?.GetType().FullName ?? "null", handle);
+                    }
                 }
                 return DosFileOperationResult.NoValue();
 
