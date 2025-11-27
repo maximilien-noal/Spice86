@@ -981,6 +981,21 @@ public class DosInt21Handler : InterruptHandler {
     /// <inheritdoc/>
     public override byte VectorNumber => 0x21;
 
+    // Instruction size constants for ASM stub generation
+    private const int SizeCmpAhImm8 = 3;      // CMP AH, imm8
+    private const int SizeJzRel8 = 2;          // JZ rel8
+    private const int SizeCallback = 4;        // Callback instruction (FE 38 + 2-byte callback number)
+    private const int SizeIret = 1;            // IRET
+    private const int SizeMovAhImm8 = 2;       // MOV AH, imm8
+    private const int SizeInt = 2;             // INT nn
+    private const int SizePushAx = 1;          // PUSH AX
+    private const int SizePopAx = 1;           // POP AX
+
+    // Block sizes for jump offset calculation
+    private const int SizeCallbackIret = SizeCallback + SizeIret;  // 5 bytes
+    private const int SizeAh01Block = SizeMovAhImm8 + SizeInt + SizePushAx + SizeMovAhImm8 + SizeInt + SizePopAx + SizeIret;  // 11 bytes
+    private const int SizeAh0708Block = SizeMovAhImm8 + SizeInt + SizeIret;  // 5 bytes
+
     /// <summary>
     /// Emits a minimal INT 21h handler stub into guest RAM that handles keyboard input functions
     /// (AH=01h, 07h, 08h) in-place using INT 16h for blocking input, and dispatches all other
@@ -1021,35 +1036,34 @@ public class DosInt21Handler : InterruptHandler {
     public override SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
         SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
 
+        // Calculate jump offsets based on block sizes
+        // From JZ after CMP AH,01h to L_AH01: skip CMP+JZ (07h) + CMP+JZ (08h) + callback+IRET
+        int offsetToAh01 = (SizeCmpAhImm8 + SizeJzRel8) + (SizeCmpAhImm8 + SizeJzRel8) + SizeCallbackIret;
+        // From JZ after CMP AH,07h to L_AH07_08: skip CMP+JZ (08h) + callback+IRET + L_AH01 block
+        int offsetToAh0708From07 = (SizeCmpAhImm8 + SizeJzRel8) + SizeCallbackIret + SizeAh01Block;
+        // From JZ after CMP AH,08h to L_AH07_08: skip callback+IRET + L_AH01 block
+        int offsetToAh0708From08 = SizeCallbackIret + SizeAh01Block;
+
         // CMP AH, 01h (Read keyboard with echo)
         memoryAsmWriter.WriteUInt8(0x80);  // CMP r/m8, imm8
         memoryAsmWriter.WriteUInt8(0xFC);  // AH
         memoryAsmWriter.WriteUInt8(0x01);  // 01h
-        // JZ L_AH01 - we'll calculate offset later
-        // For now, we need to know the sizes:
-        // - CMP AH, 07h: 3 bytes
-        // - JZ L_AH07_08: 2 bytes  
-        // - CMP AH, 08h: 3 bytes
-        // - JZ L_AH07_08: 2 bytes
-        // - callback + IRET: 4 + 1 = 5 bytes
-        // Total to skip to get to L_AH01: 3+2+3+2+5 = 15 bytes
-        memoryAsmWriter.WriteJz(15);
+        // JZ L_AH01
+        memoryAsmWriter.WriteJz((sbyte)offsetToAh01);
 
         // CMP AH, 07h (Direct input without echo)
         memoryAsmWriter.WriteUInt8(0x80);
         memoryAsmWriter.WriteUInt8(0xFC);
         memoryAsmWriter.WriteUInt8(0x07);
-        // JZ L_AH07_08: skip CMP AH,08h (3) + JZ (2) + callback+IRET (5) + L_AH01 code
-        // L_AH01 code: MOV AH,0 (2) + INT 16h (2) + PUSH AX (1) + MOV AH,0Eh (2) + INT 10h (2) + POP AX (1) + IRET (1) = 11 bytes
-        // So skip: 3+2+5+11 = 21 bytes
-        memoryAsmWriter.WriteJz(21);
+        // JZ L_AH07_08
+        memoryAsmWriter.WriteJz((sbyte)offsetToAh0708From07);
 
         // CMP AH, 08h (Direct input without echo)
         memoryAsmWriter.WriteUInt8(0x80);
         memoryAsmWriter.WriteUInt8(0xFC);
         memoryAsmWriter.WriteUInt8(0x08);
-        // JZ L_AH07_08: skip callback+IRET (5) + L_AH01 code (11) = 16 bytes
-        memoryAsmWriter.WriteJz(16);
+        // JZ L_AH07_08
+        memoryAsmWriter.WriteJz((sbyte)offsetToAh0708From08);
 
         // L_DEFAULT: callback to C# Run() then IRET
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
