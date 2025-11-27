@@ -436,6 +436,135 @@ public class DosInt21IntegrationTests {
     }
 
     /// <summary>
+    /// Tests INT 21h, AH=50h - Set PSP Address
+    /// Verifies that setting the PSP via INT 21h/50h is reflected when getting it via INT 21h/62h
+    /// </summary>
+    /// <remarks>
+    /// INT 21h, AH=50h: Set Current PSP Address
+    ///   Input:  BX = segment of PSP for new process
+    ///   Output: None
+    /// 
+    /// INT 21h, AH=62h: Get Current PSP Address
+    ///   Input:  None
+    ///   Output: BX = segment of current PSP
+    /// 
+    /// This test sets the PSP to a known value (0x1234) and verifies it can be read back.
+    /// Note: Some MS applications use 0x0000 and 0xFFFF to detect MS-DOS vs compatible OS.
+    /// </remarks>
+    [Fact]
+    public void SetPspAddress_ThenGetPspAddress_ReturnsSetValue() {
+        byte[] program = new byte[] {
+            // Set PSP to 0x1234 using INT 21h, AH=50h
+            0xBB, 0x34, 0x12,       // mov bx, 1234h - PSP segment to set
+            0xB4, 0x50,             // mov ah, 50h - Set PSP Address
+            0xCD, 0x21,             // int 21h
+
+            // Get PSP address using INT 21h, AH=62h
+            0xB4, 0x62,             // mov ah, 62h - Get PSP Address
+            0xCD, 0x21,             // int 21h - BX = current PSP segment
+
+            // Check BX = 0x1234
+            0x81, 0xFB, 0x34, 0x12, // cmp bx, 1234h
+            0x75, 0x04,             // jne failed
+
+            // Success
+            0xB0, 0x00,             // mov al, TestResult.Success
+            0xEB, 0x02,             // jmp writeResult
+
+            // failed:
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
+    /// Tests INT 21h, AH=50h with edge case value 0x0000
+    /// Some MS applications use segment 0x0000 to detect MS-DOS vs compatible OS.
+    /// </summary>
+    [Fact]
+    public void SetPspAddress_WithZeroSegment_AcceptsValue() {
+        byte[] program = new byte[] {
+            // Set PSP to 0x0000 using INT 21h, AH=50h
+            0xBB, 0x00, 0x00,       // mov bx, 0000h - PSP segment to set
+            0xB4, 0x50,             // mov ah, 50h - Set PSP Address
+            0xCD, 0x21,             // int 21h
+
+            // Get PSP address using INT 21h, AH=62h
+            0xB4, 0x62,             // mov ah, 62h - Get PSP Address
+            0xCD, 0x21,             // int 21h - BX = current PSP segment
+
+            // Check BX = 0x0000
+            0x81, 0xFB, 0x00, 0x00, // cmp bx, 0000h
+            0x75, 0x04,             // jne failed
+
+            // Success
+            0xB0, 0x00,             // mov al, TestResult.Success
+            0xEB, 0x02,             // jmp writeResult
+
+            // failed:
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
+    /// Tests INT 21h, AH=50h with edge case value 0xFFFF
+    /// Some MS applications use segment 0xFFFF to detect MS-DOS vs compatible OS.
+    /// </summary>
+    [Fact]
+    public void SetPspAddress_WithMaxSegment_AcceptsValue() {
+        byte[] program = new byte[] {
+            // Set PSP to 0xFFFF using INT 21h, AH=50h
+            0xBB, 0xFF, 0xFF,       // mov bx, FFFFh - PSP segment to set
+            0xB4, 0x50,             // mov ah, 50h - Set PSP Address
+            0xCD, 0x21,             // int 21h
+
+            // Get PSP address using INT 21h, AH=62h
+            0xB4, 0x62,             // mov ah, 62h - Get PSP Address
+            0xCD, 0x21,             // int 21h - BX = current PSP segment
+
+            // Check BX = 0xFFFF
+            0x81, 0xFB, 0xFF, 0xFF, // cmp bx, FFFFh
+            0x75, 0x04,             // jne failed
+
+            // Success
+            0xB0, 0x00,             // mov al, TestResult.Success
+            0xEB, 0x02,             // jmp writeResult
+
+            // failed:
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
     /// Runs the DOS test program and returns a test handler with results
     /// </summary>
     private DosTestHandler RunDosTest(byte[] program,
