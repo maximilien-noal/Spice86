@@ -29,8 +29,8 @@ using Xunit;
 /// https://github.com/FDOS/emm386
 /// </para>
 /// <para>
-/// Note: VCPI and other LIM 4.0 OS-specific features (GEMMIS) are out of scope
-/// for this emulator as we only emulate real mode.
+/// Note: VCPI and other LIM 4.0 OS-specific features (GEMMIS) are not currently
+/// implemented as we only emulate real mode at this time.
 /// </para>
 /// </summary>
 public class EmsUnitTests {
