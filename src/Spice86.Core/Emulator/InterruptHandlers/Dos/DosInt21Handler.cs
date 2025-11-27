@@ -142,6 +142,7 @@ public class DosInt21Handler : InterruptHandler {
         AddAction(0x4C, QuitWithExitCode);
         AddAction(0x4E, () => FindFirstMatchingFile(true));
         AddAction(0x4F, () => FindNextMatchingFile(true));
+        AddAction(0x50, SetPspAddress);
         AddAction(0x51, GetPspAddress);
         AddAction(0x52, GetListOfLists);
         // INT 21h/58h: Get/Set Memory Allocation Strategy (related to memory functions 48h-4Ah)
@@ -985,6 +986,33 @@ public class DosInt21Handler : InterruptHandler {
         }
         State.ES = segment;
         State.BX = offset;
+    }
+
+    /// <summary>
+    /// INT 21h, AH=50h - Set Current PSP Address.
+    /// <para>
+    /// Sets the current Program Segment Prefix (PSP) address. DOS uses the current PSP
+    /// address to determine which processes own files and memory.
+    /// </para>
+    /// <b>Expects:</b><br/>
+    /// BX = segment of PSP for new process
+    /// <remarks>
+    /// Under MS-DOS 3.0+ and DR DOS 3.41+, this function does not use any of the DOS-internal
+    /// stacks and may thus be called at any time, even during another INT 21h call.
+    /// <br/><br/>
+    /// Some Microsoft applications such as Quick C 2.51 use segments 0x0000 and 0xFFFF
+    /// and direct access to the SDA to test whether they are running under MS-DOS rather
+    /// than a compatible OS. Programs hooking this function should be prepared to handle
+    /// invalid addresses.
+    /// </remarks>
+    /// </summary>
+    public void SetPspAddress() {
+        ushort pspSegment = State.BX;
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("SET PSP ADDRESS {PspSegment}",
+                ConvertUtils.ToHex16(pspSegment));
+        }
+        _dosPspTracker.SetCurrentPspSegment(pspSegment);
     }
 
     /// <summary>

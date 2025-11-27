@@ -46,6 +46,13 @@ public class DosProgramSegmentPrefixTracker {
     /// </summary>
     private readonly List<DosProgramSegmentPrefix> _loadedPsps;
 
+    /// <summary>
+    /// When set, this value overrides the normal PSP segment returned by <see cref="GetCurrentPspSegment"/>.
+    /// This supports INT 21h/50h (Set PSP Address) which allows programs to temporarily change the
+    /// current PSP without modifying the actual process stack.
+    /// </summary>
+    private ushort? _overridePspSegment;
+
     public DosProgramSegmentPrefixTracker(Configuration configuration, IMemory memory,
         ILoggerService loggerService) {
         _initialProgramEntryPointSegment = configuration.ProgramEntryPointSegment;
@@ -101,10 +108,36 @@ public class DosProgramSegmentPrefixTracker {
     /// <summary>
     /// Gets the address of the PSP segment for the current program that is loaded.
     /// </summary>
+    /// <remarks>
+    /// If an override PSP segment has been set via <see cref="SetCurrentPspSegment"/>,
+    /// that value is returned instead of the actual process stack value.
+    /// </remarks>
     /// <returns>Returns the PSP segment for the current program.</returns>
     public ushort GetCurrentPspSegment() {
+        if (_overridePspSegment.HasValue) {
+            return _overridePspSegment.Value;
+        }
         DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
         return currentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(currentPsp.BaseAddress);
+    }
+
+    /// <summary>
+    /// Sets the current PSP segment directly, overriding the normal process stack behavior.
+    /// </summary>
+    /// <remarks>
+    /// This method implements the behavior of INT 21h/50h (Set PSP Address).
+    /// DOS uses the current PSP address to determine which processes own files and memory.
+    /// <br/><br/>
+    /// Some Microsoft applications (such as Quick C 2.51) use segments 0x0000 and 0xFFFF
+    /// to test whether they are running under MS-DOS rather than a compatible OS.
+    /// Programs hooking this function should be prepared to handle invalid addresses.
+    /// </remarks>
+    /// <param name="pspSegment">The segment of the PSP for the new process.</param>
+    public void SetCurrentPspSegment(ushort pspSegment) {
+        _overridePspSegment = pspSegment;
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("Set current PSP segment to {PspSegment:X4}", pspSegment);
+        }
     }
 
     /// <summary>

@@ -108,4 +108,55 @@ public class DosProgramSegmentPrefixTrackerTests {
         _pspTracker.GetCurrentPspSegment().Should().Be(0x4000);
         _pspTracker.GetProgramEntryPointSegment().Should().Be(0x4010);
     }
+
+    /// <summary>
+    /// Verifies that SetCurrentPspSegment overrides the normal PSP segment.
+    /// This supports INT 21h/50h (Set PSP Address).
+    /// </summary>
+    [Fact]
+    public void SetCurrentPspSegment_OverridesNormalBehavior() {
+        // Arrange - Push some PSPs to establish a normal stack
+        _pspTracker.PushPspSegment(0x2000);
+        _pspTracker.PushPspSegment(0x3000);
+
+        // Act - Override with a specific PSP segment
+        _pspTracker.SetCurrentPspSegment(0x5500);
+
+        // Assert - GetCurrentPspSegment should return the override value
+        _pspTracker.GetCurrentPspSegment().Should().Be(0x5500);
+        // But the actual PSP stack should be unchanged
+        _pspTracker.PspCount.Should().Be(2);
+        _pspTracker.GetCurrentPsp().Should().NotBeNull();
+    }
+
+    /// <summary>
+    /// Verifies that SetCurrentPspSegment can be called with edge case values
+    /// like 0x0000 and 0xFFFF (used by some MS applications to detect DOS).
+    /// </summary>
+    [Theory]
+    [InlineData(0x0000)]
+    [InlineData(0xFFFF)]
+    [InlineData(0x1234)]
+    public void SetCurrentPspSegment_AcceptsAnyValue(ushort pspSegment) {
+        // Act
+        _pspTracker.SetCurrentPspSegment(pspSegment);
+
+        // Assert
+        _pspTracker.GetCurrentPspSegment().Should().Be(pspSegment);
+    }
+
+    /// <summary>
+    /// Verifies that SetCurrentPspSegment works even when no programs are loaded.
+    /// </summary>
+    [Fact]
+    public void SetCurrentPspSegment_WorksWithNoProgramsLoaded() {
+        // Arrange - no programs loaded (PspCount is 0)
+        _pspTracker.PspCount.Should().Be(0);
+
+        // Act
+        _pspTracker.SetCurrentPspSegment(0xABCD);
+
+        // Assert
+        _pspTracker.GetCurrentPspSegment().Should().Be(0xABCD);
+    }
 }
