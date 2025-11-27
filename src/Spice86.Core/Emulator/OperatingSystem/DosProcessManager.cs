@@ -715,7 +715,8 @@ public class DosProcessManager : DosFileLoader {
         InterruptVectorTable interruptVectorTable) {
         
         // Store the return code for parent to retrieve via INT 21h AH=4Dh
-        LastChildReturnCode = (ushort)((byte)terminationType << 8 | exitCode);
+        // Format: AH = termination type, AL = exit code
+        LastChildReturnCode = (ushort)(((ushort)terminationType << 8) | exitCode);
         
         DosProgramSegmentPrefix? currentPsp = _pspTracker.GetCurrentPsp();
         if (currentPsp is null) {
@@ -749,26 +750,9 @@ public class DosProcessManager : DosFileLoader {
 
         // Restore interrupt vectors from PSP before removing it
         // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
-        uint terminateAddress = currentPsp.TerminateAddress;
-        uint breakAddress = currentPsp.BreakAddress;
-        uint criticalErrorAddress = currentPsp.CriticalErrorAddress;
-
-        // Only restore non-zero vectors (0 means use system default)
-        if (terminateAddress != 0) {
-            ushort segment = MemoryUtils.ToSegment(terminateAddress);
-            ushort offset = (ushort)(terminateAddress & 0xFFFF);
-            interruptVectorTable[0x22] = new SegmentedAddress(segment, offset);
-        }
-        if (breakAddress != 0) {
-            ushort segment = MemoryUtils.ToSegment(breakAddress);
-            ushort offset = (ushort)(breakAddress & 0xFFFF);
-            interruptVectorTable[0x23] = new SegmentedAddress(segment, offset);
-        }
-        if (criticalErrorAddress != 0) {
-            ushort segment = MemoryUtils.ToSegment(criticalErrorAddress);
-            ushort offset = (ushort)(criticalErrorAddress & 0xFFFF);
-            interruptVectorTable[0x24] = new SegmentedAddress(segment, offset);
-        }
+        RestoreInterruptVector(0x22, currentPsp.TerminateAddress, interruptVectorTable);
+        RestoreInterruptVector(0x23, currentPsp.BreakAddress, interruptVectorTable);
+        RestoreInterruptVector(0x24, currentPsp.CriticalErrorAddress, interruptVectorTable);
 
         // Remove the PSP from the tracker
         _pspTracker.PopCurrentPspSegment();
@@ -798,5 +782,20 @@ public class DosProcessManager : DosFileLoader {
 
         // No parent to return to - this is the main program terminating
         return false;
+    }
+
+    /// <summary>
+    /// Restores an interrupt vector from a stored address if it's non-zero.
+    /// </summary>
+    /// <param name="vectorNumber">The interrupt vector number (e.g., 0x22, 0x23, 0x24).</param>
+    /// <param name="storedAddress">The address stored in the PSP (0 means don't restore).</param>
+    /// <param name="interruptVectorTable">The interrupt vector table to update.</param>
+    private static void RestoreInterruptVector(byte vectorNumber, uint storedAddress, 
+        InterruptVectorTable interruptVectorTable) {
+        if (storedAddress != 0) {
+            ushort segment = MemoryUtils.ToSegment(storedAddress);
+            ushort offset = (ushort)(storedAddress & 0xFFFF);
+            interruptVectorTable[vectorNumber] = new SegmentedAddress(segment, offset);
+        }
     }
 }
