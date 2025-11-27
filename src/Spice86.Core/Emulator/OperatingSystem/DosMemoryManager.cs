@@ -82,7 +82,7 @@ public class DosMemoryManager {
         get => _allocationStrategy;
         set {
             // Validate the strategy - only allow valid combinations
-            byte fitType = (byte)(value & 0x03);
+            byte fitType = (byte)((byte)value & 0x03);
             if (fitType > 0x02) {
                 // Invalid fit type, ignore
                 return;
@@ -724,7 +724,7 @@ public class DosMemoryManager {
     /// </remarks>
     private DosMemoryControlBlock? SelectBlockByStrategy(IEnumerable<DosMemoryControlBlock> candidates) {
         // Get the fit type from the lower 2 bits of the strategy
-        byte fitType = (byte)(_allocationStrategy & 0x03);
+        byte fitType = (byte)((byte)_allocationStrategy & 0x03);
 
         DosMemoryControlBlock? selectedBlock = null;
 
