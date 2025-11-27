@@ -699,6 +699,7 @@ public class DosProcessManager : DosFileLoader {
     /// The termination process:
     /// <list type="number">
     /// <item>Store the return code for retrieval by parent (INT 21h AH=4Dh)</item>
+    /// <item>Close all non-standard file handles (handles 5+)</item>
     /// <item>Cache interrupt vectors from PSP before freeing memory</item>
     /// <item>Free all memory blocks owned by the process</item>
     /// <item>Restore interrupt vectors 22h, 23h, 24h from cached values</item>
@@ -711,10 +712,6 @@ public class DosProcessManager : DosFileLoader {
     /// all memory blocks owned by a PSP. This implementation follows the same pattern.
     /// Note that in real DOS, the environment block is also freed since it's a separate
     /// MCB owned by the terminating process's PSP.
-    /// </para>
-    /// <para>
-    /// <strong>Note:</strong> File handle closure is not yet implemented. In a full DOS implementation,
-    /// all file handles in the Job File Table (JFT) should be closed before termination.
     /// </para>
     /// </remarks>
     public bool TerminateProcess(byte exitCode, DosTerminationType terminationType, 
@@ -749,6 +746,10 @@ public class DosProcessManager : DosFileLoader {
 
         // If this is a child process (not the main program), we have a parent to return to
         bool hasParentToReturnTo = !isRootProcess && _pspTracker.PspCount > 1;
+
+        // Close all non-standard file handles (5+) opened by this process
+        // Standard handles 0-4 (stdin, stdout, stderr, stdaux, stdprn) are inherited and not closed
+        _fileManager.CloseAllNonStandardFileHandles();
 
         // Cache interrupt vectors from PSP before freeing memory
         // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
