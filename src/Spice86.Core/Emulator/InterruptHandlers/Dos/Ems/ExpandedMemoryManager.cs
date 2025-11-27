@@ -17,15 +17,30 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 /// <summary>
-/// Provides DOS applications with EMS memory. <br/>
-/// Expanded memory is memory beyond DOS's 640K-byte limit.  This LIM <br/>
-/// implementation supports 8 MB of expanded memory. <br/>
+/// Provides DOS applications with EMS memory via INT 67h. <br/>
+/// Expanded memory is memory beyond DOS's 640K-byte limit. This implementation
+/// supports 8 MB of expanded memory (512 pages of 16 KB each). <br/>
 /// Because the 8086, 8088, and 80286 (in real mode) microprocessors can <br/>
 /// physically address only 1M byte of memory, they access expanded memory <br/>
-/// through a window in their physical address range.
-/// <remarks>This is a LIM standard implementation. Which means there's no
-/// difference between EMM pages and raw pages. They're both 16 KB.</remarks>
+/// through a 64 KB window (page frame) in their physical address range.
+/// <para>
+/// This implementation is based on the LIM EMS 4.0 specification with the following scope:
+/// <list type="bullet">
+/// <item>Core EMS 3.2 functions (0x40-0x4E): Get Status, Page Frame, Allocate/Deallocate, Map/Unmap, etc.</item>
+/// <item>Selected EMS 4.0 functions: 0x50 (Map Multiple), 0x51 (Reallocate), 0x53 (Handle Names), 0x58 (Mappable Array), 0x59 (Hardware Info)</item>
+/// <item>VCPI (Virtual Control Program Interface) is explicitly out of scope as we only emulate real mode</item>
+/// <item>GEMMIS and other LIM 4.0 OS-specific functions (0x5D-0x5F) are out of scope</item>
+/// </list>
+/// </para>
+/// <para>
+/// The EMS implementation uses its own RAM separate from conventional memory, consistent with
+/// how real EMS hardware works. This is correct behavior for a real-mode emulator.
+/// </para>
 /// </summary>
+/// <remarks>
+/// This is a LIM standard implementation where EMM pages and raw pages are identical (both 16 KB).
+/// The page frame is located at segment 0xE000, which is above 640K in the Upper Memory Area.
+/// </remarks>
 public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
     /// <summary>
     /// The string identifier in main memory for the EMS Handler. <br/>
@@ -471,10 +486,15 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
     }
 
     /// <summary>
-    /// Returns the LIM specs version we implement (3.2) in _state.AL. <br/>
+    /// Returns the EMS version in _state.AL using BCD format. <br/>
+    /// This implementation returns version 3.2 (0x32) for compatibility,
+    /// even though it supports selected EMS 4.0 functions (0x50, 0x51, 0x53, 0x58, 0x59).
+    /// Programs that need to use EMS 4.0 functions should check for specific
+    /// function support rather than relying solely on the version number.
     /// </summary>
     public void GetEmmVersion() {
-        // Return EMS version 3.2.
+        // Return EMS version 3.2 in BCD format.
+        // Note: We implement some EMS 4.0 functions but report 3.2 for broader compatibility.
         State.AL = 0x32;
         // Return good status.
         State.AH = EmmStatus.EmmNoError;

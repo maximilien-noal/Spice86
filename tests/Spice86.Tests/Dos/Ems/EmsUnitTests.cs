@@ -17,8 +17,21 @@ using Xunit;
 
 /// <summary>
 /// Tests the Expanded Memory Manager (EMS) functionality.
-/// Based on the LIM EMS 4.0 specification and implementation in ExpandedMemoryManager.cs
-/// Each test validates a specific EMS function or behavior.
+/// <para>
+/// Based on the LIM EMS specification:
+/// <list type="bullet">
+/// <item>Core functions (0x40-0x4E) are from EMS 3.2</item>
+/// <item>Extended functions (0x50-0x59) are from EMS 4.0</item>
+/// </list>
+/// </para>
+/// <para>
+/// The implementation was verified against the jemmex/emm386 source code from FreeDOS:
+/// https://github.com/FDOS/emm386
+/// </para>
+/// <para>
+/// Note: VCPI and other LIM 4.0 OS-specific features (GEMMIS) are out of scope
+/// for this emulator as we only emulate real mode.
+/// </para>
 /// </summary>
 public class EmsUnitTests {
     private readonly ExpandedMemoryManager _ems;
