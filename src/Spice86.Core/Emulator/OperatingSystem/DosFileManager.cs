@@ -1064,7 +1064,7 @@ public class DosFileManager {
                     }
                 } else if (OpenFiles[handle] is VirtualFileBase file) {
                     long oldLocation = file.Position;
-                    file.Seek(file.Position, SeekOrigin.End);
+                    file.Seek(0, SeekOrigin.End);
                     long endLocation = file.Position;
                     if (oldLocation < endLocation) { //Still data available
                         state.AL = 0xff;
