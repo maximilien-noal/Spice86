@@ -1015,17 +1015,25 @@ public class DosInt21Handler : InterruptHandler {
     /// <remarks>
     /// The returned pointer points to the beginning of the documented portion of SYSVARS.
     /// Some fields exist at negative offsets from this pointer (e.g., the first MCB segment at -2).
+    /// Similar to DOSBox, this updates the block device count before returning the pointer.
     /// </remarks>
     /// </summary>
     private void GetListOfLists() {
+        // Update block device count in SYSVARS before returning the pointer
+        // This matches DOSBox behavior which counts block devices before returning
+        // Block device count is at offset 0x20 in the SYSVARS structure
+        byte blockDeviceCount = (byte)_dosDriveManager.Count;
+        uint sysVarsBase = MemoryUtils.ToPhysicalAddress(DosSysVarsSegment, 0);
+        Memory.UInt8[sysVarsBase + 0x20] = blockDeviceCount;
+
         // Return pointer to the List of Lists (SYSVARS)
         // ES:BX points to offset 0 of the SYSVARS structure
         State.ES = DosSysVarsSegment;
         State.BX = 0;
 
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("GET LIST OF LISTS (SYSVARS) at {Address}",
-                ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
+            LoggerService.Verbose("GET LIST OF LISTS (SYSVARS) at {Address}, BlockDevices={BlockDeviceCount}",
+                ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX), blockDeviceCount);
         }
     }
 
