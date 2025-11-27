@@ -974,19 +974,12 @@ public class DosInt21Handler : InterruptHandler {
             paragraphsToKeep, 
             out DosMemoryControlBlock _);
         
-        if (errorCode != DosErrorCode.NoError) {
-            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-                LoggerService.Warning(
-                    "TSR: Failed to resize memory block to {Paragraphs} paragraphs, error: {Error}",
-                    paragraphsToKeep, errorCode);
-            }
-            // Even if resize fails, we still terminate as a TSR
-            // This matches FreeDOS behavior - it doesn't check the return value of DosMemChange
-        }
-        
-        if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-            LoggerService.Warning("INT21H: TSR TERMINATE AND STAY RESIDENT with exit code {ExitCode}, keeping {Paragraphs} paragraphs",
-                ConvertUtils.ToHex8(returnCode), paragraphsToKeep);
+        // Even if resize fails, we still terminate as a TSR
+        // This matches FreeDOS behavior - it doesn't check the return value of DosMemChange
+        if (errorCode != DosErrorCode.NoError && LoggerService.IsEnabled(LogEventLevel.Warning)) {
+            LoggerService.Warning(
+                "TSR: Failed to resize memory block to {Paragraphs} paragraphs, error: {Error}",
+                paragraphsToKeep, errorCode);
         }
         
         // TSR does NOT remove the PSP from the tracker (the program stays resident)

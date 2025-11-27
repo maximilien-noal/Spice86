@@ -4,10 +4,7 @@ using FluentAssertions;
 
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.IOPorts;
-using Spice86.Core.Emulator.Memory;
-using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Interfaces;
-using Spice86.Shared.Utils;
 
 using System.Runtime.CompilerServices;
 
@@ -162,12 +159,12 @@ public class TsrIntegrationTests {
             
             // Check BX == 5678h
             0x81, 0xFB, 0x78, 0x56, // 0x14: cmp bx, 5678h
-            0x75, 0x10,             // 0x18: jne failed (jump +16 bytes to 0x2A)
+            0x75, 0x0F,             // 0x18: jne failed (jump +15 bytes to 0x29)
             
             // Check ES == 1234h
             0x8C, 0xC0,             // 0x1A: mov ax, es
             0x3D, 0x34, 0x12,       // 0x1C: cmp ax, 1234h
-            0x75, 0x09,             // 0x1F: jne failed (jump +9 bytes to 0x2A)
+            0x75, 0x08,             // 0x1F: jne failed (jump +8 bytes to 0x29)
             
             // Success
             0xB0, 0x00,             // 0x21: mov al, 00h (success)
@@ -239,8 +236,7 @@ public class TsrIntegrationTests {
         TsrTestHandler testHandler = new(
             spice86DependencyInjection.Machine.CpuState,
             NSubstitute.Substitute.For<ILoggerService>(),
-            spice86DependencyInjection.Machine.IoPortDispatcher,
-            spice86DependencyInjection.Machine.Memory
+            spice86DependencyInjection.Machine.IoPortDispatcher
         );
         spice86DependencyInjection.ProgramExecutor.Run();
 
@@ -248,15 +244,13 @@ public class TsrIntegrationTests {
     }
 
     /// <summary>
-    /// Captures DOS test results from designated I/O ports and provides memory access.
+    /// Captures DOS test results from designated I/O ports.
     /// </summary>
     private class TsrTestHandler : DefaultIOPortHandler {
         public List<byte> Results { get; } = new();
-        public IMemory Memory { get; }
 
         public TsrTestHandler(State state, ILoggerService loggerService,
-            IOPortDispatcher ioPortDispatcher, IMemory memory) : base(state, true, loggerService) {
-            Memory = memory;
+            IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService) {
             ioPortDispatcher.AddIOPortHandler(ResultPort, this);
             ioPortDispatcher.AddIOPortHandler(DetailsPort, this);
         }
