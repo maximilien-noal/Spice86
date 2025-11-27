@@ -1151,6 +1151,25 @@ public class DosMemoryManagerTests {
     }
 
     /// <summary>
+    /// Ensures that the MCB chain check returns false for a corrupted chain.
+    /// </summary>
+    [Fact]
+    public void CheckMcbChainCorruptedChain() {
+        // Arrange - create some allocations and then corrupt one
+        DosMemoryControlBlock? block1 = _memoryManager.AllocateMemoryBlock(1000);
+        block1.Should().NotBeNull();
+        
+        // Corrupt the MCB by setting an invalid TypeField (neither 'M' nor 'Z')
+        block1!.TypeField = 0x00; // Invalid value
+        
+        // Act
+        bool isValid = _memoryManager.CheckMcbChain();
+        
+        // Assert
+        isValid.Should().BeFalse();
+    }
+
+    /// <summary>
     /// Ensures that FreeProcessMemory frees all blocks owned by a specific PSP.
     /// </summary>
     [Fact]
@@ -1179,6 +1198,21 @@ public class DosMemoryManagerTests {
         
         // Act - try to set invalid fit type (0x03)
         _memoryManager.AllocationStrategy = (DosMemoryAllocationStrategy)0x03;
+        
+        // Assert - should remain unchanged
+        _memoryManager.AllocationStrategy.Should().Be(originalStrategy);
+    }
+
+    /// <summary>
+    /// Ensures that setting an invalid allocation strategy (bits 2-5 set) is ignored.
+    /// </summary>
+    [Fact]
+    public void InvalidAllocationStrategyBits2To5SetIsIgnored() {
+        // Arrange
+        DosMemoryAllocationStrategy originalStrategy = _memoryManager.AllocationStrategy;
+        
+        // Act - try to set strategy with bit 2 set (0x04)
+        _memoryManager.AllocationStrategy = (DosMemoryAllocationStrategy)0x04;
         
         // Assert - should remain unchanged
         _memoryManager.AllocationStrategy.Should().Be(originalStrategy);

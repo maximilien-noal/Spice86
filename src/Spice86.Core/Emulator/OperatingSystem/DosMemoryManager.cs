@@ -87,6 +87,10 @@ public class DosMemoryManager {
                 // Invalid fit type, ignore
                 return;
             }
+            // Validate bits 2-5 must be zero per DOS specification
+            if (((byte)value & 0x3C) != 0) {
+                return;
+            }
             byte highMemBits = (byte)((byte)value & 0xC0);
             if (highMemBits != 0x00 && highMemBits != 0x40 && highMemBits != 0x80) {
                 // Invalid high memory bits, ignore
