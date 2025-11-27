@@ -1405,9 +1405,8 @@ public class DosInt21Handler : InterruptHandler {
                 exitCode, (DosTerminationType)terminationType);
         }
         
-        // TODO: In MS-DOS, subsequent calls to AH=4Dh should return 0.
-        // This behavior is currently not implemented. Most programs only call this once
-        // after EXEC returns, so this is rarely needed in practice.
+        // In MS-DOS, subsequent calls to AH=4Dh return 0 after the first read
+        _dosProcessManager.LastChildReturnCode = 0;
     }
 
     /// <summary>

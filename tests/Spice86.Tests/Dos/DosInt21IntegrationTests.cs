@@ -403,6 +403,49 @@ public class DosInt21IntegrationTests {
     }
 
     /// <summary>
+    /// Tests that subsequent calls to INT 21h AH=4Dh return 0 (MS-DOS behavior).
+    /// </summary>
+    /// <remarks>
+    /// In MS-DOS, the return code is only valid for the first read after a child
+    /// process terminates. Subsequent reads should return 0. This test verifies
+    /// that calling AH=4Dh twice in a row returns 0 on the second call.
+    /// </remarks>
+    [Fact]
+    public void GetChildReturnCode_SubsequentCallsReturnZero() {
+        // This test calls INT 21h AH=4Dh twice and verifies the second call returns 0
+        byte[] program = new byte[] {
+            // First call to get child return code (clears the value)
+            0xB4, 0x4D,             // mov ah, 4Dh - Get child return code
+            0xCD, 0x21,             // int 21h
+            
+            // Second call - should return 0 now
+            0xB4, 0x4D,             // mov ah, 4Dh - Get child return code again
+            0xCD, 0x21,             // int 21h
+            
+            // Check that AX is 0 (both exit code and termination type)
+            0x85, 0xC0,             // test ax, ax - check if AX is 0
+            0x75, 0x04,             // jne failed (jump if not zero)
+            
+            // Success
+            0xB0, 0x00,             // mov al, TestResult.Success
+            0xEB, 0x02,             // jmp writeResult
+            
+            // failed:
+            0xB0, 0xFF,             // mov al, TestResult.Failure
+            
+            // writeResult:
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            0xF4                    // hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
     /// Tests that INT 21h AH=4Ch properly terminates the program and sets the exit code.
     /// </summary>
     /// <remarks>

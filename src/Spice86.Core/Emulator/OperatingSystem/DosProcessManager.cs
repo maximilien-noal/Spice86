@@ -64,10 +64,12 @@ public class DosProcessManager : DosFileLoader {
     /// <remarks>
     /// The low byte (AL) contains the exit code, and the high byte (AH) contains
     /// the termination type. See <see cref="DosTerminationType"/> for termination types.
+    /// In MS-DOS, this value is only valid for one read after EXEC returns - subsequent
+    /// reads return 0.
     /// </remarks>
     public ushort LastChildReturnCode {
         get => _lastChildReturnCode;
-        private set => _lastChildReturnCode = value;
+        set => _lastChildReturnCode = value;
     }
 
     /// <summary>
@@ -763,8 +765,9 @@ public class DosProcessManager : DosFileLoader {
             _state.DS = parentPspSegment;
             _state.ES = parentPspSegment;
 
-            // Get the terminate address (INT 22h vector) from the terminated process's PSP
-            // This is where we return control
+            // Get the terminate address from the interrupt vector table
+            // The INT 22h vector was just restored from the PSP above, so it now
+            // contains the return address for the parent process
             SegmentedAddress returnAddress = interruptVectorTable[0x22];
             
             if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
@@ -785,16 +788,21 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
-    /// Restores an interrupt vector from a stored address if it's non-zero.
+    /// Restores an interrupt vector from a stored far pointer if it's non-zero.
     /// </summary>
     /// <param name="vectorNumber">The interrupt vector number (e.g., 0x22, 0x23, 0x24).</param>
-    /// <param name="storedAddress">The address stored in the PSP (0 means don't restore).</param>
+    /// <param name="storedFarPointer">The far pointer stored in the PSP (offset:segment format, 0 means don't restore).</param>
     /// <param name="interruptVectorTable">The interrupt vector table to update.</param>
-    private static void RestoreInterruptVector(byte vectorNumber, uint storedAddress, 
+    /// <remarks>
+    /// The PSP stores far pointers as DWORDs in offset:segment format (little-endian):
+    /// - Low 16 bits = offset
+    /// - High 16 bits = segment
+    /// </remarks>
+    private static void RestoreInterruptVector(byte vectorNumber, uint storedFarPointer, 
         InterruptVectorTable interruptVectorTable) {
-        if (storedAddress != 0) {
-            ushort segment = MemoryUtils.ToSegment(storedAddress);
-            ushort offset = (ushort)(storedAddress & 0xFFFF);
+        if (storedFarPointer != 0) {
+            ushort offset = (ushort)(storedFarPointer & 0xFFFF);
+            ushort segment = (ushort)(storedFarPointer >> 16);
             interruptVectorTable[vectorNumber] = new SegmentedAddress(segment, offset);
         }
     }
