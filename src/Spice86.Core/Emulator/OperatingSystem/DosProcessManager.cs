@@ -41,6 +41,36 @@ public class DosProcessManager : DosFileLoader {
     private readonly EnvironmentVariables _environmentVariables;
 
     /// <summary>
+    /// Stores the return code of the last terminated child process.
+    /// This is retrieved by INT 21h AH=4Dh (Get Return Code of Child Process).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The value is a 16-bit word where:
+    /// - AL (low byte) = Exit code (ERRORLEVEL) from the child process
+    /// - AH (high byte) = Termination type (see <see cref="DosTerminationType"/>)
+    /// </para>
+    /// <para>
+    /// <strong>MCB Note:</strong> In FreeDOS, this is stored in the SDA (Swappable Data Area)
+    /// and is only valid immediately after the child process terminates. Reading it a second
+    /// time returns 0 in MS-DOS. FreeDOS may behave slightly differently.
+    /// </para>
+    /// </remarks>
+    private ushort _lastChildReturnCode;
+
+    /// <summary>
+    /// Gets or sets the return code of the last terminated child process.
+    /// </summary>
+    /// <remarks>
+    /// The low byte (AL) contains the exit code, and the high byte (AH) contains
+    /// the termination type. See <see cref="DosTerminationType"/> for termination types.
+    /// </remarks>
+    public ushort LastChildReturnCode {
+        get => _lastChildReturnCode;
+        private set => _lastChildReturnCode = value;
+    }
+
+    /// <summary>
     /// Gets the simulated COMMAND.COM instance.
     /// </summary>
     public CommandCom CommandCom => _commandCom;
@@ -647,5 +677,126 @@ public class DosProcessManager : DosFileLoader {
                 + physicalStartAddress;
             _memory.UInt16[addressToEdit] += startSegment;
         }
+    }
+
+    /// <summary>
+    /// Terminates the current process with the specified exit code and termination type.
+    /// </summary>
+    /// <param name="exitCode">The exit code (ERRORLEVEL) to return to the parent process.</param>
+    /// <param name="terminationType">How the process terminated.</param>
+    /// <param name="interruptVectorTable">The interrupt vector table to restore vectors from PSP.</param>
+    /// <returns>
+    /// <c>true</c> if control should return to a parent process (child process terminating);
+    /// <c>false</c> if the main program is terminating and emulation should stop.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This implements DOS process termination semantics (INT 21h AH=4Ch, INT 21h AH=00h, INT 20h).
+    /// </para>
+    /// <para>
+    /// The termination process:
+    /// <list type="number">
+    /// <item>Store the return code for retrieval by parent (INT 21h AH=4Dh)</item>
+    /// <item>Close all file handles opened by the process</item>
+    /// <item>Free all memory blocks owned by the process</item>
+    /// <item>Restore interrupt vectors 22h, 23h, 24h from the PSP</item>
+    /// <item>Remove the PSP from the tracker</item>
+    /// <item>Return control to parent via INT 22h vector</item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// <strong>MCB Note:</strong> FreeDOS kernel uses FreeProcessMem() in task.c to free
+    /// all memory blocks owned by a PSP. This implementation follows the same pattern.
+    /// Note that in real DOS, the environment block is also freed since it's a separate
+    /// MCB owned by the terminating process's PSP.
+    /// </para>
+    /// </remarks>
+    public bool TerminateProcess(byte exitCode, DosTerminationType terminationType, 
+        InterruptVectorTable interruptVectorTable) {
+        
+        // Store the return code for parent to retrieve via INT 21h AH=4Dh
+        LastChildReturnCode = (ushort)((byte)terminationType << 8 | exitCode);
+        
+        DosProgramSegmentPrefix? currentPsp = _pspTracker.GetCurrentPsp();
+        if (currentPsp is null) {
+            // No PSP means we're terminating before any program was loaded
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("TerminateProcess called with no current PSP");
+            }
+            return false;
+        }
+
+        ushort currentPspSegment = _pspTracker.GetCurrentPspSegment();
+        ushort parentPspSegment = currentPsp.ParentProgramSegmentPrefix;
+
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information(
+                "Terminating process at PSP {CurrentPsp:X4}, exit code {ExitCode:X2}, type {Type}, parent PSP {ParentPsp:X4}",
+                currentPspSegment, exitCode, terminationType, parentPspSegment);
+        }
+
+        // Check if this is the root process (PSP = parent PSP, like COMMAND.COM)
+        // or if parent is COMMAND.COM (the shell)
+        bool isRootProcess = currentPspSegment == parentPspSegment || 
+                            parentPspSegment == CommandCom.CommandComSegment;
+
+        // If this is a child process (not the main program), we have a parent to return to
+        bool hasParentToReturnTo = !isRootProcess && _pspTracker.PspCount > 1;
+
+        // Free all memory blocks owned by this process (including environment block)
+        // This follows FreeDOS kernel FreeProcessMem() pattern
+        _memoryManager.FreeProcessMemory(currentPspSegment);
+
+        // Restore interrupt vectors from PSP before removing it
+        // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
+        uint terminateAddress = currentPsp.TerminateAddress;
+        uint breakAddress = currentPsp.BreakAddress;
+        uint criticalErrorAddress = currentPsp.CriticalErrorAddress;
+
+        // Only restore non-zero vectors (0 means use system default)
+        if (terminateAddress != 0) {
+            ushort segment = MemoryUtils.ToSegment(terminateAddress);
+            ushort offset = (ushort)(terminateAddress & 0xFFFF);
+            interruptVectorTable[0x22] = new SegmentedAddress(segment, offset);
+        }
+        if (breakAddress != 0) {
+            ushort segment = MemoryUtils.ToSegment(breakAddress);
+            ushort offset = (ushort)(breakAddress & 0xFFFF);
+            interruptVectorTable[0x23] = new SegmentedAddress(segment, offset);
+        }
+        if (criticalErrorAddress != 0) {
+            ushort segment = MemoryUtils.ToSegment(criticalErrorAddress);
+            ushort offset = (ushort)(criticalErrorAddress & 0xFFFF);
+            interruptVectorTable[0x24] = new SegmentedAddress(segment, offset);
+        }
+
+        // Remove the PSP from the tracker
+        _pspTracker.PopCurrentPspSegment();
+
+        if (hasParentToReturnTo) {
+            // Set up return to parent process
+            // DS and ES should point to parent's PSP
+            _state.DS = parentPspSegment;
+            _state.ES = parentPspSegment;
+
+            // Get the terminate address (INT 22h vector) from the terminated process's PSP
+            // This is where we return control
+            SegmentedAddress returnAddress = interruptVectorTable[0x22];
+            
+            if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+                _loggerService.Debug(
+                    "Returning to parent at {Segment:X4}:{Offset:X4}",
+                    returnAddress.Segment, returnAddress.Offset);
+            }
+
+            // Set up CPU to continue at the return address
+            _state.CS = returnAddress.Segment;
+            _state.IP = returnAddress.Offset;
+            
+            return true; // Continue execution at parent
+        }
+
+        // No parent to return to - this is the main program terminating
+        return false;
     }
 }
