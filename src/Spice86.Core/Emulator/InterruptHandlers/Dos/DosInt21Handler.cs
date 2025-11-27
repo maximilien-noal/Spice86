@@ -6,6 +6,7 @@ using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.Cmos;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.InterruptHandlers.Common.MemoryWriter;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
@@ -13,6 +14,7 @@ using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
 
@@ -978,6 +980,110 @@ public class DosInt21Handler : InterruptHandler {
 
     /// <inheritdoc/>
     public override byte VectorNumber => 0x21;
+
+    /// <summary>
+    /// Emits a minimal INT 21h handler stub into guest RAM that handles keyboard input functions
+    /// (AH=01h, 07h, 08h) in-place using INT 16h for blocking input, and dispatches all other
+    /// AH values back to the C# handler via a callback.
+    /// </summary>
+    /// <remarks><![CDATA[
+    /// Assembled control flow (labels for readability):
+    /// L_HANDLER:
+    ///     cmp ah, 01h
+    ///     jz  L_AH01          ; Read keyboard with echo
+    ///     cmp ah, 07h
+    ///     jz  L_AH07_08       ; Direct input without echo
+    ///     cmp ah, 08h
+    ///     jz  L_AH07_08       ; Direct input without echo
+    ///
+    /// L_DEFAULT:
+    ///     callback -> C# Run()
+    ///     iret
+    ///
+    /// L_AH01:                 ; Read keyboard with echo
+    ///     mov ah, 00h         ; INT 16h function 00h - wait for key
+    ///     int 16h             ; Wait for keystroke, result in AX
+    ///     push ax             ; Save key
+    ///     mov ah, 0Eh         ; INT 10h function 0Eh - TTY output
+    ///     int 10h             ; Echo character in AL
+    ///     pop ax              ; Restore key
+    ///     iret
+    ///
+    /// L_AH07_08:              ; Direct input without echo  
+    ///     mov ah, 00h         ; INT 16h function 00h - wait for key
+    ///     int 16h             ; Wait for keystroke, result in AL
+    ///     iret
+    ///
+    /// Note: This implementation relies on INT 16h having its own blocking stub already installed.
+    /// ]]></remarks>
+    /// <param name="memoryAsmWriter">Helper used to write machine code and callbacks into guest memory.</param>
+    /// <returns>The segment:offset address where the handler stub was emitted.</returns>
+    public override SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
+        SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
+
+        // CMP AH, 01h (Read keyboard with echo)
+        memoryAsmWriter.WriteUInt8(0x80);  // CMP r/m8, imm8
+        memoryAsmWriter.WriteUInt8(0xFC);  // AH
+        memoryAsmWriter.WriteUInt8(0x01);  // 01h
+        // JZ L_AH01 - we'll calculate offset later
+        // For now, we need to know the sizes:
+        // - CMP AH, 07h: 3 bytes
+        // - JZ L_AH07_08: 2 bytes  
+        // - CMP AH, 08h: 3 bytes
+        // - JZ L_AH07_08: 2 bytes
+        // - callback + IRET: 4 + 1 = 5 bytes
+        // Total to skip to get to L_AH01: 3+2+3+2+5 = 15 bytes
+        memoryAsmWriter.WriteJz(15);
+
+        // CMP AH, 07h (Direct input without echo)
+        memoryAsmWriter.WriteUInt8(0x80);
+        memoryAsmWriter.WriteUInt8(0xFC);
+        memoryAsmWriter.WriteUInt8(0x07);
+        // JZ L_AH07_08: skip CMP AH,08h (3) + JZ (2) + callback+IRET (5) + L_AH01 code
+        // L_AH01 code: MOV AH,0 (2) + INT 16h (2) + PUSH AX (1) + MOV AH,0Eh (2) + INT 10h (2) + POP AX (1) + IRET (1) = 11 bytes
+        // So skip: 3+2+5+11 = 21 bytes
+        memoryAsmWriter.WriteJz(21);
+
+        // CMP AH, 08h (Direct input without echo)
+        memoryAsmWriter.WriteUInt8(0x80);
+        memoryAsmWriter.WriteUInt8(0xFC);
+        memoryAsmWriter.WriteUInt8(0x08);
+        // JZ L_AH07_08: skip callback+IRET (5) + L_AH01 code (11) = 16 bytes
+        memoryAsmWriter.WriteJz(16);
+
+        // L_DEFAULT: callback to C# Run() then IRET
+        memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
+        memoryAsmWriter.WriteIret();
+
+        // L_AH01: Read keyboard with echo
+        // MOV AH, 00h
+        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
+        memoryAsmWriter.WriteUInt8(0x00);
+        // INT 16h - Wait for keystroke
+        memoryAsmWriter.WriteInt(0x16);
+        // PUSH AX - Save the keystroke
+        memoryAsmWriter.WriteUInt8(0x50);
+        // MOV AH, 0Eh - TTY output function
+        memoryAsmWriter.WriteUInt8(0xB4);
+        memoryAsmWriter.WriteUInt8(0x0E);
+        // INT 10h - Echo the character
+        memoryAsmWriter.WriteInt(0x10);
+        // POP AX - Restore the keystroke
+        memoryAsmWriter.WriteUInt8(0x58);
+        // IRET
+        memoryAsmWriter.WriteIret();
+
+        // L_AH07_08: Direct input without echo
+        // MOV AH, 00h
+        memoryAsmWriter.WriteUInt8(0xB4);
+        memoryAsmWriter.WriteUInt8(0x00);
+        // INT 16h - Wait for keystroke
+        memoryAsmWriter.WriteInt(0x16);
+        // IRET
+        memoryAsmWriter.WriteIret();
+
+        return handlerAddress;
+    }
 
     /// <summary>
     /// Function 35H returns the address stored in the interrupt vector table for the handler associated with the specified interrupt. <br/>
