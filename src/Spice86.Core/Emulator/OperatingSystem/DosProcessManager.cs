@@ -128,6 +128,26 @@ public class DosProcessManager : DosFileLoader {
         // For child processes, we use proper MCB-based allocation.
         bool isFirstProgram = _pspTracker.PspCount == 0;
 
+        // For the first program, we need to reserve the PSP space BEFORE allocating the environment
+        // block. Otherwise, the environment block will be allocated at InitialPspSegment, and then
+        // the PSP initialization will overwrite it. This is done by allocating a small block at
+        // InitialPspSegment first, which marks that memory as used so the environment block
+        // allocator will find the next free block instead.
+        // See: https://github.com/maximilien-noal/Spice86/issues/XXX
+        DosMemoryControlBlock? firstProgramMemBlock = null;
+        if (isFirstProgram) {
+            // Reserve at least 1 paragraph at InitialPspSegment to prevent environment block
+            // from being allocated there. We'll use this block for the program later.
+            // For now, just reserve the minimum PSP size (16 paragraphs = 256 bytes).
+            firstProgramMemBlock = _memoryManager.AllocateMemoryBlockForPsp(0x10, parentPspSegment);
+            if (firstProgramMemBlock is null) {
+                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                    _loggerService.Error("EXEC: Failed to reserve PSP space for first program");
+                }
+                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+            }
+        }
+
         // Create environment block using MCB
         byte[] envBlockData = CreateEnvironmentBlock(programPath);
         ushort envSegment = environmentSegment;
@@ -135,6 +155,10 @@ public class DosProcessManager : DosFileLoader {
             // Allocate new environment block
             envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
             if (envSegment == 0) {
+                // Free the PSP reservation if we made one
+                if (firstProgramMemBlock is not null) {
+                    _memoryManager.FreeMemoryBlock(firstProgramMemBlock);
+                }
                 return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
             }
         }
