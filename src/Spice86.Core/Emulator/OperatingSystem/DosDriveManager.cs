@@ -90,7 +90,7 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// </summary>
     /// <returns>An enumerable of all mounted VirtualDrive instances.</returns>
     public IEnumerable<VirtualDrive> GetDrives() {
-        return _driveMap.Values.Where(drive => drive != null)!;
+        return _driveMap.Values.OfType<VirtualDrive>();
     }
 
     public byte NumberOfPotentiallyValidDriveLetters {

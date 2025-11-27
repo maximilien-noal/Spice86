@@ -1222,10 +1222,12 @@ public class DosFileManager {
     /// own executable location (like VB3 runtimes embedded in the EXE).
     /// </remarks>
     public string GetDosProgramPath(string hostPath) {
+        // Normalize the host path once before iterating through drives
+        string normalizedHostPath = hostPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        
         // Try to find a mounted drive that contains this host path
         foreach (VirtualDrive drive in _dosDriveManager.GetDrives()) {
             string mountedDir = drive.MountedHostDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            string normalizedHostPath = hostPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
             
             // Check if the host path starts with the mounted directory
             if (normalizedHostPath.StartsWith(mountedDir, StringComparison.OrdinalIgnoreCase)) {
