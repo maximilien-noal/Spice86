@@ -935,7 +935,7 @@ public class DosInt21Handler : InterruptHandler {
     /// Based on FreeDOS kernel behavior (FDOS/kernel inthndlr.c):
     /// - Resizes the current PSP's memory block to DX paragraphs (minimum 6)
     /// - Sets return code to AL | 0x300 (high byte 0x03 indicates TSR termination)
-    /// - Terminates the process while leaving memory allocated
+    /// - Returns to parent process via terminate address stored in PSP
     /// </para>
     /// <b>Expects:</b><br/>
     /// AL = return code passed to parent process<br/>
@@ -957,6 +957,8 @@ public class DosInt21Handler : InterruptHandler {
             paragraphsToKeep = MinimumParagraphs;
         }
         
+        // Get the current PSP
+        DosProgramSegmentPrefix? currentPsp = _dosPspTracker.GetCurrentPsp();
         ushort currentPspSegment = _dosPspTracker.GetCurrentPspSegment();
         
         if (LoggerService.IsEnabled(LogEventLevel.Information)) {
@@ -982,21 +984,61 @@ public class DosInt21Handler : InterruptHandler {
             // This matches FreeDOS behavior - it doesn't check the return value of DosMemChange
         }
         
-        // TSR return code has 0x300 in high byte to indicate TSR termination
-        // Lower byte is the program's return code (from AL)
-        // This is stored for INT 21h/4Dh (Get Child Return Value) if needed
-        // For now, we just terminate like a normal exit
-        // The 0x300 flag in the return_code indicates this was a TSR termination
-        // (term_type = 3 in FreeDOS)
-        
         if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
             LoggerService.Warning("INT21H: TSR TERMINATE AND STAY RESIDENT with exit code {ExitCode}, keeping {Paragraphs} paragraphs",
                 ConvertUtils.ToHex8(returnCode), paragraphsToKeep);
         }
         
-        // Terminate the program
-        // Note: Unlike a normal exit, we do NOT free the process memory or pop the PSP
-        // The TSR program remains in memory
+        // TSR does NOT remove the PSP from the tracker (the program stays resident)
+        // TSR does NOT free the process memory (the program stays in memory)
+        // TSR DOES return to parent process
+        
+        // Check if we have a valid PSP with a terminate address
+        // If the current PSP has a valid terminate address, return to the parent
+        // Otherwise, stop the emulation (for initial programs or test environments)
+        if (currentPsp is not null) {
+            uint terminateAddress = currentPsp.TerminateAddress;
+            ushort terminateSegment = (ushort)(terminateAddress >> 16);
+            ushort terminateOffset = (ushort)(terminateAddress & 0xFFFF);
+            
+            // Check if we have a valid parent to return to:
+            // - terminateAddress must be non-zero (was saved when program was loaded)
+            // - parentPspSegment must not be ourselves (we're not the root shell)
+            // - parentPspSegment must not be zero (there is a parent)
+            ushort parentPspSegment = currentPsp.ParentProgramSegmentPrefix;
+            bool hasValidParent = terminateAddress != 0 && 
+                                  parentPspSegment != currentPspSegment &&
+                                  parentPspSegment != 0;
+            
+            if (hasValidParent) {
+                // Restore the CPU stack to the state it was in when the program started.
+                // The PSP stores the parent's SS:SP at offset 0x2E, which was saved by
+                // INT 21h/4Bh (EXEC) when this program was loaded. Restoring it allows
+                // the parent to continue execution from where it called EXEC.
+                uint savedStackPointer = currentPsp.StackPointer;
+                State.SS = (ushort)(savedStackPointer >> 16);
+                State.SP = (ushort)(savedStackPointer & 0xFFFF);
+                
+                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
+                // This was set when the program was loaded and points back to the parent's
+                // continuation point. This is how DOS returns control to the parent process.
+                State.CS = terminateSegment;
+                State.IP = terminateOffset;
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                    LoggerService.Verbose(
+                        "TSR: Returning to parent at {Segment:X4}:{Offset:X4}, stack {SS:X4}:{SP:X4}",
+                        terminateSegment, terminateOffset, State.SS, State.SP);
+                }
+                return;
+            }
+        }
+        
+        // Fallback: If we're the initial program or no valid parent exists, stop the emulator
+        // This handles test environments and programs launched directly without EXEC
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("TSR: No valid parent process, stopping emulation");
+        }
         State.IsRunning = false;
     }
 
