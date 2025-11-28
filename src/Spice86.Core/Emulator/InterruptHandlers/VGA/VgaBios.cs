@@ -622,84 +622,99 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
     }
 
     /// <summary>
-    /// Handler for INT 10h function 0x70 (Everex Extended Video BIOS).
-    /// This is an Everex-specific BIOS extension for extended video modes.
+    /// Handler for INT 10h AH=70h (Everex Extended Video BIOS).
+    /// AH=70h, AL=00h with various BX values for extended functions.
+    /// Note: The Extended Mode Set (AX=0070h) uses AH=00h, not 70h.
     /// </summary>
     private void EverexExtendedVideoBios() {
-        switch (State.AL) {
-            case 0x00:
-                SetEverexExtendedMode();
+        // When AH=70h, the function is determined by BX
+        // AL is typically 0x00 for these functions
+        switch (State.BX) {
+            case 0x0000:
+                EverexReturnEmulationStatus();
+                break;
+            case 0x0004:
+                EverexGetPagingFunctionPointer();
+                break;
+            case 0x0005:
+                EverexGetSupportedModeInfo();
                 break;
             default:
                 if (_logger.IsEnabled(LogEventLevel.Warning)) {
-                    _logger.Warning("{ClassName} INT 10 70 {MethodName} - Unsupported subfunction AL=0x{Al:X2}. Returning without action.",
-                        nameof(VgaBios), nameof(EverexExtendedVideoBios), State.AL);
+                    _logger.Warning("{ClassName} INT 10 AH=70h {MethodName} - Unsupported BX=0x{Bx:X4}, AL=0x{Al:X2}.",
+                        nameof(VgaBios), nameof(EverexExtendedVideoBios), State.BX, State.AL);
                 }
                 break;
         }
     }
 
     /// <summary>
-    /// Sets an Everex extended video mode.
-    /// INT 10h, AH=70h, AL=00h - Set Extended Mode
-    /// BL = Everex mode number
+    /// INT 10h AX=7000h BX=0000h - Return Emulation Status.
+    /// Returns monitor type, feature bits, board info, and BIOS version.
     /// </summary>
-    private void SetEverexExtendedMode() {
-        byte everexMode = State.BL;
-        int? standardModeId = MapEverexModeToStandard(everexMode);
+    private void EverexReturnEmulationStatus() {
+        // CL = monitor type (06h = SuperVGA)
+        State.CL = 0x06;
 
-        if (standardModeId.HasValue) {
-            if (_logger.IsEnabled(LogEventLevel.Debug)) {
-                _logger.Debug("{ClassName} INT 10 70 00 {MethodName} - Everex mode 0x{EverexMode:X2} mapped to standard mode 0x{StandardMode:X2}",
-                    nameof(VgaBios), nameof(SetEverexExtendedMode), everexMode, standardModeId.Value);
-            }
+        // CH = feature bits (0x81 = 10000001b)
+        // bits 7,6 = 10 (binary): 1024K memory
+        // bit 5 = 0: no special oscillator
+        // bit 4 = 0: VGA protect disabled
+        // bit 0 = 1: 6845 emulation enabled
+        State.CH = 0x81;
 
-            ModeFlags flags = ModeFlags.Legacy | (ModeFlags)_biosDataArea.ModesetCtl & (ModeFlags.NoPalette | ModeFlags.GraySum);
-            _vgaFunctions.VgaSetMode(standardModeId.Value, flags);
-        } else {
-            if (_logger.IsEnabled(LogEventLevel.Warning)) {
-                _logger.Warning("{ClassName} INT 10 70 00 {MethodName} - Unsupported Everex mode 0x{EverexMode:X2}. Returning without action.",
-                    nameof(VgaBios), nameof(SetEverexExtendedMode), everexMode);
-            }
+        // DX = video board info
+        // bits 4-15: board ID model (use 0x678 for Viewpoint)
+        // bits 0-3: board ID revision
+        State.DX = 0x6780;
+
+        // DI = BCD BIOS version number (e.g., 0x0100 for version 1.00)
+        State.DI = 0x0100;
+
+        // AL = 0x70 indicates Everex card detected
+        State.AL = 0x70;
+
+        if (_logger.IsEnabled(LogEventLevel.Debug)) {
+            _logger.Debug("{ClassName} INT 10 AX=7000h BX=0000h {MethodName} - Returning emulation status: CL=0x{Cl:X2}, CH=0x{Ch:X2}, DX=0x{Dx:X4}, DI=0x{Di:X4}",
+                nameof(VgaBios), nameof(EverexReturnEmulationStatus), State.CL, State.CH, State.DX, State.DI);
         }
     }
 
     /// <summary>
-    /// Maps Everex extended mode numbers to standard VGA mode IDs.
-    /// Everex mode numbers are vendor-specific and may vary by card model.
+    /// INT 10h AX=7000h BX=0004h - Get Paging Function Pointer.
+    /// Returns ES:DI pointing to a FAR paging function.
+    /// Since we don't have bank switching, we return a stub.
     /// </summary>
-    /// <param name="everexMode">The Everex mode number from BL register.</param>
-    /// <returns>The standard VGA mode ID, or null if the mode is not supported.</returns>
-    private static int? MapEverexModeToStandard(byte everexMode) {
-        // Everex extended mode mappings based on common Everex VGA/SVGA cards
-        // These mappings are approximations as exact values varied by hardware
-        return everexMode switch {
-            // Standard text modes
-            0x00 => 0x03, // 80x25 text
-            0x01 => 0x03, // 80x25 text (alternate)
+    private void EverexGetPagingFunctionPointer() {
+        // We don't have a real paging function, so return 0:0
+        // Real hardware would return a pointer to a function that sets the bank
+        State.ES = 0;
+        State.DI = 0;
 
-            // CGA/EGA compatible modes  
-            0x02 => 0x04, // 320x200x4
-            0x03 => 0x06, // 640x200x2
-            0x04 => 0x0D, // 320x200x16
-            0x05 => 0x0E, // 640x200x16
-            0x06 => 0x10, // 640x350x16
-            0x07 => 0x12, // 640x480x16
+        if (_logger.IsEnabled(LogEventLevel.Warning)) {
+            _logger.Warning("{ClassName} INT 10 AX=7000h BX=0004h {MethodName} - Paging function not implemented, returning NULL pointer.",
+                nameof(VgaBios), nameof(EverexGetPagingFunctionPointer));
+        }
+    }
 
-            // VGA 256-color modes
-            0x13 => 0x13, // 320x200x256
-            0x14 => 0x13, // 320x200x256 (alternate)
+    /// <summary>
+    /// INT 10h AX=7000h BX=0005h - Get Supported Mode Info.
+    /// Returns information about supported video modes.
+    /// CL = max modes to return, CH = mode type filter, DL = monitor type
+    /// ES:DI = buffer for mode info
+    /// Returns: CL = total modes, CH = record size
+    /// </summary>
+    private void EverexGetSupportedModeInfo() {
+        // Return no modes for simplicity (CL = 0)
+        // A full implementation would fill the buffer with mode records
+        // using the input parameters: CL=max modes, CH=mode type, DL=monitor type, ES:DI=buffer
+        if (_logger.IsEnabled(LogEventLevel.Debug)) {
+            _logger.Debug("{ClassName} INT 10 AX=7000h BX=0005h {MethodName} - Requested max {MaxModes} modes of type 0x{ModeType:X2} for monitor 0x{MonitorType:X2}. Returning 0 modes.",
+                nameof(VgaBios), nameof(EverexGetSupportedModeInfo), State.CL, State.CH, State.DL);
+        }
 
-            // Extended modes - 800x600
-            0x30 => 0x6A, // 800x600x16
-
-            // High-resolution text modes (132 columns)
-            // These would need additional support in the mode table
-            0x22 => 0x03, // 132x25 text - fallback to 80x25
-            0x23 => 0x03, // 132x43 text - fallback to 80x25
-
-            _ => null
-        };
+        State.CL = 0;  // Total number of modes
+        State.CH = 9;  // Size of each mode info record
     }
 
     /// <inheritdoc />
