@@ -1168,7 +1168,8 @@ public class DosInt21Handler : InterruptHandler {
         int skipToBufferedInput = CallbackInstructionSize + IretInstructionSize;
         memoryAsmWriter.WriteJz((sbyte)skipToBufferedInput);
 
-        // L_DEFAULT: Default callback for all other functions
+        // L_DEFAULT: Default callback for all other functions.
+        // Uses VectorNumber (0x21) as the callback index - this is the primary entry point.
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
         memoryAsmWriter.WriteIret();
 
@@ -1189,9 +1190,9 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteInt(0x28);
 
         // JMP short L_BUFFERED_INPUT - Loop back to check again
-        // Need to jump back: -(mov ah (2) + int 16h (2) + jnz (2) + int 28h (2) + jmp (2))
-        // But we're at the end of JMP, so: -(2 + 2 + 2 + 2) = -8 relative to end of this instruction
-        int jumpBackOffset = -(MovAhImm8InstructionSize + IntInstructionSize + ConditionalJumpShortSize + IntInstructionSize);
+        // Offset is relative to the instruction following JMP short
+        // We need to jump back: -(mov ah (2) + int 16h (2) + jnz (2) + int 28h (2) + jmp (2)) = -10
+        int jumpBackOffset = -(MovAhImm8InstructionSize + IntInstructionSize + ConditionalJumpShortSize + IntInstructionSize + JmpShortInstructionSize);
         memoryAsmWriter.WriteJumpShort((sbyte)jumpBackOffset);
 
         // L_KEY_AVAILABLE: Key is available, call the C# handler
@@ -1199,7 +1200,9 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
         memoryAsmWriter.WriteUInt8(0x0A);  // immediate: 0x0A
 
-        // Callback to C# BufferedInput handler (uses auto-allocated callback number)
+        // Callback to C# BufferedInput handler.
+        // Uses auto-allocated callback number (different from VectorNumber) to avoid
+        // duplicate key error. Both callbacks invoke Run() which dispatches by AH value.
         memoryAsmWriter.RegisterAndWriteCallback(Run);
         memoryAsmWriter.WriteIret();
 
