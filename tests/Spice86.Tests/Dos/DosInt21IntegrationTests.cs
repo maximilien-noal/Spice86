@@ -540,14 +540,17 @@ public class DosInt21IntegrationTests {
     public void TerminateWithExitCode_TerminatesProgramNormally() {
         // This test calls INT 21h AH=4Ch with exit code 0x42
         // After termination, we expect the emulator to have stopped
+        // Note: Set AH before writing to port so AL is preserved for the I/O write
         byte[] program = new byte[] {
-            // First, write a success marker before terminating
+            // Setup AH=4C first before writing to port
+            0xB4, 0x4C,             // mov ah, 4Ch - Terminate with exit code
+            
+            // Write a success marker before terminating
             0xB0, 0x00,             // mov al, TestResult.Success
             0xBA, 0x99, 0x09,       // mov dx, ResultPort
             0xEE,                   // out dx, al
             
-            // Terminate with exit code 0x42
-            0xB4, 0x4C,             // mov ah, 4Ch - Terminate with exit code
+            // Set exit code and terminate
             0xB0, 0x42,             // mov al, 42h - exit code
             0xCD, 0x21,             // int 21h - should terminate
             
@@ -604,8 +607,9 @@ public class DosInt21IntegrationTests {
     /// </summary>
     private DosTestHandler RunDosTest(byte[] program,
         [CallerMemberName] string unitTestName = "test") {
-        // Write program to a .com file
-        string filePath = Path.GetFullPath($"{unitTestName}.com");
+        // Write program to a .com file with unique suffix to avoid test file conflicts
+        string uniqueId = Guid.NewGuid().ToString("N")[..8];
+        string filePath = Path.GetFullPath($"{unitTestName}_{uniqueId}.com");
         File.WriteAllBytes(filePath, program);
 
         // Setup emulator with DOS initialized
