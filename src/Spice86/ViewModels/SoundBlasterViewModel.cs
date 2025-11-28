@@ -29,28 +29,6 @@ public partial class SoundBlasterViewModel : DebuggerTabViewModel {
     [ObservableProperty]
     private byte _irq;
 
-    // DMA info
-    [ObservableProperty]
-    private string _dmaPlaybackMode = string.Empty;
-
-    [ObservableProperty]
-    private bool _autoInit;
-
-    [ObservableProperty]
-    private bool _stereo;
-
-    [ObservableProperty]
-    private string _sampleRate = string.Empty;
-
-    [ObservableProperty]
-    private string _remainingBytes = string.Empty;
-
-    [ObservableProperty]
-    private bool _speakerEnabled;
-
-    [ObservableProperty]
-    private bool _dmaMasked;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SoundBlasterViewModel"/> class.
     /// </summary>
@@ -71,8 +49,7 @@ public partial class SoundBlasterViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // The DMA state properties are internal, so we can only show the static config
-        // In a real implementation, we would expose more internal state
+        // Sound Blaster configuration is static, but update in case it changes
         BlasterString = _soundBlaster.BlasterString;
     }
 }
