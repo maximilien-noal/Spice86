@@ -609,7 +609,7 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         AddAction(0x1A, GetSetDisplayCombinationCode);
         AddAction(0x1B, () => GetFunctionalityInfo());
         AddAction(0x4F, VesaFunctions);
-        AddAction(0x70, GetDisplayConnectorInfo);
+        AddAction(0x70, EverexExtendedVideoBios);
     }
 
     public void VesaFunctions() {
@@ -622,15 +622,84 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
     }
 
     /// <summary>
-    /// Stub handler for INT 10h function 0x70 (Get/Set Display Connector Information).
-    /// This is not a standard VGA BIOS function and is undocumented/reserved.
-    /// Some programs may call this expecting it to be a no-op or return specific values.
+    /// Handler for INT 10h function 0x70 (Everex Extended Video BIOS).
+    /// This is an Everex-specific BIOS extension for extended video modes.
     /// </summary>
-    private void GetDisplayConnectorInfo() {
-        if (_logger.IsEnabled(LogEventLevel.Warning)) {
-            _logger.Warning("{ClassName} INT 10 70 {MethodName} - Undocumented function called with AL=0x{Al:X2}. Returning without action.",
-                nameof(VgaBios), nameof(GetDisplayConnectorInfo), State.AL);
+    private void EverexExtendedVideoBios() {
+        switch (State.AL) {
+            case 0x00:
+                SetEverexExtendedMode();
+                break;
+            default:
+                if (_logger.IsEnabled(LogEventLevel.Warning)) {
+                    _logger.Warning("{ClassName} INT 10 70 {MethodName} - Unsupported subfunction AL=0x{Al:X2}. Returning without action.",
+                        nameof(VgaBios), nameof(EverexExtendedVideoBios), State.AL);
+                }
+                break;
         }
+    }
+
+    /// <summary>
+    /// Sets an Everex extended video mode.
+    /// INT 10h, AH=70h, AL=00h - Set Extended Mode
+    /// BL = Everex mode number
+    /// </summary>
+    private void SetEverexExtendedMode() {
+        byte everexMode = State.BL;
+        int? standardModeId = MapEverexModeToStandard(everexMode);
+
+        if (standardModeId.HasValue) {
+            if (_logger.IsEnabled(LogEventLevel.Debug)) {
+                _logger.Debug("{ClassName} INT 10 70 00 {MethodName} - Everex mode 0x{EverexMode:X2} mapped to standard mode 0x{StandardMode:X2}",
+                    nameof(VgaBios), nameof(SetEverexExtendedMode), everexMode, standardModeId.Value);
+            }
+
+            ModeFlags flags = ModeFlags.Legacy | (ModeFlags)_biosDataArea.ModesetCtl & (ModeFlags.NoPalette | ModeFlags.GraySum);
+            _vgaFunctions.VgaSetMode(standardModeId.Value, flags);
+        } else {
+            if (_logger.IsEnabled(LogEventLevel.Warning)) {
+                _logger.Warning("{ClassName} INT 10 70 00 {MethodName} - Unsupported Everex mode 0x{EverexMode:X2}. Returning without action.",
+                    nameof(VgaBios), nameof(SetEverexExtendedMode), everexMode);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Maps Everex extended mode numbers to standard VGA mode IDs.
+    /// Everex mode numbers are vendor-specific and may vary by card model.
+    /// </summary>
+    /// <param name="everexMode">The Everex mode number from BL register.</param>
+    /// <returns>The standard VGA mode ID, or null if the mode is not supported.</returns>
+    private static int? MapEverexModeToStandard(byte everexMode) {
+        // Everex extended mode mappings based on common Everex VGA/SVGA cards
+        // These mappings are approximations as exact values varied by hardware
+        return everexMode switch {
+            // Standard text modes
+            0x00 => 0x03, // 80x25 text
+            0x01 => 0x03, // 80x25 text (alternate)
+
+            // CGA/EGA compatible modes  
+            0x02 => 0x04, // 320x200x4
+            0x03 => 0x06, // 640x200x2
+            0x04 => 0x0D, // 320x200x16
+            0x05 => 0x0E, // 640x200x16
+            0x06 => 0x10, // 640x350x16
+            0x07 => 0x12, // 640x480x16
+
+            // VGA 256-color modes
+            0x13 => 0x13, // 320x200x256
+            0x14 => 0x13, // 320x200x256 (alternate)
+
+            // Extended modes - 800x600
+            0x30 => 0x6A, // 800x600x16
+
+            // High-resolution text modes (132 columns)
+            // These would need additional support in the mode table
+            0x22 => 0x03, // 132x25 text - fallback to 80x25
+            0x23 => 0x03, // 132x43 text - fallback to 80x25
+
+            _ => null
+        };
     }
 
     /// <inheritdoc />
