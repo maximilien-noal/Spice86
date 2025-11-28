@@ -6,6 +6,7 @@ using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.Devices.Cmos;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.InterruptHandlers.Common.MemoryWriter;
 using Spice86.Core.Emulator.InterruptHandlers.Input.Keyboard;
 using Spice86.Core.Emulator.IOPorts;
 using Spice86.Core.Emulator.Memory;
@@ -13,6 +14,7 @@ using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Devices;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
 
@@ -29,6 +31,41 @@ public class DosInt21Handler : InterruptHandler {
     /// This must match the value in <c>Dos.DosSysVarSegment</c> (private const in Dos.cs, line 47).
     /// </summary>
     private const ushort DosSysVarsSegment = 0x80;
+
+    /// <summary>
+    /// Size of INT instruction in bytes (opcode + vector number).
+    /// </summary>
+    private const int IntInstructionSize = 2;
+
+    /// <summary>
+    /// Size of callback instruction in bytes (FE 38 + 2-byte callback number).
+    /// </summary>
+    private const int CallbackInstructionSize = 4;
+
+    /// <summary>
+    /// Size of IRET instruction in bytes.
+    /// </summary>
+    private const int IretInstructionSize = 1;
+
+    /// <summary>
+    /// Size of CMP AH, imm8 instruction in bytes (80 FC imm8).
+    /// </summary>
+    private const int CmpAhImm8InstructionSize = 3;
+
+    /// <summary>
+    /// Size of JZ/JNZ rel8 instruction in bytes (opcode + offset).
+    /// </summary>
+    private const int ConditionalJumpShortSize = 2;
+
+    /// <summary>
+    /// Size of MOV AH, imm8 instruction in bytes (B4 imm8).
+    /// </summary>
+    private const int MovAhImm8InstructionSize = 2;
+
+    /// <summary>
+    /// Size of JMP short instruction in bytes (EB + offset).
+    /// </summary>
+    private const int JmpShortInstructionSize = 2;
 
     private readonly DosMemoryManager _dosMemoryManager;
     private readonly DosDriveManager _dosDriveManager;
@@ -1082,6 +1119,92 @@ public class DosInt21Handler : InterruptHandler {
 
     /// <inheritdoc/>
     public override byte VectorNumber => 0x21;
+
+    /// <summary>
+    /// Emits the INT 21h handler stub into guest RAM with special handling for AH=0Ah (BufferedInput).
+    /// </summary>
+    /// <remarks><![CDATA[
+    /// Assembled control flow (labels for readability):
+    /// 
+    /// L_HANDLER:
+    ///     cmp ah, 0Ah            ; Is this BufferedInput?
+    ///     jz  L_BUFFERED_INPUT   ; If yes, go to special handler
+    /// 
+    /// L_DEFAULT:
+    ///     callback Run           ; Default: call C# dispatcher
+    ///     iret
+    /// 
+    /// L_BUFFERED_INPUT:
+    ///     mov ah, 01h            ; INT 16h AH=01h: check keyboard status
+    ///     int 16h                ; Check if key available (ZF=0 if key present)
+    ///     jnz L_KEY_AVAILABLE    ; If key available, proceed
+    ///     int 28h                ; DOS idle interrupt (allows TSRs to run)
+    ///     jmp short L_BUFFERED_INPUT  ; Loop back to check again
+    /// 
+    /// L_KEY_AVAILABLE:
+    ///     mov ah, 0Ah            ; Restore AH to 0Ah for C# handler
+    ///     callback Run           ; Call C# BufferedInput handler
+    ///     iret
+    /// 
+    /// This approach follows the FreeDOS pattern where the read_char_sft_dev() function
+    /// uses an idle loop with DosIdle_int() while waiting for input.
+    /// The wait loop allows:
+    /// - INT 16h AH=01h to check keyboard status without removing the key
+    /// - INT 28h (DOS idle) to give other processes a chance to run
+    /// - Proper emulation loop continuation without C# blocking
+    /// ]]></remarks>
+    /// <param name="memoryAsmWriter">Helper used to write machine code and callbacks into guest memory.</param>
+    /// <returns>The segment:offset address where the handler stub was emitted.</returns>
+    public override SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
+        SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
+
+        // CMP AH, 0Ah - Check if this is BufferedInput function
+        memoryAsmWriter.WriteUInt8(0x80);  // CMP r/m8, imm8
+        memoryAsmWriter.WriteUInt8(0xFC);  // ModR/M: AH
+        memoryAsmWriter.WriteUInt8(0x0A);  // immediate: 0x0A
+
+        // JZ L_BUFFERED_INPUT - Skip over default handler if AH=0Ah
+        // Need to skip: callback (4) + iret (1) = 5 bytes
+        int skipToBufferedInput = CallbackInstructionSize + IretInstructionSize;
+        memoryAsmWriter.WriteJz((sbyte)skipToBufferedInput);
+
+        // L_DEFAULT: Default callback for all other functions
+        memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
+        memoryAsmWriter.WriteIret();
+
+        // L_BUFFERED_INPUT: Wait loop for keyboard input
+        // MOV AH, 01h - Setup INT 16h AH=01h (check keyboard status)
+        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
+        memoryAsmWriter.WriteUInt8(0x01);  // immediate: 0x01
+
+        // INT 16h - Check keyboard status (ZF=0 if key available)
+        memoryAsmWriter.WriteInt(0x16);
+
+        // JNZ L_KEY_AVAILABLE - Skip wait loop if key is available
+        // Need to skip: int 28h (2) + jmp short (2) = 4 bytes
+        int skipToKeyAvailable = IntInstructionSize + JmpShortInstructionSize;
+        memoryAsmWriter.WriteJnz((sbyte)skipToKeyAvailable);
+
+        // INT 28h - DOS idle (allows TSRs and background processing)
+        memoryAsmWriter.WriteInt(0x28);
+
+        // JMP short L_BUFFERED_INPUT - Loop back to check again
+        // Need to jump back: -(mov ah (2) + int 16h (2) + jnz (2) + int 28h (2) + jmp (2))
+        // But we're at the end of JMP, so: -(2 + 2 + 2 + 2) = -8 relative to end of this instruction
+        int jumpBackOffset = -(MovAhImm8InstructionSize + IntInstructionSize + ConditionalJumpShortSize + IntInstructionSize);
+        memoryAsmWriter.WriteJumpShort((sbyte)jumpBackOffset);
+
+        // L_KEY_AVAILABLE: Key is available, call the C# handler
+        // MOV AH, 0Ah - Restore AH to 0Ah (BufferedInput function number)
+        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
+        memoryAsmWriter.WriteUInt8(0x0A);  // immediate: 0x0A
+
+        // Callback to C# BufferedInput handler (uses auto-allocated callback number)
+        memoryAsmWriter.RegisterAndWriteCallback(Run);
+        memoryAsmWriter.WriteIret();
+
+        return handlerAddress;
+    }
 
     /// <summary>
     /// Function 35H returns the address stored in the interrupt vector table for the handler associated with the specified interrupt. <br/>
