@@ -10,7 +10,7 @@ This document provides a step-by-step plan to rebase the `maximilien-noal/Spice8
 ## Prerequisites
 
 1. Ensure you have a local clone of your fork
-2. Backup your work before proceeding (optional but recommended)
+2. **IMPORTANT**: Create a backup branch before proceeding (see Step 3)
 
 ## Step-by-Step Rebase Commands
 
@@ -26,11 +26,11 @@ git remote add upstream https://github.com/OpenRakis/Spice86.git
 
 # Verify remotes
 git remote -v
-# Should show:
+# Should show (note: push to upstream is not needed, only fetch):
 # origin    https://github.com/maximilien-noal/Spice86 (fetch)
 # origin    https://github.com/maximilien-noal/Spice86 (push)
 # upstream  https://github.com/OpenRakis/Spice86 (fetch)
-# upstream  https://github.com/OpenRakis/Spice86 (push)
+# upstream  https://github.com/OpenRakis/Spice86 (fetch)
 ```
 
 ### Step 2: Fetch Latest from Both Remotes
@@ -119,6 +119,11 @@ git diff backup-before-rebase
 ```
 
 ### Step 8: Force Push to Update Your Fork
+
+> ⚠️ **WARNING**: Force pushing rewrites history. Before proceeding:
+> - Notify any collaborators who may have pulled from your fork
+> - Ensure no one else is currently working on the fork
+> - Collaborators will need to re-clone or run `git fetch --all && git reset --hard origin/master`
 
 ```bash
 # Force push is required because history has been rewritten
