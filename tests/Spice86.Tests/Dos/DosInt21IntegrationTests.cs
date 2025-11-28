@@ -609,7 +609,7 @@ public class DosInt21IntegrationTests {
         File.WriteAllBytes(filePath, program);
 
         // Setup emulator with DOS initialized
-        using Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+        Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
             binName: filePath,
             enableCfgCpu: true,
             enablePit: false,
