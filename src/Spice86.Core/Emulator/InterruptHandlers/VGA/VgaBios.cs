@@ -768,9 +768,11 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
 
         // Bytes per scan line (offset 16)
         // Per VBE 1.2 spec, this is the number of bytes between consecutive scanlines
+        // For planar modes (4-bit), this is bytes per plane (width/8 since 1 bit per pixel per plane)
         ushort bytesPerLine;
         if (bpp == 4) {
-            bytesPerLine = (ushort)(width / 2);
+            // 4-bit planar: 4 planes, each with 1 bit per pixel
+            bytesPerLine = (ushort)(width / 8);
         } else if (bpp == 1) {
             bytesPerLine = (ushort)(width / 8);
         } else if (bpp == 15 || bpp == 16) {
@@ -781,8 +783,8 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         } else if (bpp == 32) {
             bytesPerLine = (ushort)(width * 4);
         } else {
-            // 8-bit packed pixel
-            bytesPerLine = (ushort)(width * (bpp / 8));
+            // 8-bit packed pixel (bpp == 8)
+            bytesPerLine = width;
         }
         Memory.UInt16[address + 16] = bytesPerLine;
 
@@ -832,7 +834,8 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         // Direct color fields (for 15/16/24/32 bpp modes)
         if (bpp >= 15) {
             if (bpp == 15 || bpp == 16) {
-                // 5:5:5 or 5:6:5 format
+                // 15-bit: 5:5:5 format (R=5 bits at position 10, G=5 bits at position 5, B=5 bits at position 0)
+                // 16-bit: 5:6:5 format (R=5 bits at position 11, G=6 bits at position 5, B=5 bits at position 0)
                 Memory.UInt8[address + 31] = 5;  // Red mask size
                 Memory.UInt8[address + 32] = (byte)(bpp == 16 ? 11 : 10); // Red field position
                 Memory.UInt8[address + 33] = (byte)(bpp == 16 ? 6 : 5);   // Green mask size
