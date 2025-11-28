@@ -267,19 +267,26 @@ internal sealed class GusVoice {
         }
     }
 
+    // Sample conversion constant: scales 8-bit samples to 16-bit range
+    private const float Sample8BitScalar = 256f;
+
+    // 16-bit addressing layout masks for GUS memory
+    private const int Addr16BitUpperMask = 0b1100_0000_0000_0000_0000;
+    private const int Addr16BitLowerMask = 0b0001_1111_1111_1111_1111;
+
     private static float Read8BitSample(byte[] ram, int addr) {
         int i = addr & 0xfffff;
         if (i >= ram.Length) {
             return 0;
         }
         // Convert unsigned 8-bit to signed 16-bit range
-        return (sbyte)ram[i] * 256f;
+        return (sbyte)ram[i] * Sample8BitScalar;
     }
 
     private static float Read16BitSample(byte[] ram, int addr) {
         // 16-bit addressing uses a different layout
-        int upper = addr & 0b1100_0000_0000_0000_0000;
-        int lower = addr & 0b0001_1111_1111_1111_1111;
+        int upper = addr & Addr16BitUpperMask;
+        int lower = addr & Addr16BitLowerMask;
         int i = upper | (lower << 1);
 
         if (i + 1 >= ram.Length) {

@@ -491,7 +491,8 @@ public class Spice86DependencyInjection : IDisposable {
             state, biosKeyboardBuffer,
             keyboardInt16Handler, biosDataArea, vgaFunctionality,
             new Dictionary<string, string> {
-                { "BLASTER", soundBlaster.BlasterString } }, loggerService,
+                { "BLASTER", soundBlaster.BlasterString },
+                { "ULTRASND", gravisUltraSound.UltrasndString } }, loggerService,
             ioPortDispatcher, dosTables, xms);
 
         if (configuration.InitializeDOS is not false) {
