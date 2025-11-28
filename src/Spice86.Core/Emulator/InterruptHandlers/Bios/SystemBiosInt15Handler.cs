@@ -398,8 +398,9 @@ public class SystemBiosInt15Handler : InterruptHandler {
         int maxTicks = (int)(delayMs * 2) + 10;
         int ticksWaited = 0;
 
-        // Block until the wait completes by advancing emulated time
-        // This mimics DOSBox's CALLBACK_Idle() behavior
+        // Block until the wait completes by advancing emulated time.
+        // Each iteration advances the PIC tick counter and processes scheduled events,
+        // similar to how DOSBox's CALLBACK_Idle() allows time to pass while waiting.
         while (_biosDataArea.RtcWaitFlag != 0 && ticksWaited < maxTicks) {
             _dualPic.AddTick();
             _dualPic.RunQueue();
