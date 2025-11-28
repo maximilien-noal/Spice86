@@ -48,7 +48,6 @@ public partial class TimerViewModel : DebuggerTabViewModel {
     public TimerViewModel(PitTimer pitTimer, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
         : base(pauseHandler, uiDispatcher) {
         _pitTimer = pitTimer;
-        SystemStartTime = _pitTimer.SystemStartTime.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     /// <inheritdoc />
@@ -57,6 +56,8 @@ public partial class TimerViewModel : DebuggerTabViewModel {
             return;
         }
 
+        // Read values from the Core on each update
+        SystemStartTime = _pitTimer.SystemStartTime.ToString("yyyy-MM-dd HH:mm:ss");
         CurrentTicks = $"{_pitTimer.GetTicks():N0}";
         TicksUs = $"{_pitTimer.GetTicksUs():N0} µs";
 

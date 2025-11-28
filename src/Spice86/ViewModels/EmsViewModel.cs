@@ -23,7 +23,7 @@ public partial class EmsViewModel : DebuggerTabViewModel {
 
     // EMS Version and Status
     [ObservableProperty]
-    private string _emsVersion = "4.0";
+    private string _emsVersion = string.Empty;
 
     [ObservableProperty]
     private string _pageFrameSegment = string.Empty;
@@ -65,9 +65,6 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         : base(pauseHandler, uiDispatcher) {
         _ems = ems;
         IsEnabled = ems != null;
-        PageFrameSegment = $"0x{ExpandedMemoryManager.EmmPageFrameSegment:X4}";
-        TotalPages = EmmMemory.TotalPages;
-        TotalMemory = FormatMemorySize(EmmMemory.TotalPages * ExpandedMemoryManager.EmmPageSize);
     }
 
     /// <inheritdoc />
@@ -75,6 +72,12 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         if (!IsVisible || _ems == null) {
             return;
         }
+
+        // Update EMS configuration from the Core
+        EmsVersion = "4.0"; // EMS 4.0 is the standard version emulated
+        PageFrameSegment = $"0x{ExpandedMemoryManager.EmmPageFrameSegment:X4}";
+        TotalPages = EmmMemory.TotalPages;
+        TotalMemory = FormatMemorySize(EmmMemory.TotalPages * ExpandedMemoryManager.EmmPageSize);
 
         UpdateMemoryStatistics();
         UpdateHandles();

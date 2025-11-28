@@ -38,9 +38,6 @@ public partial class SoundBlasterViewModel : DebuggerTabViewModel {
     public SoundBlasterViewModel(SoundBlaster soundBlaster, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
         : base(pauseHandler, uiDispatcher) {
         _soundBlaster = soundBlaster;
-        BlasterString = soundBlaster.BlasterString;
-        SbType = soundBlaster.SbType.ToString();
-        Irq = soundBlaster.IRQ;
     }
 
     /// <inheritdoc />
@@ -49,7 +46,9 @@ public partial class SoundBlasterViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // Sound Blaster configuration is static, but update in case it changes
+        // Read values from the Core on each update
         BlasterString = _soundBlaster.BlasterString;
+        SbType = _soundBlaster.SbType.ToString();
+        Irq = _soundBlaster.IRQ;
     }
 }

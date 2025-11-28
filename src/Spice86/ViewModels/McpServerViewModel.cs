@@ -73,15 +73,12 @@ public partial class McpServerViewModel : DebuggerTabViewModel {
         : base(pauseHandler, uiDispatcher) {
         _mcpServer = mcpServer;
         IsEnabled = mcpServer != null;
-        IsServerRunning = isMcpEnabled;
-        IsCfgCpuEnabled = isCfgCpuEnabled;
-
-        ServerStatus = isMcpEnabled ? "Running (stdio transport)" : "Disabled";
-        CfgCpuStatus = isCfgCpuEnabled ? "Enabled (read_cfg_cpu_graph available)" : "Disabled";
-
-        // Populate tools immediately since they don't change at runtime
-        PopulateAvailableTools();
+        _configMcpEnabled = isMcpEnabled;
+        _configCfgCpuEnabled = isCfgCpuEnabled;
     }
+
+    private readonly bool _configMcpEnabled;
+    private readonly bool _configCfgCpuEnabled;
 
     /// <inheritdoc />
     public override void UpdateValues(object? sender, EventArgs e) {
@@ -89,14 +86,14 @@ public partial class McpServerViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // MCP server state is mostly static after initialization
-        // Only update status indicators
-        UpdateServerStatus();
-    }
+        // Read values from configuration on each update
+        IsServerRunning = _configMcpEnabled;
+        IsCfgCpuEnabled = _configCfgCpuEnabled;
+        ServerStatus = _configMcpEnabled ? "Running (stdio transport)" : "Disabled";
+        CfgCpuStatus = _configCfgCpuEnabled ? "Enabled (read_cfg_cpu_graph available)" : "Disabled";
 
-    private void UpdateServerStatus() {
-        // Server status is determined at startup and doesn't change
-        // This could be extended to show request statistics if needed
+        // Update tools list
+        PopulateAvailableTools();
     }
 
     private void PopulateAvailableTools() {

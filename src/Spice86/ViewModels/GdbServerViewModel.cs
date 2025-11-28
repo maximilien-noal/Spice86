@@ -42,10 +42,6 @@ public partial class GdbServerViewModel : DebuggerTabViewModel {
         : base(pauseHandler, uiDispatcher) {
         _gdbPort = gdbPort;
         _isEnabled = gdbPort > 0;
-        IsServerEnabled = _isEnabled;
-        Port = gdbPort;
-        ServerStatus = _isEnabled ? "Running" : "Disabled";
-        ConnectionInfo = _isEnabled ? $"Connect with: target remote localhost:{gdbPort}" : "GDB server is disabled";
     }
 
     /// <inheritdoc />
@@ -54,7 +50,10 @@ public partial class GdbServerViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // GDB server status is mostly static
+        // Read values from configuration on each update
+        IsServerEnabled = _isEnabled;
+        Port = _gdbPort;
         ServerStatus = _isEnabled ? "Running" : "Disabled";
+        ConnectionInfo = _isEnabled ? $"Connect with: target remote localhost:{_gdbPort}" : "GDB server is disabled";
     }
 }

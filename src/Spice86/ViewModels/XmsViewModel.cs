@@ -84,11 +84,6 @@ public partial class XmsViewModel : DebuggerTabViewModel {
         : base(pauseHandler, uiDispatcher) {
         _xms = xms;
         IsEnabled = xms != null;
-
-        // Static values
-        XmsVersion = $"{(ExtendedMemoryManager.XmsVersion >> 8) & 0xFF}.{ExtendedMemoryManager.XmsVersion & 0xFF:D2}";
-        TotalXmsMemory = FormatMemorySize(ExtendedMemoryManager.XmsMemorySize * 1024L);
-        XmsBaseAddress = $"0x{ExtendedMemoryManager.XmsBaseAddress:X8}";
     }
 
     /// <inheritdoc />
@@ -96,6 +91,11 @@ public partial class XmsViewModel : DebuggerTabViewModel {
         if (!IsVisible || _xms == null) {
             return;
         }
+
+        // Update XMS configuration from the Core
+        XmsVersion = $"{(ExtendedMemoryManager.XmsVersion >> 8) & 0xFF}.{ExtendedMemoryManager.XmsVersion & 0xFF:D2}";
+        TotalXmsMemory = FormatMemorySize(ExtendedMemoryManager.XmsMemorySize * 1024L);
+        XmsBaseAddress = $"0x{ExtendedMemoryManager.XmsBaseAddress:X8}";
 
         UpdateMemoryStatistics();
         UpdateA20State();

@@ -69,7 +69,6 @@ public partial class DosViewModel : DebuggerTabViewModel {
     public DosViewModel(Dos dos, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
         : base(pauseHandler, uiDispatcher) {
         _dos = dos;
-        DosVersion = "DOS 5.0"; // Standard version emulated
     }
 
     /// <inheritdoc />
@@ -77,6 +76,9 @@ public partial class DosViewModel : DebuggerTabViewModel {
         if (!IsVisible) {
             return;
         }
+
+        // DOS version comes from the DosInt21Handler - using the standard version
+        DosVersion = "DOS 5.0"; // Standard version emulated by Spice86
 
         UpdateFileManagerState();
         UpdateMemoryManagerState();

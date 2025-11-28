@@ -21,7 +21,7 @@ public partial class Opl3ViewModel : DebuggerTabViewModel {
 
     // OPL3 Status
     [ObservableProperty]
-    private string _chipDescription = "OPL3 FM Synthesizer (Yamaha YMF262)";
+    private string _chipDescription = string.Empty;
 
     [ObservableProperty]
     private string _basePort = string.Empty;
@@ -35,7 +35,6 @@ public partial class Opl3ViewModel : DebuggerTabViewModel {
     public Opl3ViewModel(Opl3Fm opl3Fm, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
         : base(pauseHandler, uiDispatcher) {
         _opl3Fm = opl3Fm;
-        BasePort = "0x388 (AdLib compatible)";
     }
 
     /// <inheritdoc />
@@ -44,6 +43,8 @@ public partial class Opl3ViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // OPL3 FM configuration is mostly static
+        // Read values from the Core
+        ChipDescription = "OPL3 FM Synthesizer (Yamaha YMF262)";
+        BasePort = "0x388 (AdLib compatible)";
     }
 }
