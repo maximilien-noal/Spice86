@@ -19,6 +19,7 @@ using Spice86.Core.Emulator.Devices.Input.Keyboard;
 using Spice86.Core.Emulator.Devices.Input.Mouse;
 using Spice86.Core.Emulator.Devices.Sound;
 using Spice86.Core.Emulator.Devices.Sound.Blaster;
+using Spice86.Core.Emulator.Devices.Sound.Gus;
 using Spice86.Core.Emulator.Devices.Sound.Midi;
 using Spice86.Core.Emulator.Devices.Timer;
 using Spice86.Core.Emulator.Devices.Video;
@@ -354,7 +355,8 @@ public class Spice86DependencyInjection : IDisposable {
             softwareMixer, state, dmaSystem, dualPic,
             configuration.FailOnUnhandledPort,
             loggerService, soundBlasterHardwareConfig, pauseHandler);
-        var gravisUltraSound = new GravisUltraSound(state, ioPortDispatcher,
+        GravisUltraSound gravisUltraSound = new GravisUltraSound(state, ioPortDispatcher,
+            softwareMixer, dmaSystem, dualPic, pauseHandler,
             configuration.FailOnUnhandledPort, loggerService);
 
         loggerService.Information("Sound devices created...");
