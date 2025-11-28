@@ -108,4 +108,41 @@ public class DosProgramSegmentPrefixTrackerTests {
         _pspTracker.GetCurrentPspSegment().Should().Be(0x4000);
         _pspTracker.GetProgramEntryPointSegment().Should().Be(0x4010);
     }
+
+    /// <summary>
+    /// Ensures that <see cref="DosProgramSegmentPrefixTracker.SetCurrentPspSegment"/> overrides
+    /// the current PSP returned by <see cref="DosProgramSegmentPrefixTracker.GetCurrentPspSegment"/>.
+    /// This tests the implementation of INT 21h, AH=50h (Set Current PSP Address).
+    /// </summary>
+    [Fact]
+    public void SetCurrentPspSegment_ShouldOverrideCurrentPsp() {
+        // Arrange - push some PSPs to the stack
+        _pspTracker.PushPspSegment(0x2000);
+        _pspTracker.PushPspSegment(0x3000);
+
+        // Act - set an override PSP segment
+        _pspTracker.SetCurrentPspSegment(0x5000);
+
+        // Assert - GetCurrentPspSegment should return the override, not the top of stack
+        _pspTracker.GetCurrentPspSegment().Should().Be(0x5000);
+        // The stack itself should be unchanged
+        _pspTracker.PspCount.Should().Be(2);
+        // GetCurrentPsp should still return the top of the stack (not affected by override)
+        _pspTracker.GetCurrentPsp().Should().NotBeNull();
+    }
+
+    /// <summary>
+    /// Ensures that <see cref="DosProgramSegmentPrefixTracker.SetCurrentPspSegment"/> can set
+    /// an arbitrary segment value, even one that doesn't correspond to a tracked PSP.
+    /// </summary>
+    [Fact]
+    public void SetCurrentPspSegment_ShouldAcceptArbitrarySegment() {
+        // Act - set an override PSP segment without pushing any PSPs first
+        _pspTracker.SetCurrentPspSegment(0x1234);
+
+        // Assert
+        _pspTracker.GetCurrentPspSegment().Should().Be(0x1234);
+        _pspTracker.PspCount.Should().Be(0);
+        _pspTracker.GetCurrentPsp().Should().BeNull();
+    }
 }

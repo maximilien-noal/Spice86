@@ -158,6 +158,7 @@ public class DosInt21Handler : InterruptHandler {
         AddAction(0x4D, GetChildReturnCode);
         AddAction(0x4E, () => FindFirstMatchingFile(true));
         AddAction(0x4F, () => FindNextMatchingFile(true));
+        AddAction(0x50, SetPspAddress);
         AddAction(0x51, GetPspAddress);
         AddAction(0x52, GetListOfLists);
         // INT 21h/58h: Get/Set Memory Allocation Strategy (related to memory functions 48h-4Ah)
@@ -1117,6 +1118,31 @@ public class DosInt21Handler : InterruptHandler {
         State.BX = pspSegment;
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
             LoggerService.Verbose("GET PSP ADDRESS {PspSegment}",
+                ConvertUtils.ToHex16(pspSegment));
+        }
+    }
+
+    /// <summary>
+    /// INT 21h, AH=50h - Set Current PSP Address.
+    /// <para>
+    /// Sets the current Program Segment Prefix (PSP) segment. This is an internal DOS function
+    /// that allows switching the current process context. It's typically used by debuggers
+    /// and system utilities.
+    /// </para>
+    /// <b>Expects:</b><br/>
+    /// BX = segment of new PSP
+    /// <b>Returns:</b><br/>
+    /// Nothing (no return value)
+    /// </summary>
+    /// <remarks>
+    /// This function does not verify that BX contains a valid PSP segment.
+    /// The caller is responsible for ensuring the segment points to a valid PSP.
+    /// </remarks>
+    public void SetPspAddress() {
+        ushort pspSegment = State.BX;
+        _dosPspTracker.SetCurrentPspSegment(pspSegment);
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("SET PSP ADDRESS {PspSegment}",
                 ConvertUtils.ToHex16(pspSegment));
         }
     }

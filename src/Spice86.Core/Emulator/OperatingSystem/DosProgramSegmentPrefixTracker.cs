@@ -46,6 +46,18 @@ public class DosProgramSegmentPrefixTracker {
     /// </summary>
     private readonly List<DosProgramSegmentPrefix> _loadedPsps;
 
+    /// <summary>
+    /// An override PSP segment set by INT 21h, AH=50h. When non-null, this takes precedence
+    /// over the top of the PSP stack for <see cref="GetCurrentPspSegment"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is an internal DOS function used by debuggers and some system utilities to
+    /// temporarily switch the current PSP context. The segment is stored directly rather
+    /// than maintaining a reference to a <see cref="DosProgramSegmentPrefix"/> object because
+    /// the caller may set an arbitrary segment that doesn't correspond to a tracked PSP.
+    /// </remarks>
+    private ushort? _overridePspSegment;
+
     public DosProgramSegmentPrefixTracker(Configuration configuration, IMemory memory,
         ILoggerService loggerService) {
         _initialProgramEntryPointSegment = configuration.ProgramEntryPointSegment;
@@ -101,10 +113,35 @@ public class DosProgramSegmentPrefixTracker {
     /// <summary>
     /// Gets the address of the PSP segment for the current program that is loaded.
     /// </summary>
+    /// <remarks>
+    /// If an override PSP segment has been set via <see cref="SetCurrentPspSegment"/>,
+    /// that value is returned instead of the top of the PSP stack.
+    /// </remarks>
     /// <returns>Returns the PSP segment for the current program.</returns>
     public ushort GetCurrentPspSegment() {
+        // Return override if set (via INT 21h, AH=50h)
+        if (_overridePspSegment.HasValue) {
+            return _overridePspSegment.Value;
+        }
         DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
         return currentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(currentPsp.BaseAddress);
+    }
+
+    /// <summary>
+    /// Sets the current PSP segment to an arbitrary value.
+    /// </summary>
+    /// <remarks>
+    /// This implements the functionality for INT 21h, AH=50h (Set Current PSP Address).
+    /// It's an internal DOS function used by debuggers and system utilities to temporarily
+    /// switch the current process context. The segment doesn't need to correspond to a
+    /// tracked PSP in the stack.
+    /// </remarks>
+    /// <param name="pspSegment">The PSP segment to set as current.</param>
+    public void SetCurrentPspSegment(ushort pspSegment) {
+        _overridePspSegment = pspSegment;
+        if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
+            _loggerService.Verbose("Set current PSP segment to {PspSegment:X4}", pspSegment);
+        }
     }
 
     /// <summary>
