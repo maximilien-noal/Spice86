@@ -15,6 +15,11 @@ using Spice86.ViewModels.Services;
 public partial class McpServerViewModel : DebuggerTabViewModel {
     private readonly IMcpServer? _mcpServer;
 
+    /// <summary>
+    /// MCP protocol version string.
+    /// </summary>
+    private const string McpProtocolVersionString = "2025-06-18";
+
     /// <inheritdoc />
     public override string Header => "MCP Server";
 
@@ -29,7 +34,7 @@ public partial class McpServerViewModel : DebuggerTabViewModel {
     private string _serverStatus = string.Empty;
 
     [ObservableProperty]
-    private string _protocolVersion = "2025-06-18";
+    private string _protocolVersion = McpProtocolVersionString;
 
     [ObservableProperty]
     private string _serverName = "Spice86 MCP Server";

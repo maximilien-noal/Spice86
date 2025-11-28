@@ -96,8 +96,11 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Margin="5" Padding="10,5" BorderThickness="1" CornerRadius="3"
-                                        Background="{Binding IsCurrent, Converter={StaticResource BoolToBrushConverter}}">
-                                    <TextBlock Text="{Binding Letter}" FontWeight="{Binding IsCurrent, Converter={StaticResource BoolToFontWeightConverter}}" />
+                                        BorderBrush="Gray">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{Binding Letter}" />
+                                        <TextBlock Text="*" IsVisible="{Binding IsCurrent}" FontWeight="Bold" />
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

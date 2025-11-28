@@ -21,6 +21,11 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     /// <inheritdoc />
     public override string? IconKey => "Memory";
 
+    /// <summary>
+    /// Default maximum number of XMS handles.
+    /// </summary>
+    private const int DefaultMaxHandles = 128;
+
     // XMS Version and Status
     [ObservableProperty]
     private string _xmsVersion = string.Empty;
@@ -60,7 +65,7 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     private int _handleCount;
 
     [ObservableProperty]
-    private int _maxHandles = 128;
+    private int _maxHandles = DefaultMaxHandles;
 
     [ObservableProperty]
     private AvaloniaList<XmsHandleInfo> _handles = new();

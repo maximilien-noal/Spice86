@@ -22,11 +22,7 @@
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Protocol Version:" Margin="0,0,10,0" />
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ProtocolVersion}" />
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Status:" Margin="0,0,10,0" />
-                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                            <Ellipse Width="10" Height="10" 
-                                     Fill="{Binding IsServerRunning, Converter={StaticResource BoolToColorConverter}}" />
-                            <TextBlock Text="{Binding ServerStatus}" />
-                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ServerStatus}" />
                     </Grid>
                 </StackPanel>
             </Border>
