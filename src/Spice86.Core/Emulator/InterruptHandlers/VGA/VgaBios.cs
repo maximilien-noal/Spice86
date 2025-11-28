@@ -609,7 +609,26 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         AddAction(0x1A, GetSetDisplayCombinationCode);
         AddAction(0x1B, () => GetFunctionalityInfo());
         AddAction(0x4F, VesaFunctions);
-        AddAction(0x70, EverexExtendedVideoBios);
+        // S3-compatible extended VESA mode handler (mode 0x70 = 640x480x32K = VESA 0x110)
+        // The S3 BIOS uses mode numbers 0x70+ for extended VESA modes.
+        // These functions are typically not called directly with AH=0x70;
+        // instead, the mode number goes in AL when calling AH=00h (SetVideoMode).
+        // This stub prevents exceptions when programs probe for extended functions.
+        AddAction(0x70, VesaExtendedModeStub);
+    }
+
+    /// <summary>
+    /// Stub handler for INT 10h AH=70h.
+    /// Based on S3 BIOS behavior: extended function numbers (AH >= 0x1D) that aren't
+    /// VESA (AH=4Fh) simply return without action.
+    /// Some programs may probe for extended video BIOS functionality.
+    /// </summary>
+    private void VesaExtendedModeStub() {
+        if (_logger.IsEnabled(LogEventLevel.Debug)) {
+            _logger.Debug("{ClassName} INT 10 70 - Extended VESA function called (S3-compatible stub). AX=0x{Ax:X4}, BX=0x{Bx:X4}",
+                nameof(VgaBios), State.AX, State.BX);
+        }
+        // S3 BIOS returns without action for unsupported extended functions
     }
 
     public void VesaFunctions() {
@@ -619,102 +638,6 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
             //TODO: Implement at least VESA 1.2
             _logger.Warning("Emulated program tried to call VESA functions. Not implemented, moving on!");
         }
-    }
-
-    /// <summary>
-    /// Handler for INT 10h AH=70h (Everex Extended Video BIOS).
-    /// AH=70h, AL=00h with various BX values for extended functions.
-    /// Note: The Extended Mode Set (AX=0070h) uses AH=00h, not 70h.
-    /// </summary>
-    private void EverexExtendedVideoBios() {
-        // When AH=70h, the function is determined by BX
-        // AL is typically 0x00 for these functions
-        switch (State.BX) {
-            case 0x0000:
-                EverexReturnEmulationStatus();
-                break;
-            case 0x0004:
-                EverexGetPagingFunctionPointer();
-                break;
-            case 0x0005:
-                EverexGetSupportedModeInfo();
-                break;
-            default:
-                if (_logger.IsEnabled(LogEventLevel.Warning)) {
-                    _logger.Warning("{ClassName} INT 10 AH=70h {MethodName} - Unsupported BX=0x{Bx:X4}, AL=0x{Al:X2}.",
-                        nameof(VgaBios), nameof(EverexExtendedVideoBios), State.BX, State.AL);
-                }
-                break;
-        }
-    }
-
-    /// <summary>
-    /// INT 10h AX=7000h BX=0000h - Return Emulation Status.
-    /// Returns monitor type, feature bits, board info, and BIOS version.
-    /// </summary>
-    private void EverexReturnEmulationStatus() {
-        // CL = monitor type (06h = SuperVGA)
-        State.CL = 0x06;
-
-        // CH = feature bits (0x81 = 10000001b)
-        // bits 7,6 = 10 (binary): 1024K memory
-        // bit 5 = 0: no special oscillator
-        // bit 4 = 0: VGA protect disabled
-        // bit 0 = 1: 6845 emulation enabled
-        State.CH = 0x81;
-
-        // DX = video board info
-        // bits 4-15: board ID model (use 0x678 for Viewpoint)
-        // bits 0-3: board ID revision
-        State.DX = 0x6780;
-
-        // DI = BCD BIOS version number (e.g., 0x0100 for version 1.00)
-        State.DI = 0x0100;
-
-        // AL = 0x70 indicates Everex card detected
-        State.AL = 0x70;
-
-        if (_logger.IsEnabled(LogEventLevel.Debug)) {
-            _logger.Debug("{ClassName} INT 10 AX=7000h BX=0000h {MethodName} - Returning emulation status: CL=0x{Cl:X2}, CH=0x{Ch:X2}, DX=0x{Dx:X4}, DI=0x{Di:X4}",
-                nameof(VgaBios), nameof(EverexReturnEmulationStatus), State.CL, State.CH, State.DX, State.DI);
-        }
-    }
-
-    /// <summary>
-    /// INT 10h AX=7000h BX=0004h - Get Paging Function Pointer.
-    /// Returns ES:DI pointing to a FAR paging function.
-    /// Since we don't have bank switching, we return a stub.
-    /// </summary>
-    private void EverexGetPagingFunctionPointer() {
-        // We don't have a real paging function, so return 0:0
-        // Real hardware would return a pointer to a function that sets the bank
-        State.ES = 0;
-        State.DI = 0;
-
-        if (_logger.IsEnabled(LogEventLevel.Warning)) {
-            _logger.Warning("{ClassName} INT 10 AX=7000h BX=0004h {MethodName} - Paging function not implemented, returning NULL pointer.",
-                nameof(VgaBios), nameof(EverexGetPagingFunctionPointer));
-        }
-    }
-
-    /// <summary>
-    /// INT 10h AX=7000h BX=0005h - Get Supported Mode Info.
-    /// Returns information about supported video modes.
-    /// CL = max modes to return, CH = mode type filter, DL = monitor type
-    /// ES:DI = buffer for mode info
-    /// Returns: CL = total modes, CH = record size
-    /// </summary>
-    private void EverexGetSupportedModeInfo() {
-        // Return no modes for simplicity (CL = 0)
-        // A full implementation would fill the buffer with mode records
-        // using the input parameters: CL=max modes, CH=mode type, DL=monitor type, ES:DI=buffer
-        if (_logger.IsEnabled(LogEventLevel.Debug)) {
-            _logger.Debug("{ClassName} INT 10 AX=7000h BX=0005h {MethodName} - Requested max {MaxModes} modes of type 0x{ModeType:X2} for monitor 0x{MonitorType:X2}. Returning 0 modes.",
-                nameof(VgaBios), nameof(EverexGetSupportedModeInfo), State.CL, State.CH, State.DL);
-        }
-
-        State.CL = 0;  // Total number of modes
-        State.CH = 9;  // Size of each mode info record
     }
 
     /// <inheritdoc />
