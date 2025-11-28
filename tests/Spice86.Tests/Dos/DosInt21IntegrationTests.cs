@@ -541,12 +541,17 @@ public class DosInt21IntegrationTests {
         // This test calls INT 21h AH=4Ch with exit code 0x42
         // After termination, we expect the emulator to have stopped
         byte[] program = new byte[] {
+            // First, write a success marker before terminating
+            0xB0, 0x00,             // mov al, TestResult.Success
+            0xBA, 0x99, 0x09,       // mov dx, ResultPort
+            0xEE,                   // out dx, al
+            
             // Terminate with exit code 0x42
-            // B8 42 4C = mov ax, 4C42h (little-endian: AL=42h exit code, AH=4Ch terminate)
-            0xB8, 0x42, 0x4C,       // mov ax, 4C42h
+            0xB4, 0x4C,             // mov ah, 4Ch - Terminate with exit code
+            0xB0, 0x42,             // mov al, 42h - exit code
             0xCD, 0x21,             // int 21h - should terminate
             
-            // This should never be reached - if we get here, write failure marker
+            // This should never be reached
             0xB0, 0xFF,             // mov al, TestResult.Failure
             0xBA, 0x99, 0x09,       // mov dx, ResultPort
             0xEE,                   // out dx, al
@@ -555,8 +560,8 @@ public class DosInt21IntegrationTests {
 
         DosTestHandler testHandler = RunDosTest(program);
 
-        // The program should terminate without writing any result to the port
-        // If failure marker is found, the termination didn't work
+        // We should see the success marker but NOT the failure marker
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
         testHandler.Results.Should().NotContain((byte)TestResult.Failure);
     }
 
@@ -604,7 +609,7 @@ public class DosInt21IntegrationTests {
         File.WriteAllBytes(filePath, program);
 
         // Setup emulator with DOS initialized
-        Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+        using Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
             binName: filePath,
             enableCfgCpu: true,
             enablePit: false,
