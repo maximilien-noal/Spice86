@@ -350,8 +350,7 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// INT 15h, AH=86h - BIOS - WAIT (AT, PS)
     /// <para>
     /// Waits for CX:DX microseconds using the RTC timer.
-    /// This is implemented following the SeaBIOS handle_1586 function pattern,
-    /// which uses a user timer to wait without blocking the emulation loop.
+    /// This is a blocking call that advances emulated time until the wait completes.
     /// </para><br/>
     /// <b>Inputs:</b><br/>
     /// AH = 86h<br/>
@@ -375,6 +374,12 @@ public class SystemBiosInt15Handler : InterruptHandler {
             LoggerService.Verbose("BIOS WAIT requested for {Microseconds} microseconds", microseconds);
         }
 
+        // If no delay requested, return immediately
+        if (microseconds == 0) {
+            SetCarryFlag(false, calledFromVm);
+            return;
+        }
+
         // Convert microseconds to milliseconds for the PIC event system
         // Add 1ms to ensure we wait at least the requested time
         double delayMs = (microseconds / 1000.0) + 1.0;
@@ -387,6 +392,27 @@ public class SystemBiosInt15Handler : InterruptHandler {
 
         // Schedule a PIC event to clear the wait flag after the delay
         _dualPic.AddEvent(OnWaitComplete, delayMs);
+
+        // Calculate maximum ticks to wait (timeout fallback if timer doesn't work)
+        // Use 2x the expected delay to account for any timing variations
+        int maxTicks = (int)(delayMs * 2) + 10;
+        int ticksWaited = 0;
+
+        // Block until the wait completes by advancing emulated time
+        // This mimics DOSBox's CALLBACK_Idle() behavior
+        while (_biosDataArea.RtcWaitFlag != 0 && ticksWaited < maxTicks) {
+            _dualPic.AddTick();
+            _dualPic.RunQueue();
+            ticksWaited++;
+        }
+
+        // Clear any remaining wait state (in case timeout occurred)
+        if (_biosDataArea.RtcWaitFlag != 0) {
+            _biosDataArea.RtcWaitFlag = 0;
+            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                LoggerService.Warning("BIOS WAIT timed out after {TicksWaited} ticks", ticksWaited);
+            }
+        }
 
         // Success
         SetCarryFlag(false, calledFromVm);
