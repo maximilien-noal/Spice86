@@ -1164,12 +1164,15 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0x0A);  // immediate: 0x0A
 
         // JZ L_BUFFERED_INPUT - Skip over default handler if AH=0Ah
-        // Need to skip: callback (4) + iret (1) = 5 bytes
+        // Jump offset is relative to end of JZ instruction, needs to skip:
+        // callback instruction (4 bytes) + IRET (1 byte) = 5 bytes
         int skipToBufferedInput = CallbackInstructionSize + IretInstructionSize;
         memoryAsmWriter.WriteJz((sbyte)skipToBufferedInput);
 
         // L_DEFAULT: Default callback for all other functions.
-        // Uses VectorNumber (0x21) as the callback index - this is the primary entry point.
+        // Uses VectorNumber (0x21) as the callback index - this is the primary entry point
+        // for the interrupt handler. Other callbacks in this handler use auto-allocated
+        // numbers to avoid conflicts in the CallbackHandler's internal dictionary.
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
         memoryAsmWriter.WriteIret();
 
@@ -1201,8 +1204,9 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0x0A);  // immediate: 0x0A
 
         // Callback to C# BufferedInput handler.
-        // Uses auto-allocated callback number (different from VectorNumber) to avoid
-        // duplicate key error. Both callbacks invoke Run() which dispatches by AH value.
+        // Uses auto-allocated callback number to avoid adding a duplicate key in
+        // CallbackHandler (VectorNumber 0x21 was already used for L_DEFAULT above).
+        // Both callbacks invoke Run() which dispatches to the correct handler based on AH.
         memoryAsmWriter.RegisterAndWriteCallback(Run);
         memoryAsmWriter.WriteIret();
 
