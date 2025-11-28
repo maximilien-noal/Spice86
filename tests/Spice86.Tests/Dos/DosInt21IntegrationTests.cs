@@ -542,7 +542,8 @@ public class DosInt21IntegrationTests {
         // After termination, we expect the emulator to have stopped
         byte[] program = new byte[] {
             // Terminate with exit code 0x42
-            0xB8, 0x42, 0x4C,       // mov ax, 4C42h - AH=4Ch (terminate), AL=42h (exit code)
+            // B8 42 4C = mov ax, 4C42h (little-endian: AL=42h exit code, AH=4Ch terminate)
+            0xB8, 0x42, 0x4C,       // mov ax, 4C42h
             0xCD, 0x21,             // int 21h - should terminate
             
             // This should never be reached - if we get here, write failure marker
