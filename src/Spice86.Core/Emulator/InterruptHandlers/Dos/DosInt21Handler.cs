@@ -1136,8 +1136,8 @@ public class DosInt21Handler : InterruptHandler {
     /// 
     /// L_BUFFERED_INPUT:
     ///     mov ah, 01h            ; INT 16h AH=01h: check keyboard status
-    ///     int 16h                ; Check if key available (ZF=0 if key present)
-    ///     jnz L_KEY_AVAILABLE    ; If key available, proceed
+    ///     int 16h                ; Check if key available (ZF=0 means key present, ZF=1 means no key)
+    ///     jnz L_KEY_AVAILABLE    ; JNZ jumps when ZF=0 (key present), so proceed to handler
     ///     int 28h                ; DOS idle interrupt (allows TSRs to run)
     ///     jmp short L_BUFFERED_INPUT  ; Loop back to check again
     /// 
@@ -1181,10 +1181,11 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
         memoryAsmWriter.WriteUInt8(0x01);  // immediate: 0x01
 
-        // INT 16h - Check keyboard status (ZF=0 if key available)
+        // INT 16h - Check keyboard status
+        // Per KeyboardInt16Handler.GetKeystrokeStatus(): ZF=0 when key present, ZF=1 when no key
         memoryAsmWriter.WriteInt(0x16);
 
-        // JNZ L_KEY_AVAILABLE - Skip wait loop if key is available
+        // JNZ L_KEY_AVAILABLE - JNZ jumps when ZF=0, which means a key IS present
         // Need to skip: int 28h (2) + jmp short (2) = 4 bytes
         int skipToKeyAvailable = IntInstructionSize + JmpShortInstructionSize;
         memoryAsmWriter.WriteJnz((sbyte)skipToKeyAvailable);
@@ -1193,8 +1194,8 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteInt(0x28);
 
         // JMP short L_BUFFERED_INPUT - Loop back to check again
-        // Offset is relative to the instruction following JMP short
-        // We need to jump back: -(mov ah (2) + int 16h (2) + jnz (2) + int 28h (2) + jmp (2)) = -10
+        // Offset from IP after JMP (at L_KEY_AVAILABLE) back to L_BUFFERED_INPUT: -10 bytes
+        // The calculation includes all instructions in the loop: mov ah (2) + int 16h (2) + jnz (2) + int 28h (2) + jmp (2)
         int jumpBackOffset = -(MovAhImm8InstructionSize + IntInstructionSize + ConditionalJumpShortSize + IntInstructionSize + JmpShortInstructionSize);
         memoryAsmWriter.WriteJumpShort((sbyte)jumpBackOffset);
 
