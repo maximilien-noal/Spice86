@@ -47,16 +47,16 @@ public class DosProgramSegmentPrefixTracker {
     private readonly List<DosProgramSegmentPrefix> _loadedPsps;
 
     /// <summary>
-    /// An override PSP segment set by INT 21h, AH=50h. When non-null, this takes precedence
-    /// over the top of the PSP stack for <see cref="GetCurrentPspSegment"/>.
+    /// The current PSP segment, as set by INT 21h, AH=50h or when a program is loaded.
     /// </summary>
     /// <remarks>
-    /// This is an internal DOS function used by debuggers and some system utilities to
-    /// temporarily switch the current PSP context. The segment is stored directly rather
-    /// than maintaining a reference to a <see cref="DosProgramSegmentPrefix"/> object because
-    /// the caller may set an arbitrary segment that doesn't correspond to a tracked PSP.
+    /// This follows the FreeDOS approach where a single variable holds the current PSP segment.
+    /// INT 21h AH=50h sets this value, and AH=51h/62h returns it.
+    /// When a new program is loaded (PushPspSegment), this is updated to the new PSP.
+    /// When a program exits (PopPspSegment/PopCurrentPspSegment), this is updated to the
+    /// previous PSP on the stack, or to InitialPspSegment if the stack is empty.
     /// </remarks>
-    private ushort? _overridePspSegment;
+    private ushort _currentPspSegment;
 
     public DosProgramSegmentPrefixTracker(Configuration configuration, IMemory memory,
         ILoggerService loggerService) {
@@ -64,6 +64,7 @@ public class DosProgramSegmentPrefixTracker {
         _memory = memory;
         _loggerService = loggerService;
         _loadedPsps = new();
+        _currentPspSegment = InitialPspSegment;
 
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("Initial program entry point at segment: {EntryPointSegment}",
@@ -114,31 +115,24 @@ public class DosProgramSegmentPrefixTracker {
     /// Gets the address of the PSP segment for the current program that is loaded.
     /// </summary>
     /// <remarks>
-    /// If an override PSP segment has been set via <see cref="SetCurrentPspSegment"/>,
-    /// that value is returned instead of the top of the PSP stack.
+    /// Returns the current PSP segment as set by <see cref="SetCurrentPspSegment"/>
+    /// or updated when programs are loaded/unloaded.
     /// </remarks>
     /// <returns>Returns the PSP segment for the current program.</returns>
     public ushort GetCurrentPspSegment() {
-        // Return override if set (via INT 21h, AH=50h)
-        if (_overridePspSegment.HasValue) {
-            return _overridePspSegment.Value;
-        }
-        DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
-        return currentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(currentPsp.BaseAddress);
+        return _currentPspSegment;
     }
 
     /// <summary>
-    /// Sets the current PSP segment to an arbitrary value.
+    /// Sets the current PSP segment.
     /// </summary>
     /// <remarks>
     /// This implements the functionality for INT 21h, AH=50h (Set Current PSP Address).
-    /// It's an internal DOS function used by debuggers and system utilities to temporarily
-    /// switch the current process context. The segment doesn't need to correspond to a
-    /// tracked PSP in the stack.
+    /// Following the FreeDOS approach, this simply sets the current PSP segment directly.
     /// </remarks>
     /// <param name="pspSegment">The PSP segment to set as current.</param>
     public void SetCurrentPspSegment(ushort pspSegment) {
-        _overridePspSegment = pspSegment;
+        _currentPspSegment = pspSegment;
         if (_loggerService.IsEnabled(LogEventLevel.Verbose)) {
             _loggerService.Verbose("Set current PSP segment to {PspSegment:X4}", pspSegment);
         }
@@ -180,6 +174,7 @@ public class DosProgramSegmentPrefixTracker {
         uint pspAddress = MemoryUtils.ToPhysicalAddress(pspSegment, 0);
         DosProgramSegmentPrefix psp = new(_memory, pspAddress);
         _loadedPsps.Add(psp);
+        _currentPspSegment = pspSegment;
         return psp;
     }
 
@@ -189,11 +184,13 @@ public class DosProgramSegmentPrefixTracker {
     /// <param name="pspSegment">Address of the PSP segment for the program that is exiting.</param>
     /// <returns>Returns true if the given segment was found and could be removed.</returns>
     public bool PopPspSegment(ushort pspSegment) {
-        // Clear the override if it matches the segment being popped to avoid pointing to freed memory
-        if (_overridePspSegment == pspSegment) {
-            _overridePspSegment = null;
+        bool removed = _loadedPsps.RemoveAll(psp => MemoryUtils.ToSegment(psp.BaseAddress) == pspSegment) > 0;
+        if (removed) {
+            // Update current PSP to the top of the stack, or InitialPspSegment if empty
+            DosProgramSegmentPrefix? newCurrentPsp = GetCurrentPsp();
+            _currentPspSegment = newCurrentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(newCurrentPsp.BaseAddress);
         }
-        return _loadedPsps.RemoveAll(psp => MemoryUtils.ToSegment(psp.BaseAddress) == pspSegment) > 0;
+        return removed;
     }
 
     /// <summary>
@@ -202,12 +199,10 @@ public class DosProgramSegmentPrefixTracker {
     public void PopCurrentPspSegment() {
         DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
         if (currentPsp != null) {
-            ushort currentPspSegment = MemoryUtils.ToSegment(currentPsp.BaseAddress);
-            // Clear the override if it matches the segment being popped to avoid pointing to freed memory
-            if (_overridePspSegment == currentPspSegment) {
-                _overridePspSegment = null;
-            }
             _loadedPsps.Remove(currentPsp);
+            // Update current PSP to the new top of the stack, or InitialPspSegment if empty
+            DosProgramSegmentPrefix? newCurrentPsp = GetCurrentPsp();
+            _currentPspSegment = newCurrentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(newCurrentPsp.BaseAddress);
         }
     }
 }
