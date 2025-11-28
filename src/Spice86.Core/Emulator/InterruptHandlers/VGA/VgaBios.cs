@@ -640,7 +640,8 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
 
     /// <summary>
     /// VBE Function 00h - Return VBE Controller Information.
-    /// ES:DI = Pointer to VbeInfoBlock structure (512 bytes).
+    /// ES:DI = Pointer to VbeInfoBlock structure (256 bytes minimum, but caller should provide ~512 bytes
+    /// to accommodate the OEM string and mode list stored beyond the structure).
     /// Returns: AX = VBE Return Status (004Fh = success).
     /// </summary>
     private void VbeGetControllerInfo() {
@@ -685,14 +686,10 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         Memory.UInt8[address + 256 + oemString.Length] = 0; // Null terminator
 
         // Write Video Mode List at offset+280
-        // Only list modes that are actually supported by VbeSetMode
+        // Only list modes that have corresponding internal VGA modes
+        // Per VBE 1.2 spec, modes without hardware support should not be listed
         ushort[] vesaModes = {
-            0x101, // 640x480x256 (8-bit)
-            0x102, // 800x600x16 (4-bit planar)
-            0x103, // 800x600x256 (8-bit)
-            0x110, // 640x480x15-bit (32K colors, S3 mode 0x70)
-            0x111, // 640x480x16-bit (64K colors)
-            0x112, // 640x480x24-bit (16M colors)
+            0x102, // 800x600x16 (4-bit planar) -> internal mode 0x6A
             0xFFFF // End of list
         };
 
@@ -770,9 +767,23 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
         Memory.UInt32[address + 12] = 0;
 
         // Bytes per scan line (offset 16)
-        ushort bytesPerLine = (ushort)(width * (bpp / 8));
-        if (bpp == 4) bytesPerLine = (ushort)(width / 2);
-        if (bpp == 1) bytesPerLine = (ushort)(width / 8);
+        // Per VBE 1.2 spec, this is the number of bytes between consecutive scanlines
+        ushort bytesPerLine;
+        if (bpp == 4) {
+            bytesPerLine = (ushort)(width / 2);
+        } else if (bpp == 1) {
+            bytesPerLine = (ushort)(width / 8);
+        } else if (bpp == 15 || bpp == 16) {
+            // 15-bit and 16-bit modes use 2 bytes per pixel
+            bytesPerLine = (ushort)(width * 2);
+        } else if (bpp == 24) {
+            bytesPerLine = (ushort)(width * 3);
+        } else if (bpp == 32) {
+            bytesPerLine = (ushort)(width * 4);
+        } else {
+            // 8-bit packed pixel
+            bytesPerLine = (ushort)(width * (bpp / 8));
+        }
         Memory.UInt16[address + 16] = bytesPerLine;
 
         // X resolution (offset 18)
@@ -849,12 +860,14 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
 
     /// <summary>
     /// VBE Function 02h - Set VBE Mode.
-    /// BX = Mode number (bit 14 = use linear frame buffer if set).
+    /// BX = Mode number (bit 14 = use linear frame buffer if set, bit 15 = don't clear display).
+    /// Note: VBE 1.0/1.2 does not support linear frame buffer (LFB) - that was introduced in VBE 2.0.
+    /// The LFB bit is parsed for completeness but ignored in this implementation.
     /// Returns: AX = VBE Return Status (004Fh = success).
     /// </summary>
     private void VbeSetMode() {
         ushort modeNumber = State.BX;
-        bool useLinearFrameBuffer = (modeNumber & 0x4000) != 0;
+        // VBE 1.0/1.2 does not support LFB; bit 14 is parsed but ignored
         bool dontClearDisplay = (modeNumber & 0x8000) != 0;
         ushort mode = (ushort)(modeNumber & 0x01FF);
 
@@ -889,36 +902,54 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
 
     /// <summary>
     /// Gets the parameters for a VESA mode number.
-    /// Only returns supported=true for modes that can actually be set.
+    /// Returns mode information for all standard VESA modes defined in VBE 1.2 spec.
+    /// Note: supported=true indicates the mode is valid per spec; actual hardware support
+    /// is determined by whether MapVesaModeToInternal returns a valid internal mode.
     /// </summary>
     private static (ushort width, ushort height, byte bpp, bool supported) GetVesaModeParams(ushort mode) {
         return mode switch {
-            // Modes that are supported by both VbeGetModeInfo and VbeSetMode
+            // VBE 1.2 standard modes - return info for queries even if not hardware-supported
+            // The emulator only supports modes that have corresponding internal VGA modes
+            0x100 => (640, 400, 8, true),    // 640x400x256
             0x101 => (640, 480, 8, true),    // 640x480x256
-            0x102 => (800, 600, 4, true),    // 800x600x16 (planar)
+            0x102 => (800, 600, 4, true),    // 800x600x16 (planar) - SUPPORTED via mode 0x6A
             0x103 => (800, 600, 8, true),    // 800x600x256
-            0x110 => (640, 480, 15, true),   // 640x480x15-bit (32K colors, S3 mode 0x70)
-            0x111 => (640, 480, 16, true),   // 640x480x16-bit (64K colors)
-            0x112 => (640, 480, 24, true),   // 640x480x24-bit (16M colors)
+            0x104 => (1024, 768, 4, true),   // 1024x768x16 (planar)
+            0x105 => (1024, 768, 8, true),   // 1024x768x256
+            0x106 => (1280, 1024, 4, true),  // 1280x1024x16 (planar)
+            0x107 => (1280, 1024, 8, true),  // 1280x1024x256
+            0x10D => (320, 200, 15, true),   // 320x200x15-bit
+            0x10E => (320, 200, 16, true),   // 320x200x16-bit
+            0x10F => (320, 200, 24, true),   // 320x200x24-bit
+            0x110 => (640, 480, 15, true),   // 640x480x15-bit (S3 mode 0x70)
+            0x111 => (640, 480, 16, true),   // 640x480x16-bit
+            0x112 => (640, 480, 24, true),   // 640x480x24-bit
+            0x113 => (800, 600, 15, true),   // 800x600x15-bit
+            0x114 => (800, 600, 16, true),   // 800x600x16-bit
+            0x115 => (800, 600, 24, true),   // 800x600x24-bit
+            0x116 => (1024, 768, 15, true),  // 1024x768x15-bit
+            0x117 => (1024, 768, 16, true),  // 1024x768x16-bit
+            0x118 => (1024, 768, 24, true),  // 1024x768x24-bit
+            0x119 => (1280, 1024, 15, true), // 1280x1024x15-bit
+            0x11A => (1280, 1024, 16, true), // 1280x1024x16-bit
+            0x11B => (1280, 1024, 24, true), // 1280x1024x24-bit
             _ => (0, 0, 0, false)
         };
     }
 
     /// <summary>
     /// Maps a VESA mode number to an internal VGA mode number.
-    /// Returns null if the mode is not supported.
+    /// Returns null if the mode is not supported by the emulator's VGA hardware.
+    /// Per VBE 1.2 spec, only modes with actual hardware support should be settable.
     /// </summary>
     private static int? MapVesaModeToInternal(ushort vesaMode) {
-        // Map VESA modes to internal VGA modes
-        // Note: High-color modes (15/16/24 bpp) are mapped to mode 12h as base
-        // The actual color depth handling requires additional VGA register configuration
+        // Only map modes that have actual internal VGA mode support
+        // The emulator currently only supports standard VGA modes + mode 0x6A (800x600x16)
+        // High-color/true-color modes and higher resolutions require SVGA hardware
+        // that is not emulated, so they return null (unsupported)
         return vesaMode switch {
-            0x101 => 0x13,  // 640x480x256 -> use mode 13h as base
-            0x102 => 0x6A,  // 800x600x16 -> mode 6Ah (planar)
-            0x103 => 0x13,  // 800x600x256 -> use mode 13h as base
-            0x110 => 0x12,  // 640x480x15-bit -> use mode 12h as base
-            0x111 => 0x12,  // 640x480x16-bit -> use mode 12h as base
-            0x112 => 0x12,  // 640x480x24-bit -> use mode 12h as base
+            0x102 => 0x6A,  // 800x600x16 (planar) -> internal mode 0x6A
+            // All other VESA modes are not supported by the current VGA emulation
             _ => null
         };
     }
