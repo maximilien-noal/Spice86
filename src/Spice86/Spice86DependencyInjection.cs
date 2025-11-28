@@ -645,13 +645,21 @@ public class Spice86DependencyInjection : IDisposable {
                 mcpServer, configuration.McpServer, configuration.CfgCpu,
                 pauseHandler, uiDispatcher);
 
+            // Create additional hardware ViewModels
+            TimerViewModel timerViewModel = new(pitTimer, pauseHandler, uiDispatcher);
+
+            PicViewModel picViewModel = new(dualPic, pauseHandler, uiDispatcher);
+
+            SoundBlasterViewModel soundBlasterViewModel = new(soundBlaster, pauseHandler, uiDispatcher);
+
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
                 paletteViewModel, softwareMixerViewModel, videoCardViewModel,
                 cpuViewModel, midiViewModel, cfgCpuViewModel,
                 [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
-                dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel);
+                dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel,
+                timerViewModel, picViewModel, soundBlasterViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;

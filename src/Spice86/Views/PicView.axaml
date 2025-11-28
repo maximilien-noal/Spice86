@@ -1,0 +1,90 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.PicView"
+    x:DataType="vm:PicViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- General Status -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="PIC Status" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IRQ Check:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding IrqCheck}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Ticks:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Ticks}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Master PIC -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding MasterPic.Name}" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IRR (Interrupt Request):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MasterPic.InterruptRequestRegister}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="IMR (Interrupt Mask):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MasterPic.InterruptMaskRegister}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="ISR (In-Service):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MasterPic.InServiceRegister}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Active IRQ Line:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MasterPic.ActiveIrqLine}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Vector Base:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MasterPic.InterruptVectorBase}" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Auto EOI:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MasterPic.IsAutoEoi}" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Special Mask Mode:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding MasterPic.IsSpecialMaskMode}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Slave PIC -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding SlavePic.Name}" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IRR (Interrupt Request):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SlavePic.InterruptRequestRegister}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="IMR (Interrupt Mask):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SlavePic.InterruptMaskRegister}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="ISR (In-Service):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SlavePic.InServiceRegister}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Active IRQ Line:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SlavePic.ActiveIrqLine}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Vector Base:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SlavePic.InterruptVectorBase}" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Auto EOI:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SlavePic.IsAutoEoi}" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Special Mask Mode:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SlavePic.IsSpecialMaskMode}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- IRQ Status -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="IRQ Mask Status" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding IrqStatuses}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="250"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="IRQ #" Binding="{Binding IrqNumber}" Width="80" />
+                            <DataGridCheckBoxColumn Header="Masked" Binding="{Binding IsMasked}" Width="80" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

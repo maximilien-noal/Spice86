@@ -1,0 +1,52 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.TimerView"
+    x:DataType="vm:TimerViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- System Timing -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="System Timing" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="System Start Time:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SystemStartTime}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Ticks:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentTicks}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Ticks (µs):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TicksUs}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="PIT Tick Rate:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding PitTickRate, StringFormat='{}{0:N0} Hz'}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- PIT Channels -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="PIT Channels" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding Channels}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="200"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Channel" Binding="{Binding ChannelNumber}" Width="70" />
+                            <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" Width="100" />
+                            <DataGridTextColumn Header="Read Latch" Binding="{Binding ReadLatch}" Width="100" />
+                            <DataGridTextColumn Header="Write Latch" Binding="{Binding WriteLatch}" Width="100" />
+                            <DataGridCheckBoxColumn Header="Counting" Binding="{Binding IsCounting}" Width="80" />
+                            <DataGridCheckBoxColumn Header="Mode Changed" Binding="{Binding ModeChanged}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

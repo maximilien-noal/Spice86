@@ -71,6 +71,16 @@ public partial class DebugWindowViewModel : ViewModelBase,
     [ObservableProperty]
     private McpServerViewModel _mcpServerViewModel;
 
+    // Additional hardware ViewModels
+    [ObservableProperty]
+    private TimerViewModel _timerViewModel;
+
+    [ObservableProperty]
+    private PicViewModel _picViewModel;
+
+    [ObservableProperty]
+    private SoundBlasterViewModel _soundBlasterViewModel;
+
     private readonly IPauseHandler _pauseHandler;
 
     /// <summary>
@@ -93,6 +103,9 @@ public partial class DebugWindowViewModel : ViewModelBase,
     /// <param name="emsViewModel">The EMS view model.</param>
     /// <param name="xmsViewModel">The XMS view model.</param>
     /// <param name="mcpServerViewModel">The MCP Server view model.</param>
+    /// <param name="timerViewModel">The PIT timer view model.</param>
+    /// <param name="picViewModel">The PIC view model.</param>
+    /// <param name="soundBlasterViewModel">The Sound Blaster view model.</param>
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
         IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
         DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,
@@ -101,7 +114,9 @@ public partial class DebugWindowViewModel : ViewModelBase,
         IList<MemoryViewModel> memoryViewModels,
         DosViewModel dosViewModel, BiosViewModel biosViewModel,
         EmsViewModel emsViewModel, XmsViewModel xmsViewModel,
-        McpServerViewModel mcpServerViewModel) {
+        McpServerViewModel mcpServerViewModel,
+        TimerViewModel timerViewModel, PicViewModel picViewModel,
+        SoundBlasterViewModel soundBlasterViewModel) {
         messenger.Register<AddViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<AddViewModelMessage<MemoryViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<DisassemblyViewModel>>(this);
@@ -130,6 +145,11 @@ public partial class DebugWindowViewModel : ViewModelBase,
         EmsViewModel = emsViewModel;
         XmsViewModel = xmsViewModel;
         McpServerViewModel = mcpServerViewModel;
+
+        // Initialize additional hardware ViewModels
+        TimerViewModel = timerViewModel;
+        PicViewModel = picViewModel;
+        SoundBlasterViewModel = soundBlasterViewModel;
     }
 
     [RelayCommand]

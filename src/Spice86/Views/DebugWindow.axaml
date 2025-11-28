@@ -147,6 +147,21 @@
 						Title="MCP Server" >
 						<ContentPresenter Content="{Binding $parent[Window].DataContext.McpServerViewModel}" />
 					</dockModel:Document>
+					<dockModel:Document 
+						Id="Timer" 
+						Title="Timer (PIT)" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.TimerViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="PIC" 
+						Title="PIC" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.PicViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="SoundBlaster" 
+						Title="Sound Blaster" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.SoundBlasterViewModel}" />
+					</dockModel:Document>
 				</dockModel:DocumentDock>
 			</dockModel:RootDock>
 		</dock:DockControl>

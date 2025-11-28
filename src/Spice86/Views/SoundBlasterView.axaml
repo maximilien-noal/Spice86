@@ -1,0 +1,29 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.SoundBlasterView"
+    x:DataType="vm:SoundBlasterViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- Card Configuration -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Sound Blaster Configuration" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="BLASTER String:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BlasterString}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Sound Blaster Type:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SbType}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="IRQ:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Irq}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
