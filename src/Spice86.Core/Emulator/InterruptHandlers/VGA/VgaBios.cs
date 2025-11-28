@@ -862,12 +862,13 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
     /// VBE Function 02h - Set VBE Mode.
     /// BX = Mode number (bit 14 = use linear frame buffer if set, bit 15 = don't clear display).
     /// Note: VBE 1.0/1.2 does not support linear frame buffer (LFB) - that was introduced in VBE 2.0.
-    /// The LFB bit is parsed for completeness but ignored in this implementation.
+    /// If bit 14 is set, this implementation ignores it and uses banked mode; programs expecting
+    /// LFB access will not work correctly but the mode set will succeed.
     /// Returns: AX = VBE Return Status (004Fh = success).
     /// </summary>
     private void VbeSetMode() {
         ushort modeNumber = State.BX;
-        // VBE 1.0/1.2 does not support LFB; bit 14 is parsed but ignored
+        // VBE 1.0/1.2 does not support LFB; bit 14 is ignored (banked mode is always used)
         bool dontClearDisplay = (modeNumber & 0x8000) != 0;
         ushort mode = (ushort)(modeNumber & 0x01FF);
 
@@ -903,16 +904,18 @@ public class VgaBios : InterruptHandler, IVideoInt10Handler {
     /// <summary>
     /// Gets the parameters for a VESA mode number.
     /// Returns mode information for all standard VESA modes defined in VBE 1.2 spec.
-    /// Note: supported=true indicates the mode is valid per spec; actual hardware support
-    /// is determined by whether MapVesaModeToInternal returns a valid internal mode.
+    /// This is used by VbeGetModeInfo (VBE 01h) to return mode characteristics.
+    /// Note: supported=true means mode info is available for queries (per VBE spec);
+    /// actual ability to SET the mode depends on MapVesaModeToInternal returning a valid internal mode.
+    /// Programs query mode info before setting modes to check if they're suitable.
     /// </summary>
     private static (ushort width, ushort height, byte bpp, bool supported) GetVesaModeParams(ushort mode) {
         return mode switch {
-            // VBE 1.2 standard modes - return info for queries even if not hardware-supported
-            // The emulator only supports modes that have corresponding internal VGA modes
+            // VBE 1.2 standard modes - return info for queries
+            // Note: Only mode 0x102 can actually be SET (has internal VGA mode support)
             0x100 => (640, 400, 8, true),    // 640x400x256
             0x101 => (640, 480, 8, true),    // 640x480x256
-            0x102 => (800, 600, 4, true),    // 800x600x16 (planar) - SUPPORTED via mode 0x6A
+            0x102 => (800, 600, 4, true),    // 800x600x16 (planar) - CAN BE SET via mode 0x6A
             0x103 => (800, 600, 8, true),    // 800x600x256
             0x104 => (1024, 768, 4, true),   // 1024x768x16 (planar)
             0x105 => (1024, 768, 8, true),   // 1024x768x256
