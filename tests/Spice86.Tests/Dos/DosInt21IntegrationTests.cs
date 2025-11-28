@@ -600,6 +600,111 @@ public class DosInt21IntegrationTests {
     }
 
     /// <summary>
+    /// Tests INT 21h, AH=50h - Set Current PSP Address.
+    /// This is an internal DOS function that sets the current PSP segment.
+    /// It's used by games (like BAT II) and system utilities to switch process context.
+    /// </summary>
+    /// <remarks>
+    /// This test:
+    /// 1. Gets the current PSP segment via INT 21h, AH=62h
+    /// 2. Saves the original PSP segment
+    /// 3. Sets a new PSP segment (0x1234) via INT 21h, AH=50h
+    /// 4. Gets the PSP again via INT 21h, AH=62h
+    /// 5. Verifies the PSP was changed to 0x1234
+    /// 6. Restores the original PSP segment
+    /// </remarks>
+    [Fact]
+    public void SetPspAddress_ChangesPspForGetPspAddress() {
+        // This test verifies that INT 21h AH=50h sets the current PSP
+        // and that subsequent calls to AH=62h return the new PSP segment
+        byte[] program = new byte[] {
+            // Get current PSP address and save it
+            0xB4, 0x62,             // 0x00: mov ah, 62h - Get PSP address
+            0xCD, 0x21,             // 0x02: int 21h - BX = current PSP segment
+            0x89, 0xDE,             // 0x04: mov si, bx - save original PSP in SI
+
+            // Set new PSP segment to 0x1234 via AH=50h
+            0xBB, 0x34, 0x12,       // 0x06: mov bx, 1234h - new PSP segment
+            0xB4, 0x50,             // 0x09: mov ah, 50h - Set PSP address
+            0xCD, 0x21,             // 0x0B: int 21h
+
+            // Get PSP address again to verify change
+            0xB4, 0x62,             // 0x0D: mov ah, 62h - Get PSP address
+            0xCD, 0x21,             // 0x0F: int 21h - BX = should be 0x1234 now
+
+            // Check if BX == 0x1234
+            0x81, 0xFB, 0x34, 0x12, // 0x11: cmp bx, 1234h
+            0x75, 0x0C,             // 0x15: jne failed (target 0x23)
+
+            // Restore original PSP before returning
+            0x89, 0xF3,             // 0x17: mov bx, si - restore original PSP
+            0xB4, 0x50,             // 0x19: mov ah, 50h - Set PSP address
+            0xCD, 0x21,             // 0x1B: int 21h
+
+            // Success
+            0xB0, 0x00,             // 0x1D: mov al, TestResult.Success
+            0xEB, 0x02,             // 0x1F: jmp writeResult (target 0x23)
+
+            // failed:
+            0xB0, 0xFF,             // 0x21: mov al, TestResult.Failure
+
+            // writeResult:
+            0xBA, 0x99, 0x09,       // 0x23: mov dx, ResultPort
+            0xEE,                   // 0x26: out dx, al
+            0xF4                    // 0x27: hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
+    /// Tests INT 21h, AH=51h - Get PSP Address (undocumented, same as AH=62h).
+    /// Verifies that AH=51h also returns the PSP set by AH=50h.
+    /// </summary>
+    /// <remarks>
+    /// INT 21h AH=51h is an undocumented function that does the same thing as AH=62h.
+    /// This test verifies that both functions return the same value after AH=50h is called.
+    /// </remarks>
+    [Fact]
+    public void SetPspAddress_AlsoAffectsUndocumentedGetPsp() {
+        // This test verifies that INT 21h AH=50h affects both AH=62h and AH=51h
+        byte[] program = new byte[] {
+            // Set new PSP segment to 0xABCD via AH=50h
+            0xBB, 0xCD, 0xAB,       // 0x00: mov bx, ABCDh - new PSP segment
+            0xB4, 0x50,             // 0x03: mov ah, 50h - Set PSP address
+            0xCD, 0x21,             // 0x05: int 21h
+
+            // Get PSP address using undocumented AH=51h
+            0xB4, 0x51,             // 0x07: mov ah, 51h - Get PSP address (undocumented)
+            0xCD, 0x21,             // 0x09: int 21h - BX = should be 0xABCD now
+
+            // Check if BX == 0xABCD
+            0x81, 0xFB, 0xCD, 0xAB, // 0x0B: cmp bx, ABCDh
+            0x75, 0x04,             // 0x0F: jne failed (target 0x15)
+
+            // Success
+            0xB0, 0x00,             // 0x11: mov al, TestResult.Success
+            0xEB, 0x02,             // 0x13: jmp writeResult (target 0x17)
+
+            // failed:
+            0xB0, 0xFF,             // 0x15: mov al, TestResult.Failure
+
+            // writeResult:
+            0xBA, 0x99, 0x09,       // 0x17: mov dx, ResultPort
+            0xEE,                   // 0x1A: out dx, al
+            0xF4                    // 0x1B: hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
     /// Runs the DOS test program and returns a test handler with results
     /// </summary>
     private DosTestHandler RunDosTest(byte[] program,
