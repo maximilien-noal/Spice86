@@ -981,13 +981,35 @@ public class DosInt21Handler : InterruptHandler {
     /// <inheritdoc/>
     public override byte VectorNumber => 0x21;
 
-    // Instruction size constants for the BufferedInput ASM stub
-    private const int SizeMovAhImm8 = 2;   // MOV AH, imm8
-    private const int SizeInt = 2;         // INT nn
-    private const int SizeJnzRel8 = 2;     // JNZ rel8
-    private const int SizeJmpShort = 2;    // JMP short rel8
+    /// <summary>
+    /// Size in bytes of a CMP AH, imm8 instruction (opcode + ModR/M + immediate byte).
+    /// </summary>
+    private const int SizeCmpAhImm8 = 3;
 
-    // L_WAIT_KEY loop size: MOV AH,01h + INT 16h + JNZ + INT 28h + INT 09h + JMP short
+    /// <summary>
+    /// Size in bytes of a MOV AH, imm8 instruction (opcode + immediate byte).
+    /// </summary>
+    private const int SizeMovAhImm8 = 2;
+
+    /// <summary>
+    /// Size in bytes of an INT nn instruction (opcode + vector number).
+    /// </summary>
+    private const int SizeInt = 2;
+
+    /// <summary>
+    /// Size in bytes of a JNZ rel8 instruction (opcode + 8-bit relative offset).
+    /// </summary>
+    private const int SizeJnzRel8 = 2;
+
+    /// <summary>
+    /// Size in bytes of a JMP short rel8 instruction (opcode + 8-bit relative offset).
+    /// </summary>
+    private const int SizeJmpShort = 2;
+
+    /// <summary>
+    /// Total size in bytes of the L_WAIT_KEY loop stub:
+    /// MOV AH,01h + INT 16h + JNZ + INT 28h + INT 09h + JMP short.
+    /// </summary>
     private const int SizeWaitKeyLoop = SizeMovAhImm8 + SizeInt + SizeJnzRel8 + SizeInt + SizeInt + SizeJmpShort;
 
     /// <summary>
@@ -1001,22 +1023,25 @@ public class DosInt21Handler : InterruptHandler {
     /// This stub checks if AH=0x0A, and if so, waits for keyboard input using INT 16h AH=01h
     /// (check keyboard status without removing key from buffer) in a loop, calling INT 28h 
     /// (DOS idle) and INT 09h (keyboard handler) when no key is available. Once a key is 
-    /// available (ZF=0), it calls the C# handler.
+    /// available (ZF=0), it restores AH to 0x0A and calls the C# handler.
     /// 
     /// For all other functions, it immediately calls the C# handler.
     /// 
     /// Assembled control flow:
     /// L_HANDLER:
     ///     cmp ah, 0Ah
-    ///     jnz L_DEFAULT
+    ///     jnz L_DEFAULT           ; Skip wait loop, AH already correct
     /// 
     /// L_WAIT_KEY:
-    ///     mov ah, 01h         ; INT 16h function 01h - check keyboard status
-    ///     int 16h             ; ZF=1 if no key available, ZF=0 if key ready
-    ///     jnz L_DEFAULT       ; Key available, proceed to handler
-    ///     int 28h             ; DOS idle - allows TSRs to run
-    ///     int 09h             ; Process pending keyboard input
+    ///     mov ah, 01h             ; INT 16h function 01h - check keyboard status
+    ///     int 16h                 ; ZF=1 if no key available, ZF=0 if key ready
+    ///     jnz L_RESTORE_AH        ; Key available, restore AH and proceed
+    ///     int 28h                 ; DOS idle - allows TSRs to run
+    ///     int 09h                 ; Process pending keyboard input
     ///     jmp short L_WAIT_KEY
+    /// 
+    /// L_RESTORE_AH:
+    ///     mov ah, 0Ah             ; Restore AH for correct function dispatch
     /// 
     /// L_DEFAULT:
     ///     callback -> C# Run()
@@ -1032,8 +1057,9 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0xFC);  // AH
         memoryAsmWriter.WriteUInt8(0x0A);  // 0Ah
         
-        // JNZ L_DEFAULT - skip keyboard wait loop if not function 0x0A
-        memoryAsmWriter.WriteJnz((sbyte)SizeWaitKeyLoop);
+        // JNZ L_DEFAULT - skip keyboard wait loop AND restore if not function 0x0A
+        // Skip: wait loop (12 bytes) + MOV AH,0Ah (2 bytes) = 14 bytes
+        memoryAsmWriter.WriteJnz((sbyte)(SizeWaitKeyLoop + SizeMovAhImm8));
 
         // L_WAIT_KEY:
         // MOV AH, 01h - Set up INT 16h function 01h (check keyboard status)
@@ -1041,7 +1067,7 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0x01);
         // INT 16h - Check if key available (ZF=1 if no key, ZF=0 if key ready)
         memoryAsmWriter.WriteInt(0x16);
-        // JNZ L_DEFAULT - Key available, proceed to handler
+        // JNZ L_RESTORE_AH - Key available, restore AH and proceed to handler
         // Skip remaining loop: INT 28h + INT 09h + JMP short = 6 bytes
         memoryAsmWriter.WriteJnz((sbyte)(SizeInt + SizeInt + SizeJmpShort));
         // INT 28h - DOS idle (allows TSRs to run, reduces CPU usage)
@@ -1050,6 +1076,10 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteInt(0x09);
         // JMP short L_WAIT_KEY - Loop back to check again
         memoryAsmWriter.WriteJumpShort((sbyte)(-SizeWaitKeyLoop));
+
+        // L_RESTORE_AH: Restore AH to 0x0A for correct function dispatch
+        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
+        memoryAsmWriter.WriteUInt8(0x0A);  // 0Ah
 
         // L_DEFAULT: callback to C# Run() then IRET
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
