@@ -122,14 +122,30 @@
 						HotKeyManager.HotKey="Alt+F6">
 						<ContentPresenter Content="{Binding $parent[Window].DataContext.BreakpointsViewModel}" />
 					</dockModel:Document>
-					<dockModel:Document Id="Subsystems" Title="Subsystems (Alt-F11)" HotKeyManager.HotKey="Alt+F11">
-						<TabControl DataContext="{Binding $parent[Window].DataContext}">
-							<controls:HotKeyTabItem Header="DOS" ToolTip.Tip="DOS Kernel State" Content="{Binding DosViewModel}" />
-							<controls:HotKeyTabItem Header="BIOS" ToolTip.Tip="BIOS Data Area" Content="{Binding BiosViewModel}" />
-							<controls:HotKeyTabItem Header="EMS" ToolTip.Tip="Expanded Memory Manager" Content="{Binding EmsViewModel}" />
-							<controls:HotKeyTabItem Header="XMS" ToolTip.Tip="Extended Memory Manager" Content="{Binding XmsViewModel}" />
-							<controls:HotKeyTabItem Header="MCP Server" ToolTip.Tip="Model Context Protocol Server" Content="{Binding McpServerViewModel}" />
-						</TabControl>
+					<dockModel:Document 
+						Id="DOS" 
+						Title="DOS" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.DosViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="BIOS" 
+						Title="BIOS" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.BiosViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="EMS" 
+						Title="EMS" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.EmsViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="XMS" 
+						Title="XMS" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.XmsViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="MCPServer" 
+						Title="MCP Server" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.McpServerViewModel}" />
 					</dockModel:Document>
 				</dockModel:DocumentDock>
 			</dockModel:RootDock>
