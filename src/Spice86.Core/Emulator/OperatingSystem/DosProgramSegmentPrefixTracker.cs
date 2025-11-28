@@ -189,6 +189,10 @@ public class DosProgramSegmentPrefixTracker {
     /// <param name="pspSegment">Address of the PSP segment for the program that is exiting.</param>
     /// <returns>Returns true if the given segment was found and could be removed.</returns>
     public bool PopPspSegment(ushort pspSegment) {
+        // Clear the override if it matches the segment being popped to avoid pointing to freed memory
+        if (_overridePspSegment == pspSegment) {
+            _overridePspSegment = null;
+        }
         return _loadedPsps.RemoveAll(psp => MemoryUtils.ToSegment(psp.BaseAddress) == pspSegment) > 0;
     }
 
@@ -198,6 +202,11 @@ public class DosProgramSegmentPrefixTracker {
     public void PopCurrentPspSegment() {
         DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
         if (currentPsp != null) {
+            ushort currentPspSegment = MemoryUtils.ToSegment(currentPsp.BaseAddress);
+            // Clear the override if it matches the segment being popped to avoid pointing to freed memory
+            if (_overridePspSegment == currentPspSegment) {
+                _overridePspSegment = null;
+            }
             _loadedPsps.Remove(currentPsp);
         }
     }
