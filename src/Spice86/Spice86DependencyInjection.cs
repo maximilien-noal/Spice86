@@ -652,6 +652,14 @@ public class Spice86DependencyInjection : IDisposable {
 
             SoundBlasterViewModel soundBlasterViewModel = new(soundBlaster, pauseHandler, uiDispatcher);
 
+            Opl3ViewModel opl3ViewModel = new(soundBlaster.Opl3Fm, pauseHandler, uiDispatcher);
+
+            DmaViewModel dmaViewModel = new(dmaSystem, pauseHandler, uiDispatcher);
+
+            GdbServerViewModel gdbServerViewModel = new(configuration.GdbPort, pauseHandler, uiDispatcher);
+
+            GravisUltraSoundViewModel gravisUltraSoundViewModel = new(gravisUltraSound, pauseHandler, uiDispatcher);
+
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
@@ -659,7 +667,8 @@ public class Spice86DependencyInjection : IDisposable {
                 cpuViewModel, midiViewModel, cfgCpuViewModel,
                 [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
                 dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel,
-                timerViewModel, picViewModel, soundBlasterViewModel);
+                timerViewModel, picViewModel, soundBlasterViewModel, opl3ViewModel,
+                dmaViewModel, gdbServerViewModel, gravisUltraSoundViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;

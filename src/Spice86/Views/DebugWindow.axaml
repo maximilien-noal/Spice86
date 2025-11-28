@@ -162,6 +162,26 @@
 						Title="Sound Blaster" >
 						<ContentPresenter Content="{Binding $parent[Window].DataContext.SoundBlasterViewModel}" />
 					</dockModel:Document>
+					<dockModel:Document 
+						Id="OPL3" 
+						Title="OPL3/FM" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.Opl3ViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="DMA" 
+						Title="DMA" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.DmaViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="GDBServer" 
+						Title="GDB Server" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.GdbServerViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document 
+						Id="GravisUltraSound" 
+						Title="Gravis UltraSound" >
+						<ContentPresenter Content="{Binding $parent[Window].DataContext.GravisUltraSoundViewModel}" />
+					</dockModel:Document>
 				</dockModel:DocumentDock>
 			</dockModel:RootDock>
 		</dock:DockControl>
