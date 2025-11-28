@@ -90,9 +90,6 @@ public partial class DebugWindowViewModel : ViewModelBase,
     [ObservableProperty]
     private GdbServerViewModel _gdbServerViewModel;
 
-    [ObservableProperty]
-    private GravisUltraSoundViewModel _gravisUltraSoundViewModel;
-
     private readonly IPauseHandler _pauseHandler;
 
     /// <summary>
@@ -121,7 +118,6 @@ public partial class DebugWindowViewModel : ViewModelBase,
     /// <param name="opl3ViewModel">The OPL3/FM view model.</param>
     /// <param name="dmaViewModel">The DMA view model.</param>
     /// <param name="gdbServerViewModel">The GDB Server view model.</param>
-    /// <param name="gravisUltraSoundViewModel">The Gravis UltraSound view model.</param>
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
         IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
         DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,
@@ -133,8 +129,7 @@ public partial class DebugWindowViewModel : ViewModelBase,
         McpServerViewModel mcpServerViewModel,
         TimerViewModel timerViewModel, PicViewModel picViewModel,
         SoundBlasterViewModel soundBlasterViewModel, Opl3ViewModel opl3ViewModel,
-        DmaViewModel dmaViewModel, GdbServerViewModel gdbServerViewModel,
-        GravisUltraSoundViewModel gravisUltraSoundViewModel) {
+        DmaViewModel dmaViewModel, GdbServerViewModel gdbServerViewModel) {
         messenger.Register<AddViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<AddViewModelMessage<MemoryViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<DisassemblyViewModel>>(this);
@@ -171,7 +166,6 @@ public partial class DebugWindowViewModel : ViewModelBase,
         Opl3ViewModel = opl3ViewModel;
         DmaViewModel = dmaViewModel;
         GdbServerViewModel = gdbServerViewModel;
-        GravisUltraSoundViewModel = gravisUltraSoundViewModel;
     }
 
     [RelayCommand]

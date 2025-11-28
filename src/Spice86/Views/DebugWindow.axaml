@@ -124,7 +124,6 @@
 						<TabControl DataContext="{Binding $parent[Window].DataContext}">
 							<TabItem Header="Sound Blaster" ToolTip.Tip="Sound Blaster Card" Content="{Binding SoundBlasterViewModel}" />
 							<TabItem Header="OPL3/FM" ToolTip.Tip="OPL3 FM Synthesizer" Content="{Binding Opl3ViewModel}" />
-							<TabItem Header="Gravis UltraSound" ToolTip.Tip="Gravis UltraSound Card" Content="{Binding GravisUltraSoundViewModel}" />
 							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F9" Header="General MIDI / MT-32" ToolTip.Tip="Alt-F9" Content="{Binding MidiViewModel}" />
 							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F10" Header="Software Mixer" ToolTip.Tip="Alt-F10" Content="{Binding SoftwareMixerViewModel}" />
 						</TabControl>

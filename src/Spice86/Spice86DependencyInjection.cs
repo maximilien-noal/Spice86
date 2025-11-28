@@ -658,8 +658,6 @@ public class Spice86DependencyInjection : IDisposable {
 
             GdbServerViewModel gdbServerViewModel = new(configuration.GdbPort, pauseHandler, uiDispatcher);
 
-            GravisUltraSoundViewModel gravisUltraSoundViewModel = new(gravisUltraSound, pauseHandler, uiDispatcher);
-
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
@@ -668,7 +666,7 @@ public class Spice86DependencyInjection : IDisposable {
                 [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
                 dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel,
                 timerViewModel, picViewModel, soundBlasterViewModel, opl3ViewModel,
-                dmaViewModel, gdbServerViewModel, gravisUltraSoundViewModel);
+                dmaViewModel, gdbServerViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;
