@@ -15,6 +15,10 @@ using Xunit;
 /// Integration tests for DOS INT 21h functionality that run machine code through the emulation stack.
 /// Tests verify DOS structures (CDS, DBCS) are properly initialized and accessible via INT 21h calls.
 /// </summary>
+/// <remarks>
+/// These tests cannot run in parallel because they share global emulator state.
+/// </remarks>
+[Collection("DosIntegration")]
 public class DosInt21IntegrationTests {
     private const int ResultPort = 0x999;    // Port to write test results
     private const int DetailsPort = 0x998;   // Port to write test details/error messages
@@ -540,9 +544,9 @@ public class DosInt21IntegrationTests {
     public void TerminateWithExitCode_TerminatesProgramNormally() {
         // This test calls INT 21h AH=4Ch with exit code 0x42
         // After termination, we expect the emulator to have stopped
-        // Note: Set AH before writing to port so AL is preserved for the I/O write
+        // Note: Set AH=4Ch early so we don't need to restore it after the I/O operation
         byte[] program = new byte[] {
-            // Setup AH=4C first before writing to port
+            // Setup AH=4C first (will be preserved through the I/O write)
             0xB4, 0x4C,             // mov ah, 4Ch - Terminate with exit code
             
             // Write a success marker before terminating
@@ -608,7 +612,8 @@ public class DosInt21IntegrationTests {
     private DosTestHandler RunDosTest(byte[] program,
         [CallerMemberName] string unitTestName = "test") {
         // Write program to a .com file with unique suffix to avoid test file conflicts
-        string uniqueId = Guid.NewGuid().ToString("N")[..8];
+        // Use first 16 characters of GUID (provides enough uniqueness for test purposes)
+        string uniqueId = Guid.NewGuid().ToString("N")[..16];
         string filePath = Path.GetFullPath($"{unitTestName}_{uniqueId}.com");
         File.WriteAllBytes(filePath, program);
 
