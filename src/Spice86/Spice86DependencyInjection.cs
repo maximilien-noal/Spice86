@@ -632,12 +632,26 @@ public class Spice86DependencyInjection : IDisposable {
                 textClipboard, hostStorageProvider, structureViewModelFactory,
                 canCloseTab: false);
 
+            // Create new subsystem ViewModels for observing DOS, BIOS, EMS, XMS, and MCP Server state
+            DosViewModel dosViewModel = new(dos, pauseHandler, uiDispatcher);
+
+            BiosViewModel biosViewModel = new(biosDataArea, pauseHandler, uiDispatcher);
+
+            EmsViewModel emsViewModel = new(dos.Ems, pauseHandler, uiDispatcher);
+
+            XmsViewModel xmsViewModel = new(dos.Xms, pauseHandler, uiDispatcher);
+
+            McpServerViewModel mcpServerViewModel = new(
+                mcpServer, configuration.McpServer, configuration.CfgCpu,
+                pauseHandler, uiDispatcher);
+
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
                 paletteViewModel, softwareMixerViewModel, videoCardViewModel,
                 cpuViewModel, midiViewModel, cfgCpuViewModel,
-                [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel]);
+                [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
+                dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;

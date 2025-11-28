@@ -1,0 +1,108 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.BiosView"
+    x:DataType="vm:BiosViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- Equipment -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Equipment" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Equipment Word:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EquipmentWord, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Conventional Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ConventionalMemorySizeKb, StringFormat='{}{0} KB'}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Video -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Video" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Current Video Mode:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentVideoMode, StringFormat='0x{0:X2}'}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Screen Columns:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ScreenColumnsCount}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Screen Rows:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ScreenRowsCount}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Active Page:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ActivePage}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Cursor Position (Page 0):" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CursorPositionPage0, StringFormat='0x{0:X4}'}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Keyboard -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Keyboard" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Shift Flags 1:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding KeyboardShiftFlags1, StringFormat='0x{0:X2}'}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Shift Flags 2:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding KeyboardShiftFlags2, StringFormat='0x{0:X2}'}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Buffer Head:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding KeyboardBufferHead, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Buffer Tail:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding KeyboardBufferTail, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Buffer Count:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding KeyboardBufferCount}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Timer -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Timer" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ticks Since Midnight:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TicksSinceMidnight}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="24h Overflow Flag:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TimerOverflowFlag}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Disk -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Disk" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Number of Disk Drives:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding NumberOfDiskDrives}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Last Disk Status:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastDiskStatus, StringFormat='0x{0:X2}'}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Ports -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Serial/Parallel Ports" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="COM1 Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Com1Address}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="COM2 Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Com2Address}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="LPT1 Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Lpt1Address}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="LPT2 Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Lpt2Address}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

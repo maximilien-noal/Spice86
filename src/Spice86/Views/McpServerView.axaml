@@ -1,0 +1,89 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.McpServerView"
+    x:DataType="vm:McpServerViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- Server Status -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="MCP Server Status" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Server Name:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ServerName}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Server Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ServerVersion}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Protocol Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ProtocolVersion}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Status:" Margin="0,0,10,0" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                            <Ellipse Width="10" Height="10" 
+                                     Fill="{Binding IsServerRunning, Converter={StaticResource BoolToColorConverter}}" />
+                            <TextBlock Text="{Binding ServerStatus}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- CFG CPU Status -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="CFG CPU Integration" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="CFG CPU:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CfgCpuStatus}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Available Tools -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding ToolCount, StringFormat='Available Tools ({0})'}" FontWeight="Bold" FontSize="14" />
+                    <TextBlock Text="These tools are exposed via the MCP protocol for AI agents to inspect emulator state:" 
+                               TextWrapping="Wrap" Margin="0,0,0,10" Opacity="0.7" />
+                    <DataGrid ItemsSource="{Binding AvailableTools}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="300"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tool Name" Binding="{Binding Name}" Width="180" />
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Usage Instructions -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Usage" FontWeight="Bold" FontSize="14" />
+                    <TextBlock TextWrapping="Wrap">
+                        <Run Text="The MCP (Model Context Protocol) server allows AI agents to inspect emulator state. " />
+                        <Run Text="Enable with " /><Run Text="--McpServer true" FontWeight="Bold" /><Run Text=" flag. " />
+                        <Run Text="The server communicates via stdio transport." />
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,10,0,0">
+                        <Run Text="Available methods: " />
+                        <Run Text="initialize, tools/list, tools/call" FontFamily="Consolas" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Not Enabled Warning -->
+            <Border Classes="GroupBox" Padding="10" IsVisible="{Binding !IsEnabled}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="⚠️ MCP Server is not available" FontWeight="Bold" FontSize="14" Foreground="Orange" />
+                    <TextBlock Text="The MCP server instance is not available. Enable it with --McpServer true" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
