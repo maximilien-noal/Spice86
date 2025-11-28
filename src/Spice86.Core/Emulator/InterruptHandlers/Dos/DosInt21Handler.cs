@@ -981,119 +981,78 @@ public class DosInt21Handler : InterruptHandler {
     /// <inheritdoc/>
     public override byte VectorNumber => 0x21;
 
-    // Instruction size constants for ASM stub generation
-    private const int SizeCmpAhImm8 = 3;      // CMP AH, imm8
-    private const int SizeJzRel8 = 2;          // JZ rel8
-    private const int SizeCallback = 4;        // Callback instruction (FE 38 + 2-byte callback number)
-    private const int SizeIret = 1;            // IRET
-    private const int SizeMovAhImm8 = 2;       // MOV AH, imm8
-    private const int SizeInt = 2;             // INT nn
-    private const int SizePushAx = 1;          // PUSH AX
-    private const int SizePopAx = 1;           // POP AX
+    // Instruction size constants for the BufferedInput ASM stub
+    private const int SizeMovAhImm8 = 2;   // MOV AH, imm8
+    private const int SizeInt = 2;         // INT nn
+    private const int SizeJnzRel8 = 2;     // JNZ rel8
+    private const int SizeJmpShort = 2;    // JMP short rel8
 
-    // Block sizes for jump offset calculation
-    private const int SizeCallbackIret = SizeCallback + SizeIret;  // 5 bytes
-    private const int SizeAh01Block = SizeMovAhImm8 + SizeInt + SizePushAx + SizeMovAhImm8 + SizeInt + SizePopAx + SizeIret;  // 11 bytes
-    private const int SizeAh0708Block = SizeMovAhImm8 + SizeInt + SizeIret;  // 5 bytes
+    // L_WAIT_KEY loop size: MOV AH,01h + INT 16h + JNZ + INT 28h + INT 09h + JMP short
+    private const int SizeWaitKeyLoop = SizeMovAhImm8 + SizeInt + SizeJnzRel8 + SizeInt + SizeInt + SizeJmpShort;
 
     /// <summary>
-    /// Emits a minimal INT 21h handler stub into guest RAM that handles keyboard input functions
-    /// (AH=01h, 07h, 08h) in-place using INT 16h for blocking input, and dispatches all other
-    /// AH values back to the C# handler via a callback.
+    /// Emits a minimal INT 21h handler stub into guest RAM that handles function 0x0A (Buffered Input)
+    /// with proper blocking for keyboard input, and dispatches all other functions to C#.
     /// </summary>
     /// <remarks><![CDATA[
-    /// Assembled control flow (labels for readability):
+    /// The BufferedInput function (AH=0x0A) needs to wait for keyboard input. Without this ASM stub,
+    /// the C# handler would spin in a busy loop or return immediately when no key is available.
+    /// 
+    /// This stub checks if AH=0x0A, and if so, waits for keyboard input using INT 16h AH=01h
+    /// (check keyboard status without removing key from buffer) in a loop, calling INT 28h 
+    /// (DOS idle) and INT 09h (keyboard handler) when no key is available. Once a key is 
+    /// available (ZF=0), it calls the C# handler.
+    /// 
+    /// For all other functions, it immediately calls the C# handler.
+    /// 
+    /// Assembled control flow:
     /// L_HANDLER:
-    ///     cmp ah, 01h
-    ///     jz  L_AH01          ; Read keyboard with echo
-    ///     cmp ah, 07h
-    ///     jz  L_AH07_08       ; Direct input without echo
-    ///     cmp ah, 08h
-    ///     jz  L_AH07_08       ; Direct input without echo
-    ///
+    ///     cmp ah, 0Ah
+    ///     jnz L_DEFAULT
+    /// 
+    /// L_WAIT_KEY:
+    ///     mov ah, 01h         ; INT 16h function 01h - check keyboard status
+    ///     int 16h             ; ZF=1 if no key available, ZF=0 if key ready
+    ///     jnz L_DEFAULT       ; Key available, proceed to handler
+    ///     int 28h             ; DOS idle - allows TSRs to run
+    ///     int 09h             ; Process pending keyboard input
+    ///     jmp short L_WAIT_KEY
+    /// 
     /// L_DEFAULT:
     ///     callback -> C# Run()
     ///     iret
-    ///
-    /// L_AH01:                 ; Read keyboard with echo
-    ///     mov ah, 00h         ; INT 16h function 00h - wait for key
-    ///     int 16h             ; Wait for keystroke, result in AX
-    ///     push ax             ; Save key
-    ///     mov ah, 0Eh         ; INT 10h function 0Eh - TTY output
-    ///     int 10h             ; Echo character in AL
-    ///     pop ax              ; Restore key
-    ///     iret
-    ///
-    /// L_AH07_08:              ; Direct input without echo  
-    ///     mov ah, 00h         ; INT 16h function 00h - wait for key
-    ///     int 16h             ; Wait for keystroke, result in AL
-    ///     iret
-    ///
-    /// Note: This implementation relies on INT 16h having its own blocking stub already installed.
     /// ]]></remarks>
     /// <param name="memoryAsmWriter">Helper used to write machine code and callbacks into guest memory.</param>
     /// <returns>The segment:offset address where the handler stub was emitted.</returns>
     public override SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
         SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
 
-        // Calculate jump offsets based on block sizes
-        // From JZ after CMP AH,01h to L_AH01: skip CMP+JZ (07h) + CMP+JZ (08h) + callback+IRET
-        int offsetToAh01 = (SizeCmpAhImm8 + SizeJzRel8) + (SizeCmpAhImm8 + SizeJzRel8) + SizeCallbackIret;
-        // From JZ after CMP AH,07h to L_AH07_08: skip CMP+JZ (08h) + callback+IRET + L_AH01 block
-        int offsetToAh0708From07 = (SizeCmpAhImm8 + SizeJzRel8) + SizeCallbackIret + SizeAh01Block;
-        // From JZ after CMP AH,08h to L_AH07_08: skip callback+IRET + L_AH01 block
-        int offsetToAh0708From08 = SizeCallbackIret + SizeAh01Block;
-
-        // CMP AH, 01h (Read keyboard with echo)
+        // CMP AH, 0Ah (Buffered Input)
         memoryAsmWriter.WriteUInt8(0x80);  // CMP r/m8, imm8
         memoryAsmWriter.WriteUInt8(0xFC);  // AH
-        memoryAsmWriter.WriteUInt8(0x01);  // 01h
-        // JZ L_AH01
-        memoryAsmWriter.WriteJz((sbyte)offsetToAh01);
+        memoryAsmWriter.WriteUInt8(0x0A);  // 0Ah
+        
+        // JNZ L_DEFAULT - skip keyboard wait loop if not function 0x0A
+        memoryAsmWriter.WriteJnz((sbyte)SizeWaitKeyLoop);
 
-        // CMP AH, 07h (Direct input without echo)
-        memoryAsmWriter.WriteUInt8(0x80);
-        memoryAsmWriter.WriteUInt8(0xFC);
-        memoryAsmWriter.WriteUInt8(0x07);
-        // JZ L_AH07_08
-        memoryAsmWriter.WriteJz((sbyte)offsetToAh0708From07);
-
-        // CMP AH, 08h (Direct input without echo)
-        memoryAsmWriter.WriteUInt8(0x80);
-        memoryAsmWriter.WriteUInt8(0xFC);
-        memoryAsmWriter.WriteUInt8(0x08);
-        // JZ L_AH07_08
-        memoryAsmWriter.WriteJz((sbyte)offsetToAh0708From08);
+        // L_WAIT_KEY:
+        // MOV AH, 01h - Set up INT 16h function 01h (check keyboard status)
+        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
+        memoryAsmWriter.WriteUInt8(0x01);
+        // INT 16h - Check if key available (ZF=1 if no key, ZF=0 if key ready)
+        memoryAsmWriter.WriteInt(0x16);
+        // JNZ L_DEFAULT - Key available, proceed to handler
+        // Skip remaining loop: INT 28h + INT 09h + JMP short = 6 bytes
+        memoryAsmWriter.WriteJnz((sbyte)(SizeInt + SizeInt + SizeJmpShort));
+        // INT 28h - DOS idle (allows TSRs to run, reduces CPU usage)
+        memoryAsmWriter.WriteInt(0x28);
+        // INT 09h - Process pending keyboard input
+        memoryAsmWriter.WriteInt(0x09);
+        // JMP short L_WAIT_KEY - Loop back to check again
+        memoryAsmWriter.WriteJumpShort((sbyte)(-SizeWaitKeyLoop));
 
         // L_DEFAULT: callback to C# Run() then IRET
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
-        memoryAsmWriter.WriteIret();
-
-        // L_AH01: Read keyboard with echo
-        // MOV AH, 00h
-        memoryAsmWriter.WriteUInt8(0xB4);  // MOV AH, imm8
-        memoryAsmWriter.WriteUInt8(0x00);
-        // INT 16h - Wait for keystroke
-        memoryAsmWriter.WriteInt(0x16);
-        // PUSH AX - Save the keystroke
-        memoryAsmWriter.WriteUInt8(0x50);
-        // MOV AH, 0Eh - TTY output function
-        memoryAsmWriter.WriteUInt8(0xB4);
-        memoryAsmWriter.WriteUInt8(0x0E);
-        // INT 10h - Echo the character
-        memoryAsmWriter.WriteInt(0x10);
-        // POP AX - Restore the keystroke
-        memoryAsmWriter.WriteUInt8(0x58);
-        // IRET
-        memoryAsmWriter.WriteIret();
-
-        // L_AH07_08: Direct input without echo
-        // MOV AH, 00h
-        memoryAsmWriter.WriteUInt8(0xB4);
-        memoryAsmWriter.WriteUInt8(0x00);
-        // INT 16h - Wait for keystroke
-        memoryAsmWriter.WriteInt(0x16);
-        // IRET
         memoryAsmWriter.WriteIret();
 
         return handlerAddress;
