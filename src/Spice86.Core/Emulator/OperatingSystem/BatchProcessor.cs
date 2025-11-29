@@ -372,7 +372,7 @@ public sealed class StringArrayLineReader : IBatchLineReader {
 /// </list>
 /// </para>
 /// </remarks>
-public sealed class BatchProcessor {
+public sealed class BatchProcessor : IDisposable {
     private readonly ILoggerService _loggerService;
     private readonly IBatchEnvironment _environment;
 
@@ -454,8 +454,20 @@ public sealed class BatchProcessor {
         }
 
         // Create a host file reader and start the batch
-        IBatchLineReader reader = new HostFileLineReader(batchFilePath);
-        return StartBatchWithReader(batchFilePath, arguments, reader);
+        try {
+            IBatchLineReader reader = new HostFileLineReader(batchFilePath);
+            return StartBatchWithReader(batchFilePath, arguments, reader);
+        } catch (IOException ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning(ex, "BatchProcessor: Failed to open batch file: {Path}", batchFilePath);
+            }
+            return false;
+        } catch (UnauthorizedAccessException ex) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning(ex, "BatchProcessor: Access denied to batch file: {Path}", batchFilePath);
+            }
+            return false;
+        }
     }
 
     /// <summary>
@@ -648,6 +660,15 @@ public sealed class BatchProcessor {
         BatchContext? parent = _currentContext.Parent;
         _currentContext.Dispose();
         _currentContext = parent;
+    }
+
+    /// <summary>
+    /// Disposes all batch contexts and releases resources.
+    /// </summary>
+    public void Dispose() {
+        while (_currentContext is not null) {
+            ExitBatch();
+        }
     }
 
     /// <summary>
@@ -1053,7 +1074,7 @@ public sealed class BatchProcessor {
 internal sealed class BatchContext : IDisposable {
     private readonly IBatchLineReader _reader;
     private readonly IBatchEnvironment _environment;
-    private string[] _parameters;
+    private readonly string[] _parameters;
     private int _shiftOffset = 0;
 
     /// <summary>

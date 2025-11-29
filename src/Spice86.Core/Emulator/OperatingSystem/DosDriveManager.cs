@@ -49,7 +49,11 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// <summary>
     /// Gets whether the Z: drive is mounted.
     /// </summary>
-    public bool HasSystemDrive => _driveMap.ContainsKey('Z') && _driveMap['Z'] is not null;
+    public bool HasSystemDrive {
+        get {
+            return _driveMap.TryGetValue('Z', out VirtualDrive? drive) && drive is not null;
+        }
+    }
 
     /// <summary>
     /// Mounts the Z: drive as a system utilities drive.
@@ -70,7 +74,7 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// </param>
     /// <returns>True if the drive was mounted successfully.</returns>
     public bool MountSystemDrive(string? hostPath = null) {
-        if (_driveMap.ContainsKey('Z') && _driveMap['Z'] is not null) {
+        if (_driveMap.TryGetValue('Z', out VirtualDrive? existingZDrive) && existingZDrive is not null) {
             if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
                 _loggerService.Debug("Z: drive already mounted");
             }
@@ -118,7 +122,7 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// </summary>
     /// <returns>True if the drive was unmounted successfully.</returns>
     public bool UnmountSystemDrive() {
-        if (!_driveMap.ContainsKey('Z') || _driveMap['Z'] is null) {
+        if (!_driveMap.TryGetValue('Z', out VirtualDrive? zDrive) || zDrive is null) {
             return true; // Already unmounted
         }
 

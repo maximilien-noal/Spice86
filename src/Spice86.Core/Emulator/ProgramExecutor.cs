@@ -8,6 +8,7 @@ using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Core.Emulator.Gdb;
 using Spice86.Core.Emulator.LoadableFile;
 using Spice86.Core.Emulator.LoadableFile.Bios;
+using Spice86.Core.Emulator.LoadableFile.Dos;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.VM;
@@ -20,7 +21,7 @@ using Spice86.Shared.Utils;
 using System.Security.Cryptography;
 
 /// <summary>
-/// The class that is responsible for executing a program in the emulator. Only supports COM, EXE, and BIOS files.
+/// The class that is responsible for executing a program in the emulator. Supports COM, EXE, BAT, and BIOS files.
 /// </summary>
 public sealed class ProgramExecutor : IDisposable {
     private bool _disposed;
@@ -143,6 +144,7 @@ public sealed class ProgramExecutor : IDisposable {
         string upperCaseExtension = Path.GetExtension(exe.ToUpperInvariant());
         return upperCaseExtension switch {
             ".EXE" or ".COM" => dos.ProcessManager,
+            ".BAT" => new BatchFileLoader(memory, cpuState, dos, _loggerService),
             _ => new BiosLoader(memory, cpuState, _loggerService),
         };
     }
