@@ -24,8 +24,15 @@ public class BatchProcessorTests : IDisposable {
     }
 
     public void Dispose() {
-        if (Directory.Exists(_tempDir)) {
-            Directory.Delete(_tempDir, recursive: true);
+        try {
+            if (Directory.Exists(_tempDir)) {
+                Directory.Delete(_tempDir, recursive: true);
+            }
+        } catch (IOException) {
+            // Ignore cleanup errors - file system issues like locked files or permission problems
+            // shouldn't fail the test
+        } catch (UnauthorizedAccessException) {
+            // Ignore permission issues during cleanup
         }
     }
 

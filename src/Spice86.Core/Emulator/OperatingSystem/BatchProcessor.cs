@@ -473,7 +473,9 @@ internal sealed class BatchContext : IDisposable {
             _parameters[i] = string.Empty;
         }
 
-        // Open the file for reading
+        // Open the file for reading using ASCII encoding
+        // Note: For full DOS compatibility, CP437 would be preferred but requires
+        // registering System.Text.Encoding.CodePages provider at startup
         _reader = new StreamReader(filePath, Encoding.ASCII);
     }
 
