@@ -27,9 +27,9 @@ public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
     
     /// <summary>
-    /// Far call opcode (JMP FAR instruction).
+    /// JMP FAR opcode (far jump instruction).
     /// </summary>
-    private const byte FarCallOpcode = 0xEA;
+    private const byte FarJumpOpcode = 0xEA;
     
     /// <summary>
     /// INT instruction opcode.
@@ -1033,8 +1033,8 @@ public class DosProcessManager : DosFileLoader {
         // Set size (next_seg = psp_segment + size)
         psp.NextSegment = (ushort)(pspSegment + sizeInParagraphs);
         
-        // Far call opcode
-        psp.FarCall = FarCallOpcode;
+        // JMP FAR opcode (for far jump to DOS INT 21h dispatcher)
+        psp.FarCall = FarJumpOpcode;
         
         // CPM entry point - faked address
         psp.CpmServiceRequestAddress = MakeFarPointer(FakeCpmSegment, FakeCpmOffset);
