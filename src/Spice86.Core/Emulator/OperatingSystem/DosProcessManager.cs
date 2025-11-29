@@ -638,7 +638,7 @@ public class DosProcessManager : DosFileLoader {
     /// <param name="parentPspSegment">The segment of the parent PSP.</param>
     private static void InitializeCommonPspFields(DosProgramSegmentPrefix psp, ushort parentPspSegment) {
         // Set the PSP's first 2 bytes to INT 20h (CP/M-style exit)
-        psp.Exit[0] = 0xCD;
+        psp.Exit[0] = IntOpcode;
         psp.Exit[1] = 0x20;
         
         // Set parent PSP segment
