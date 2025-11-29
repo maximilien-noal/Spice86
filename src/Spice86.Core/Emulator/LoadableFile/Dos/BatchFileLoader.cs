@@ -81,8 +81,8 @@ public sealed class BatchFileLoader : ExecutableFileLoader {
         string dosPath = _dos.FileManager.GetDosProgramPath(hostPath);
         AutoexecGenerator autoexec = CommandCom.CreateAutoexecForBatch(dosPath, arguments ?? "", exitAfter: true);
         
-        // Load the autoexec batch
-        commandCom.BatchProcessor.Dispose(); // Clear the direct batch we started
+        // Exit the direct batch we started (preserves any parent contexts from nested CALLs)
+        commandCom.BatchProcessor.ExitBatch();
         commandCom.LoadAutoexecBatch(autoexec, "STARTUP.BAT");
 
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
@@ -109,6 +109,23 @@ public sealed class BatchFileLoader : ExecutableFileLoader {
     /// <summary>
     /// Sets up a minimal execution state for batch file processing.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Current limitations of batch file execution:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>Internal commands (ECHO, SET, IF, etc.) are parsed but not automatically executed</item>
+    /// <item>External program execution (e.g., "maupiti1.exe" in a batch) requires emulation loop integration</item>
+    /// <item>The BatchProcessor.ReadNextLine() and ParseCommand() methods need to be called from the emulation loop</item>
+    /// </list>
+    /// <para>
+    /// To complete the implementation, the emulation loop should:
+    /// 1. Check CommandCom.BatchProcessor.IsProcessingBatch after each program exits
+    /// 2. Call ReadNextLine() and ParseCommand() to get the next batch command
+    /// 3. Execute the command (for ExecuteProgram commands, call Exec())
+    /// 4. Repeat until the batch file is complete
+    /// </para>
+    /// </remarks>
     private void SetupMinimalExecutionState() {
         // For now, we'll just set up the state to point to a HLT instruction
         // The batch processing needs to be driven at a higher level
@@ -120,7 +137,8 @@ public sealed class BatchFileLoader : ExecutableFileLoader {
         if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
             _loggerService.Warning(
                 "BatchFileLoader: Batch file execution is partially implemented. " +
-                "External program execution from batch files requires emulation loop integration.");
+                "Internal batch commands are parsed but external program execution requires " +
+                "emulation loop integration. Check BatchProcessor.IsProcessingBatch after each program exits.");
         }
     }
 

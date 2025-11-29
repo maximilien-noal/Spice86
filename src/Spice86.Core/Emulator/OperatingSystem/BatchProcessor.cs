@@ -454,15 +454,24 @@ public sealed class BatchProcessor : IDisposable {
         }
 
         // Create a host file reader and start the batch
+        IBatchLineReader? reader = null;
         try {
-            IBatchLineReader reader = new HostFileLineReader(batchFilePath);
-            return StartBatchWithReader(batchFilePath, arguments, reader);
+            reader = new HostFileLineReader(batchFilePath);
+            bool success = StartBatchWithReader(batchFilePath, arguments, reader);
+            if (!success) {
+                // If StartBatchWithReader fails, we need to dispose the reader
+                // (if it succeeds, the BatchContext takes ownership)
+                reader.Dispose();
+            }
+            return success;
         } catch (IOException ex) {
+            reader?.Dispose();
             if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
                 _loggerService.Warning(ex, "BatchProcessor: Failed to open batch file: {Path}", batchFilePath);
             }
             return false;
         } catch (UnauthorizedAccessException ex) {
+            reader?.Dispose();
             if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
                 _loggerService.Warning(ex, "BatchProcessor: Access denied to batch file: {Path}", batchFilePath);
             }
