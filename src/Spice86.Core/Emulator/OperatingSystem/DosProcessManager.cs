@@ -27,9 +27,9 @@ public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
     
     /// <summary>
-    /// JMP FAR opcode (far jump instruction).
+    /// CALL FAR opcode (far call instruction) used in PSP at offset 0x05.
     /// </summary>
-    private const byte FarJumpOpcode = 0xEA;
+    private const byte FarCallOpcode = 0x9A;
     
     /// <summary>
     /// INT instruction opcode.
@@ -1005,9 +1005,10 @@ public class DosProcessManager : DosFileLoader {
         
         // Note: We intentionally do NOT register this child PSP with _pspTracker.PushPspSegment().
         // INT 21h/55h is used by debuggers and overlay managers that manage their own PSP tracking.
-        // The handler calls SetCurrentPspSegment() to update the SDA's current PSP, but the PSP
-        // is not added to the tracker's internal list. This matches DOSBox behavior where 
-        // DOS_ChildPSP() creates the PSP but the caller is responsible for managing PSP tracking.
+        // The INT 21h handler (DosInt21Handler.CreateChildPsp) will call SetCurrentPspSegment() to 
+        // update the SDA's current PSP, but the PSP is not added to the tracker's internal list. 
+        // This matches DOSBox behavior where DOS_ChildPSP() creates the PSP but the caller is 
+        // responsible for managing PSP tracking.
         
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug(
@@ -1033,8 +1034,8 @@ public class DosProcessManager : DosFileLoader {
         // Set size (next_seg = psp_segment + size)
         psp.NextSegment = (ushort)(pspSegment + sizeInParagraphs);
         
-        // JMP FAR opcode (for far jump to DOS INT 21h dispatcher)
-        psp.FarCall = FarJumpOpcode;
+        // CALL FAR opcode (for far call to DOS INT 21h dispatcher at PSP offset 0x05)
+        psp.FarCall = FarCallOpcode;
         
         // CPM entry point - faked address
         psp.CpmServiceRequestAddress = MakeFarPointer(FakeCpmSegment, FakeCpmOffset);

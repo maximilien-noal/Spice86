@@ -573,8 +573,13 @@ public class DosInt21IntegrationTests {
     /// <item>Verifies the child PSP's parent pointer points to the original PSP</item>
     /// <item>Verifies the INT 20h instruction is at the start of the PSP</item>
     /// <item>Verifies the environment segment was inherited</item>
-    /// <item>Verifies AL is set to 0xF0 (per DOSBox behavior)</item>
+    /// <item>Verifies AL is set to 0xF0 (DOSBox-compatible behavior - AL value is "destroyed")</item>
     /// </list>
+    /// </para>
+    /// <para>
+    /// Note: The AL=0xF0 check validates Spice86's DOSBox-compatible behavior. In DOS, AL is 
+    /// considered "destroyed" after this call, meaning its value is undefined. DOSBox happens 
+    /// to set it to 0xF0, and we match that behavior for compatibility.
     /// </para>
     /// <para>
     /// Based on DOSBox staging implementation:
