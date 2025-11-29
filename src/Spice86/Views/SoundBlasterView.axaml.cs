@@ -18,7 +18,17 @@ public partial class SoundBlasterView : UserControl {
     /// </summary>
     public SoundBlasterView() {
         InitializeComponent();
+        this.AttachedToVisualTree += OnAttachedToVisualTree;
         this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e) {
+        if (DataContext is IEmulatorObjectViewModel vm) {
+            vm.IsVisible = true;
+            _timer = DispatcherTimerStarter.StartNewDispatcherTimer(
+                TimeSpan.FromMilliseconds(400), DispatcherPriority.Background,
+                vm.UpdateValues);
+        }
     }
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e) {
@@ -26,17 +36,6 @@ public partial class SoundBlasterView : UserControl {
             vm.IsVisible = false;
             _timer?.Stop();
             _timer = null;
-        }
-    }
-
-    /// <inheritdoc />
-    protected override void OnDataContextChanged(EventArgs e) {
-        base.OnDataContextChanged(e);
-        if (DataContext is IEmulatorObjectViewModel vm) {
-            vm.IsVisible = this.IsVisible;
-            _timer = DispatcherTimerStarter.StartNewDispatcherTimer(
-                TimeSpan.FromMilliseconds(400), DispatcherPriority.Background,
-                vm.UpdateValues);
         }
     }
 }
