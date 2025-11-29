@@ -954,7 +954,7 @@ public class DosFcbManager {
                 for (int i = 1; i < 6; i++) {
                     _memory.UInt8[dtaAddress + (uint)i] = 0;
                 }
-                _memory.UInt8[dtaAddress + 6] = searchAttribute;
+                _memory.UInt8[dtaAddress + 6] = (byte)entryInfo.Attributes;
                 offset = DosExtendedFileControlBlock.HeaderSize;
             }
 
