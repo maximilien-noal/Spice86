@@ -63,8 +63,8 @@ internal sealed class BatchContext : IDisposable {
     /// <param name="arguments">Command line arguments.</param>
     /// <param name="currentEchoState">Current echo state to save.</param>
     /// <remarks>
-    /// This constructor is kept for backward compatibility with existing tests.
-    /// For full DOS integration, use the constructor with IBatchLineReader.
+    /// Convenience constructor for creating a batch context using the host file system.
+    /// For full DOS integration, use the constructor with IBatchLineReader and IBatchEnvironment.
     /// </remarks>
     public BatchContext(string filePath, string[] arguments, bool currentEchoState)
         : this(filePath, arguments, currentEchoState,

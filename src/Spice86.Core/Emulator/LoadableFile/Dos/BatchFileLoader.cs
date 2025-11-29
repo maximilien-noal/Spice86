@@ -210,14 +210,9 @@ public sealed class BatchFileLoader : ExecutableFileLoader {
 
         // Try to resolve through DOS file manager
         string dosPath = programName.Replace('/', '\\');
-        string? hostPath = null;
-        try {
-            hostPath = _dos.FileManager.GetHostPath(dosPath);
-            if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath)) {
-                return hostPath;
-            }
-        } catch {
-            // Path resolution failed
+        string? hostPath = _dos.FileManager.GetHostPath(dosPath);
+        if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath)) {
+            return hostPath;
         }
 
         return null;

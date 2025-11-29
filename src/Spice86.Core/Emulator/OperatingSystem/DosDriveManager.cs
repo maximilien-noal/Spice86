@@ -63,13 +63,12 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// The Z: drive contains system utilities like COMMAND.COM, MOUNT.COM, etc.
     /// </para>
     /// <para>
-    /// This creates a temporary directory on the host system to serve as the
-    /// virtual Z: drive. In a full implementation, this would contain virtual
-    /// files for system utilities.
+    /// If no host path is provided, the Z: drive uses a virtual path 'Z:\' and
+    /// does not create any temporary directory on the host system.
     /// </para>
     /// </remarks>
     /// <param name="hostPath">
-    /// Optional host path to mount as Z:. If null, creates a temporary directory.
+    /// Optional host path to mount as Z:. If null, uses a virtual path 'Z:\'.
     /// </param>
     /// <returns>True if the drive was mounted successfully.</returns>
     public bool MountSystemDrive(string? hostPath = null) {
