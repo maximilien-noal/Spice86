@@ -10,7 +10,6 @@ using System.Diagnostics;
 /// - Bits 4-6: Sharing mode (0=compat, 1=deny all, 2=deny write, 3=deny read, 4=deny none)
 /// - Bit 7: Inheritance flag (0=inherited, 1=private/not inherited)
 /// </summary>
-[Flags]
 public enum FileAccessMode {
     /// <summary>
     /// File can only be read.
