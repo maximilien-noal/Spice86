@@ -7,6 +7,7 @@ using NSubstitute;
 using Spice86.Core.Emulator.OperatingSystem.Command;
 using Spice86.Core.Emulator.OperatingSystem.Command.BatchProcessing;
 using Spice86.Shared.Interfaces;
+using Spice86.Tests.Utility;
 
 using Xunit;
 
@@ -720,18 +721,6 @@ public class BatchProcessorTests : IDisposable {
 
     #region Environment Variable Tests
 
-    /// <summary>
-    /// Test environment implementation for testing environment variable expansion.
-    /// </summary>
-    private sealed class TestBatchEnvironment : IBatchEnvironment {
-        private readonly Dictionary<string, string> _variables = new(StringComparer.OrdinalIgnoreCase);
-
-        public void SetVariable(string name, string value) => _variables[name] = value;
-
-        public string? GetEnvironmentValue(string name) =>
-            _variables.TryGetValue(name, out string? value) ? value : null;
-    }
-
     [Fact]
     public void ReadNextLine_WithEnvironmentVariable_ExpandsVariable() {
         // Arrange
@@ -809,7 +798,7 @@ public class BatchProcessorTests : IDisposable {
         // Arrange
         BatchProcessor processor = new(_loggerService);
         string[] lines = ["echo hello", "echo world"];
-        StringLineReader reader = new(lines);
+        TestStringLineReader reader = new(lines);
 
         // Act
         bool result = processor.StartBatchWithReader("test.bat", [], reader);
@@ -820,25 +809,6 @@ public class BatchProcessorTests : IDisposable {
         result.Should().BeTrue();
         line1.Should().Be("echo hello");
         line2.Should().Be("echo world");
-    }
-
-    /// <summary>
-    /// Test line reader implementation that reads from an array of strings.
-    /// </summary>
-    private sealed class StringLineReader : IBatchLineReader {
-        private readonly string[] _lines;
-        private int _index = 0;
-
-        public StringLineReader(string[] lines) => _lines = lines;
-
-        public string? ReadLine() => _index < _lines.Length ? _lines[_index++] : null;
-
-        public bool Reset() {
-            _index = 0;
-            return true;
-        }
-
-        public void Dispose() { }
     }
 
     #endregion
