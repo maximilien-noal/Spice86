@@ -52,11 +52,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private readonly ushort _basePort;
     private readonly byte _irq;
     private readonly byte _dma1;
-
-    // DMA channel 2 is used for recording (future implementation) and ULTRASND env var
-#pragma warning disable IDE0052 // Remove unread private member
     private readonly byte _dma2;
-#pragma warning restore IDE0052
 
     // Registers
     private DmaControlRegister _dmaControlRegister;
@@ -84,11 +80,6 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private byte _selectedRegister;
     private uint _dramAddr;
     private ushort _dmaAddr;
-
-    // DMA address low nibble for 16-bit DMA transfers (future implementation)
-#pragma warning disable IDE0052, CS0414 // Remove unread private member
-    private byte _dmaAddrNibble;
-#pragma warning restore IDE0052, CS0414
 
     // IRQ state
     private byte _irqStatus;
@@ -463,7 +454,6 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
 
             case 0x42: // DMA address register
                 _dmaAddr = _registerData;
-                _dmaAddrNibble = 0;
                 return;
 
             case 0x43: // LSW Peek/poke DRAM position
@@ -679,7 +669,6 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _activeVoices = 0;
 
         _dmaAddr = 0;
-        _dmaAddrNibble = 0;
         _dramAddr = 0;
         _registerData = 0;
         _selectedRegister = 0;
