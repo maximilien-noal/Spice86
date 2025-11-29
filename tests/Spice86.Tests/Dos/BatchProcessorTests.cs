@@ -600,6 +600,7 @@ public class BatchProcessorTests : IDisposable {
         cmd.Type.Should().Be(BatchCommandType.If);
         cmd.Value.Should().Be("EXIST");
         cmd.Arguments.Should().StartWith("test.txt echo found");
+        cmd.Negate.Should().BeFalse();
     }
 
     [Fact]
@@ -613,8 +614,8 @@ public class BatchProcessorTests : IDisposable {
         // Assert
         cmd.Type.Should().Be(BatchCommandType.If);
         cmd.Value.Should().Be("EXIST");
-        // The negate flag is encoded in the last byte of Arguments
-        cmd.Arguments.Should().EndWith("\x01");
+        cmd.Arguments.Should().StartWith("test.txt echo not found");
+        cmd.Negate.Should().BeTrue();
     }
 
     [Fact]

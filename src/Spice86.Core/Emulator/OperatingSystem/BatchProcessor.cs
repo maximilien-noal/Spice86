@@ -535,13 +535,6 @@ public sealed class BatchProcessor {
         }
         return BatchCommand.Shift();
     }
-
-    /// <summary>
-    /// Shifts the batch parameters by one position.
-    /// </summary>
-    public void ShiftParameters() {
-        _currentContext?.Shift();
-    }
 }
 
 /// <summary>
@@ -696,10 +689,16 @@ public readonly struct BatchCommand {
     /// </summary>
     public string Arguments { get; }
 
-    private BatchCommand(BatchCommandType type, string value = "", string arguments = "") {
+    /// <summary>
+    /// For IF commands, indicates whether the condition should be negated (IF NOT).
+    /// </summary>
+    public bool Negate { get; }
+
+    private BatchCommand(BatchCommandType type, string value = "", string arguments = "", bool negate = false) {
         Type = type;
         Value = value;
         Arguments = arguments;
+        Negate = negate;
     }
 
     /// <summary>
@@ -762,7 +761,7 @@ public readonly struct BatchCommand {
     /// <param name="arguments">The condition arguments and command to execute.</param>
     /// <param name="negate">True if the condition should be negated (IF NOT).</param>
     public static BatchCommand If(string condition, string arguments, bool negate = false) =>
-        new(BatchCommandType.If, condition, arguments + (negate ? "\x01" : "\x00"));
+        new(BatchCommandType.If, condition, arguments, negate);
 
     /// <summary>
     /// Creates a SHIFT command.
