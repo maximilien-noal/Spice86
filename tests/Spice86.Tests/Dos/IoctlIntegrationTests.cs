@@ -347,6 +347,8 @@ public class IoctlIntegrationTests {
             "Get Volume Info should succeed");
     }
 
+    // IOCTL 0x0A - Is Handle Remote Tests
+
     /// <summary>
     /// Tests IOCTL function 0x0A (Is Handle Remote) for stdin handle.
     /// Should return DX with bit 15 clear (local device).
@@ -495,7 +497,7 @@ public class IoctlIntegrationTests {
         Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
             binName: filePath,
             enableCfgCpu: true,
-            enablePit: true,
+            enablePit: false,  // Changed to false to match DosInt21IntegrationTests
             recordData: false,
             maxCycles: 100000L,
             installInterruptVectors: true,
