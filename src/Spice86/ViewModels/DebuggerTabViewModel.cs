@@ -1,7 +1,5 @@
 namespace Spice86.ViewModels;
 
-using Avalonia.Threading;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Spice86.Core.Emulator.VM;
@@ -41,18 +39,14 @@ public abstract partial class DebuggerTabViewModel : ViewModelBase, IDebuggerTab
     /// </summary>
     /// <param name="pauseHandler">The pause handler for tracking emulator pause state.</param>
     /// <param name="uiDispatcher">The UI dispatcher for thread-safe UI updates.</param>
-    /// <param name="updateInterval">The interval between updates in milliseconds. Default is 400ms.</param>
-    protected DebuggerTabViewModel(IPauseHandler pauseHandler, IUIDispatcher uiDispatcher, int updateInterval = 400) {
+    protected DebuggerTabViewModel(IPauseHandler pauseHandler, IUIDispatcher uiDispatcher) {
         _uiDispatcher = uiDispatcher;
         IsPaused = pauseHandler.IsPaused;
 
         pauseHandler.Paused += () => uiDispatcher.Post(() => IsPaused = true);
         pauseHandler.Resumed += () => uiDispatcher.Post(() => IsPaused = false);
-
-        DispatcherTimerStarter.StartNewDispatcherTimer(
-            TimeSpan.FromMilliseconds(updateInterval),
-            DispatcherPriority.Background,
-            UpdateValues);
+        // Timer is started by the View code-behind when the View is attached to visual tree
+        // This follows the same pattern as CpuView/CpuViewModel
     }
 
     /// <inheritdoc />
