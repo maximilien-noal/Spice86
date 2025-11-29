@@ -40,6 +40,14 @@ public sealed class BatchProcessor {
     private readonly ILoggerService _loggerService;
 
     /// <summary>
+    /// Special separator characters for ECHO command.
+    /// These characters can immediately follow ECHO to output the rest of the line.
+    /// For example: ECHO. outputs an empty line, ECHO:hello outputs "hello".
+    /// Based on FreeDOS FREECOM echo.c behavior.
+    /// </summary>
+    private static readonly char[] EchoSeparators = ['.', ',', ':', ';', '/', '[', '+', '(', '='];
+
+    /// <summary>
     /// The ECHO state for the current batch context.
     /// When true, commands are echoed to stdout before execution.
     /// </summary>
@@ -199,9 +207,7 @@ public sealed class BatchProcessor {
         // These must be handled before checking for exact "ECHO" match
         if (upperCommand.StartsWith("ECHO") && upperCommand.Length > 4) {
             char separator = command[4];
-            if (separator == '.' || separator == ',' || separator == ':' ||
-                separator == ';' || separator == '/' || separator == '[' ||
-                separator == '+' || separator == '(' || separator == '=') {
+            if (IsEchoSeparator(separator)) {
                 // ECHO<separator><message> - print the rest after the separator
                 string message = command[5..];
                 if (!string.IsNullOrEmpty(arguments)) {
@@ -377,18 +383,22 @@ public sealed class BatchProcessor {
             return BatchCommand.Empty();
         }
 
-        // Check for ECHO. (display empty line) - note: period immediately follows ECHO
-        // This handles "ECHO." without space as a special case
-        if (arguments.StartsWith('.') || arguments.StartsWith(',') ||
-            arguments.StartsWith(':') || arguments.StartsWith(';') ||
-            arguments.StartsWith('/') || arguments.StartsWith('[') ||
-            arguments.StartsWith('+') || arguments.StartsWith('(')) {
+        // Check for ECHO separators (display empty line or message)
+        // This handles "ECHO " followed by a special separator character
+        if (arguments.Length > 0 && IsEchoSeparator(arguments[0])) {
             // These are all valid separators that print the rest as-is
             return BatchCommand.PrintMessage(arguments[1..]);
         }
 
         // ECHO <message> - print the message
         return BatchCommand.PrintMessage(arguments);
+    }
+
+    /// <summary>
+    /// Checks if a character is a valid ECHO separator.
+    /// </summary>
+    private static bool IsEchoSeparator(char c) {
+        return Array.IndexOf(EchoSeparators, c) >= 0;
     }
 
     /// <summary>
@@ -514,8 +524,14 @@ internal sealed class BatchContext : IDisposable {
             // Extract the label from the line
             string lineLabel = line[1..].Trim();
             
-            // Label ends at first whitespace
-            int spaceIndex = lineLabel.IndexOfAny([' ', '\t']);
+            // Label ends at first whitespace (find the first whitespace character)
+            int spaceIndex = -1;
+            for (int i = 0; i < lineLabel.Length; i++) {
+                if (char.IsWhiteSpace(lineLabel[i])) {
+                    spaceIndex = i;
+                    break;
+                }
+            }
             if (spaceIndex >= 0) {
                 lineLabel = lineLabel[..spaceIndex];
             }
