@@ -349,8 +349,9 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// <summary>
     /// INT 15h, AH=86h - BIOS - WAIT (AT, PS)
     /// <para>
-    /// Waits for CX:DX microseconds using the RTC timer.
-    /// This is a blocking call that advances emulated time until the wait completes.
+    /// Waits for CX:DX microseconds. This is a blocking call that suspends
+    /// execution until the specified time interval has elapsed.
+    /// Based on DOSBox and SeaBIOS implementations.
     /// </para><br/>
     /// <b>Inputs:</b><br/>
     /// AH = 86h<br/>
@@ -358,10 +359,10 @@ public class SystemBiosInt15Handler : InterruptHandler {
     /// <b>Outputs:</b><br/>
     /// CF set on error<br/>
     /// CF clear if successful<br/>
-    /// AH = status (00h on success, 83h if timer already in use, 86h if function not supported)<br/>
+    /// AH = status (00h on success, 83h if timer already in use)<br/>
     /// </summary>
     public void BiosWait(bool calledFromVm) {
-        // Check if wait is already active
+        // Check if wait is already active (matches DOSBox behavior)
         if (_biosDataArea.RtcWaitFlag != 0) {
             State.AH = 0x83; // Timer already in use
             SetCarryFlag(true, calledFromVm);
@@ -374,15 +375,11 @@ public class SystemBiosInt15Handler : InterruptHandler {
             LoggerService.Verbose("BIOS WAIT requested for {Microseconds} microseconds", microseconds);
         }
 
-        // If no delay requested, return immediately
+        // If zero delay, return immediately
         if (microseconds == 0) {
             SetCarryFlag(false, calledFromVm);
             return;
         }
-
-        // Convert microseconds to milliseconds for the PIC event system
-        // Add 1ms to ensure we wait at least the requested time
-        double delayMs = (microseconds / 1000.0) + 1.0;
 
         // Set the wait flag to indicate a wait is in progress
         _biosDataArea.RtcWaitFlag = 1;
@@ -390,44 +387,54 @@ public class SystemBiosInt15Handler : InterruptHandler {
         // Store the target microsecond count
         _biosDataArea.UserWaitTimeout = microseconds;
 
-        // Schedule a PIC event to clear the wait flag after the delay
-        _dualPic.AddEvent(OnWaitComplete, delayMs);
+        // Use real wall-clock time for the wait since we're blocking in an interrupt handler.
+        // This matches DOSBox's approach where CALLBACK_Idle() advances real time.
+        long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+        double ticksPerMicrosecond = System.Diagnostics.Stopwatch.Frequency / 1_000_000.0;
+        long targetTicks = startTicks + (long)(microseconds * ticksPerMicrosecond);
+        
+        // Add a timeout in case something goes wrong (2x the requested time)
+        long timeoutTicks = startTicks + (long)(microseconds * ticksPerMicrosecond * 2.0) + System.Diagnostics.Stopwatch.Frequency;
 
-        // Calculate maximum ticks to wait (timeout fallback if timer doesn't work)
-        // Use 2x the expected delay to account for any timing variations
-        int maxTicks = (int)(delayMs * 2) + 10;
-        int ticksWaited = 0;
+        // Block until the wait completes.
+        // This implements the blocking behavior expected by programs like Day of the Tentacle.
+        while (System.Diagnostics.Stopwatch.GetTimestamp() < targetTicks) {
+            // Cache the current timestamp for this iteration
+            long currentTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            
+            // Safety timeout to avoid infinite loops
+            if (currentTicks > timeoutTicks) {
+                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                    LoggerService.Warning("BIOS WAIT: safety timeout reached");
+                }
+                break;
+            }
 
-        // Block until the wait completes by advancing emulated time.
-        // Each iteration advances the PIC tick counter and processes scheduled events,
-        // similar to how DOSBox's CALLBACK_Idle() allows time to pass while waiting.
-        while (_biosDataArea.RtcWaitFlag != 0 && ticksWaited < maxTicks) {
-            _dualPic.AddTick();
-            _dualPic.RunQueue();
-            ticksWaited++;
+            // Update the remaining time in BIOS data area
+            long elapsedTicks = currentTicks - startTicks;
+            double elapsedMicroseconds = elapsedTicks / ticksPerMicrosecond;
+            
+            // Clamp to valid range to prevent overflow
+            if (elapsedMicroseconds >= microseconds) {
+                _biosDataArea.UserWaitTimeout = 0;
+            } else {
+                _biosDataArea.UserWaitTimeout = microseconds - (uint)elapsedMicroseconds;
+            }
+
+            // Yield to avoid consuming 100% CPU
+            System.Threading.Thread.Yield();
         }
 
-        // Clear any remaining wait state (in case timeout occurred)
-        if (_biosDataArea.RtcWaitFlag != 0) {
-            _biosDataArea.RtcWaitFlag = 0;
-            if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-                LoggerService.Warning("BIOS WAIT timed out after {TicksWaited} ticks", ticksWaited);
-            }
+        // Clear the wait state
+        _biosDataArea.UserWaitTimeout = 0;
+        _biosDataArea.RtcWaitFlag = 0;
+
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("BIOS WAIT completed");
         }
 
         // Success
         SetCarryFlag(false, calledFromVm);
-    }
-
-    /// <summary>
-    /// Callback invoked when the BIOS wait timer expires.
-    /// Clears the RtcWaitFlag to signal completion.
-    /// </summary>
-    private void OnWaitComplete(uint value) {
-        _biosDataArea.RtcWaitFlag = 0;
-        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("BIOS WAIT completed");
-        }
     }
 
     /// <summary>
