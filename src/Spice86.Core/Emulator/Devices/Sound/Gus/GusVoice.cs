@@ -208,13 +208,10 @@ internal sealed class GusVoice {
             int nextAddr = addr + 1;
             // Ensure nextAddr does not exceed the end of the sample data
             int endAddr = WaveCtrl.End / GusConstants.WaveWidth;
-            float nextSample;
-            if (nextAddr > endAddr) {
-                // Use current sample to avoid discontinuity at sample end
-                nextSample = sample;
-            } else {
-                nextSample = Is16Bit ? Read16BitSample(ram, nextAddr) : Read8BitSample(ram, nextAddr);
-            }
+            // Use current sample to avoid discontinuity at sample end
+            float nextSample = nextAddr > endAddr
+                ? sample
+                : (Is16Bit ? Read16BitSample(ram, nextAddr) : Read8BitSample(ram, nextAddr));
             const float waveWidthInv = 1.0f / GusConstants.WaveWidth;
             sample += (nextSample - sample) * fraction * waveWidthInv;
         }
