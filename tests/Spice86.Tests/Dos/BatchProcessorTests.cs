@@ -716,4 +716,129 @@ public class BatchProcessorTests : IDisposable {
     }
 
     #endregion
+
+    #region Environment Variable Tests
+
+    /// <summary>
+    /// Test environment implementation for testing environment variable expansion.
+    /// </summary>
+    private sealed class TestBatchEnvironment : IBatchEnvironment {
+        private readonly Dictionary<string, string> _variables = new(StringComparer.OrdinalIgnoreCase);
+
+        public void SetVariable(string name, string value) => _variables[name] = value;
+
+        public string? GetEnvironmentValue(string name) =>
+            _variables.TryGetValue(name, out string? value) ? value : null;
+    }
+
+    [Fact]
+    public void ReadNextLine_WithEnvironmentVariable_ExpandsVariable() {
+        // Arrange
+        TestBatchEnvironment env = new();
+        env.SetVariable("MYVAR", "TestValue");
+        BatchProcessor processor = new(_loggerService, env);
+        string content = "echo %MYVAR%";
+        string batchPath = CreateBatchFile("test.bat", content);
+        processor.StartBatch(batchPath, []);
+
+        // Act
+        string? line = processor.ReadNextLine(out _);
+
+        // Assert
+        line.Should().Be("echo TestValue");
+    }
+
+    [Fact]
+    public void ReadNextLine_WithMultipleEnvironmentVariables_ExpandsAll() {
+        // Arrange
+        TestBatchEnvironment env = new();
+        env.SetVariable("VAR1", "Hello");
+        env.SetVariable("VAR2", "World");
+        BatchProcessor processor = new(_loggerService, env);
+        string content = "echo %VAR1% %VAR2%";
+        string batchPath = CreateBatchFile("test.bat", content);
+        processor.StartBatch(batchPath, []);
+
+        // Act
+        string? line = processor.ReadNextLine(out _);
+
+        // Assert
+        line.Should().Be("echo Hello World");
+    }
+
+    [Fact]
+    public void ReadNextLine_WithUndefinedEnvironmentVariable_LeavesEmpty() {
+        // Arrange
+        TestBatchEnvironment env = new();
+        BatchProcessor processor = new(_loggerService, env);
+        string content = "echo %UNDEFINED%";
+        string batchPath = CreateBatchFile("test.bat", content);
+        processor.StartBatch(batchPath, []);
+
+        // Act
+        string? line = processor.ReadNextLine(out _);
+
+        // Assert
+        line.Should().Be("echo ");
+    }
+
+    [Fact]
+    public void ReadNextLine_WithMixedParametersAndEnvironment_ExpandsBoth() {
+        // Arrange
+        TestBatchEnvironment env = new();
+        env.SetVariable("PATH", "C:\\DOS");
+        BatchProcessor processor = new(_loggerService, env);
+        string content = "echo %0 %1 %PATH%";
+        string batchPath = CreateBatchFile("test.bat", content);
+        processor.StartBatch(batchPath, ["arg1"]);
+
+        // Act
+        string? line = processor.ReadNextLine(out _);
+
+        // Assert
+        line.Should().Be($"echo {batchPath} arg1 C:\\DOS");
+    }
+
+    #endregion
+
+    #region IBatchLineReader Interface Tests
+
+    [Fact]
+    public void StartBatchWithReader_UsesCustomReader() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+        string[] lines = ["echo hello", "echo world"];
+        StringLineReader reader = new(lines);
+
+        // Act
+        bool result = processor.StartBatchWithReader("test.bat", [], reader);
+        string? line1 = processor.ReadNextLine(out _);
+        string? line2 = processor.ReadNextLine(out _);
+
+        // Assert
+        result.Should().BeTrue();
+        line1.Should().Be("echo hello");
+        line2.Should().Be("echo world");
+    }
+
+    /// <summary>
+    /// Test line reader implementation that reads from an array of strings.
+    /// </summary>
+    private sealed class StringLineReader : IBatchLineReader {
+        private readonly string[] _lines;
+        private int _index = 0;
+
+        public StringLineReader(string[] lines) => _lines = lines;
+
+        public string? ReadLine() => _index < _lines.Length ? _lines[_index++] : null;
+
+        public bool Reset() {
+            _index = 0;
+            return true;
+        }
+
+        public void Dispose() { }
+    }
+
+    #endregion
 }

@@ -4,9 +4,112 @@ using Serilog.Events;
 
 using Spice86.Shared.Interfaces;
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+
+/// <summary>
+/// Provides an interface for reading lines from a batch file.
+/// </summary>
+/// <remarks>
+/// This abstraction allows batch file reading through different sources:
+/// - Host file system (for testing and standalone usage)
+/// - DOS file system (for full emulation integration)
+/// Based on DOSBox staging's LineReader pattern.
+/// </remarks>
+public interface IBatchLineReader : IDisposable {
+    /// <summary>
+    /// Reads the next line from the batch file.
+    /// </summary>
+    /// <returns>The next line, or null if end of file or error.</returns>
+    string? ReadLine();
+
+    /// <summary>
+    /// Resets the reader to the beginning of the file.
+    /// </summary>
+    /// <returns>True if reset was successful, false otherwise.</returns>
+    bool Reset();
+}
+
+/// <summary>
+/// Reads batch file lines from the host file system.
+/// </summary>
+/// <remarks>
+/// This implementation reads directly from the host file system,
+/// which is useful for unit testing and standalone batch processing.
+/// For full DOS integration, use the DOS file system reader instead.
+/// </remarks>
+public sealed class HostFileLineReader : IBatchLineReader {
+    private readonly string _filePath;
+    private StreamReader? _reader;
+
+    /// <summary>
+    /// Initializes a new reader for the specified file.
+    /// </summary>
+    /// <param name="filePath">Full path to the batch file on the host file system.</param>
+    public HostFileLineReader(string filePath) {
+        _filePath = filePath;
+        // Note: For full DOS compatibility, CP437 would be preferred but requires
+        // registering System.Text.Encoding.CodePages provider at startup
+        _reader = new StreamReader(filePath, Encoding.ASCII);
+    }
+
+    /// <inheritdoc/>
+    public string? ReadLine() => _reader?.ReadLine();
+
+    /// <inheritdoc/>
+    public bool Reset() {
+        if (_reader is null) {
+            return false;
+        }
+        _reader.BaseStream.Seek(0, SeekOrigin.Begin);
+        _reader.DiscardBufferedData();
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public void Dispose() {
+        _reader?.Dispose();
+        _reader = null;
+    }
+}
+
+/// <summary>
+/// Provides access to environment variables for batch file expansion.
+/// </summary>
+/// <remarks>
+/// This abstraction allows environment variable access through different sources:
+/// - Test environment (for unit testing)
+/// - DOS environment (for full emulation integration)
+/// Based on DOSBox staging's Environment interface pattern.
+/// </remarks>
+public interface IBatchEnvironment {
+    /// <summary>
+    /// Gets the value of an environment variable.
+    /// </summary>
+    /// <param name="name">The name of the environment variable (case-insensitive).</param>
+    /// <returns>The value of the variable, or null if not found.</returns>
+    string? GetEnvironmentValue(string name);
+}
+
+/// <summary>
+/// A batch environment that always returns null (no environment variables).
+/// </summary>
+/// <remarks>
+/// This is useful for testing when no environment is needed.
+/// </remarks>
+public sealed class EmptyBatchEnvironment : IBatchEnvironment {
+    /// <summary>
+    /// Gets the singleton instance.
+    /// </summary>
+    public static EmptyBatchEnvironment Instance { get; } = new();
+
+    private EmptyBatchEnvironment() { }
+
+    /// <inheritdoc/>
+    public string? GetEnvironmentValue(string name) => null;
+}
 
 /// <summary>
 /// Processes DOS batch files (.BAT) for COMMAND.COM.
@@ -14,7 +117,7 @@ using System.Text;
 /// <remarks>
 /// <para>
 /// This class implements DOS batch file processing as part of the COMMAND.COM emulation.
-/// Based on FreeDOS FREECOM batch.c implementation.
+/// Based on DOSBox staging's BatchFile class and FreeDOS FREECOM batch.c implementation.
 /// </para>
 /// <para>
 /// Supported batch features:
@@ -22,22 +125,24 @@ using System.Text;
 /// <item>ECHO ON/OFF command to control command echoing</item>
 /// <item>@ prefix to suppress echoing of a single line</item>
 /// <item>Parameter substitution (%0-%9)</item>
+/// <item>Environment variable expansion (%NAME%)</item>
 /// <item>Comment lines starting with REM or ::</item>
 /// <item>Labels starting with :</item>
-/// <item>Executing programs (.COM, .EXE) and other batch files</item>
+/// <item>GOTO, CALL, SET, IF, SHIFT, PAUSE, EXIT commands</item>
 /// </list>
 /// </para>
 /// <para>
 /// Reference implementations:
 /// <list type="bullet">
+/// <item>DOSBox Staging: https://github.com/dosbox-staging/dosbox-staging</item>
 /// <item>FreeDOS FREECOM: https://github.com/FDOS/freecom</item>
 /// <item>FreeDOS Kernel: https://github.com/FDOS/kernel</item>
-/// <item>DOSBox Staging: https://github.com/dosbox-staging/dosbox-staging</item>
 /// </list>
 /// </para>
 /// </remarks>
 public sealed class BatchProcessor {
     private readonly ILoggerService _loggerService;
+    private readonly IBatchEnvironment _environment;
 
     /// <summary>
     /// Special separator characters for ECHO command.
@@ -62,8 +167,18 @@ public sealed class BatchProcessor {
     /// Initializes a new instance of the <see cref="BatchProcessor"/> class.
     /// </summary>
     /// <param name="loggerService">The logger service for diagnostic output.</param>
-    public BatchProcessor(ILoggerService loggerService) {
+    public BatchProcessor(ILoggerService loggerService)
+        : this(loggerService, EmptyBatchEnvironment.Instance) {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BatchProcessor"/> class with environment support.
+    /// </summary>
+    /// <param name="loggerService">The logger service for diagnostic output.</param>
+    /// <param name="environment">The environment provider for variable expansion.</param>
+    public BatchProcessor(ILoggerService loggerService, IBatchEnvironment environment) {
         _loggerService = loggerService;
+        _environment = environment;
     }
 
     /// <summary>
@@ -86,7 +201,7 @@ public sealed class BatchProcessor {
     public string? CurrentBatchPath => _currentContext?.FilePath;
 
     /// <summary>
-    /// Starts processing a batch file.
+    /// Starts processing a batch file using the host file system.
     /// </summary>
     /// <param name="batchFilePath">The full path to the batch file.</param>
     /// <param name="arguments">Command line arguments passed to the batch file.</param>
@@ -106,14 +221,33 @@ public sealed class BatchProcessor {
             return false;
         }
 
+        // Create a host file reader and start the batch
+        IBatchLineReader reader = new HostFileLineReader(batchFilePath);
+        return StartBatchWithReader(batchFilePath, arguments, reader);
+    }
+
+    /// <summary>
+    /// Starts processing a batch file using a custom line reader.
+    /// </summary>
+    /// <param name="batchFilePath">The path identifier for the batch file (for %0 and logging).</param>
+    /// <param name="arguments">Command line arguments passed to the batch file.</param>
+    /// <param name="reader">The line reader for accessing the batch file content.</param>
+    /// <returns>True if the batch file was successfully initialized, false otherwise.</returns>
+    /// <remarks>
+    /// This method allows starting a batch file with different sources:
+    /// - Host file system (HostFileLineReader)
+    /// - DOS file system (future implementation)
+    /// - In-memory content (for testing)
+    /// </remarks>
+    public bool StartBatchWithReader(string batchFilePath, string[] arguments, IBatchLineReader reader) {
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information(
                 "BatchProcessor: Starting batch file '{Path}' with {ArgCount} arguments",
                 batchFilePath, arguments.Length);
         }
 
-        // Create a new batch context
-        BatchContext newContext = new(batchFilePath, arguments, _echoState);
+        // Create a new batch context with the provided reader
+        BatchContext newContext = new(batchFilePath, arguments, _echoState, reader, _environment);
 
         // If there's an existing context, chain it (for nested batch files via CALL)
         if (_currentContext is not null) {
@@ -316,8 +450,15 @@ public sealed class BatchProcessor {
     }
 
     /// <summary>
-    /// Expands parameter placeholders (%0-%9) in the command line.
+    /// Expands parameter placeholders (%0-%9) and environment variables (%NAME%) in the command line.
     /// </summary>
+    /// <remarks>
+    /// Based on DOSBox staging's ExpandedBatchLine() method.
+    /// Supports:
+    /// - %0-%9 for batch file parameters
+    /// - %% for literal percent sign
+    /// - %NAME% for environment variables
+    /// </remarks>
     private static string ExpandParameters(string line, BatchContext context) {
         StringBuilder result = new(line.Length);
         int i = 0;
@@ -339,6 +480,18 @@ public sealed class BatchProcessor {
                 if (next == '%') {
                     result.Append('%');
                     i += 2;
+                    continue;
+                }
+
+                // Check for %NAME% environment variable
+                int closingPercent = line.IndexOf('%', i + 1);
+                if (closingPercent > i + 1) {
+                    string varName = line[(i + 1)..closingPercent];
+                    string? envValue = context.GetEnvironmentValue(varName);
+                    if (envValue is not null) {
+                        result.Append(envValue);
+                    }
+                    i = closingPercent + 1;
                     continue;
                 }
             }
@@ -540,8 +693,12 @@ public sealed class BatchProcessor {
 /// <summary>
 /// Represents the context of a batch file being processed.
 /// </summary>
+/// <remarks>
+/// Based on DOSBox staging's BatchFile class pattern.
+/// </remarks>
 internal sealed class BatchContext : IDisposable {
-    private readonly StreamReader _reader;
+    private readonly IBatchLineReader _reader;
+    private readonly IBatchEnvironment _environment;
     private string[] _parameters;
     private int _shiftOffset = 0;
 
@@ -566,9 +723,14 @@ internal sealed class BatchContext : IDisposable {
     /// <param name="filePath">Path to the batch file.</param>
     /// <param name="arguments">Command line arguments.</param>
     /// <param name="currentEchoState">Current echo state to save.</param>
-    public BatchContext(string filePath, string[] arguments, bool currentEchoState) {
+    /// <param name="reader">The line reader for batch file content.</param>
+    /// <param name="environment">The environment for variable expansion.</param>
+    public BatchContext(string filePath, string[] arguments, bool currentEchoState,
+                        IBatchLineReader reader, IBatchEnvironment environment) {
         FilePath = filePath;
         SavedEchoState = currentEchoState;
+        _reader = reader;
+        _environment = environment;
 
         // Build parameters array: %0 is the batch file name, %1-%9 are arguments
         _parameters = new string[10];
@@ -580,11 +742,21 @@ internal sealed class BatchContext : IDisposable {
         for (int i = arguments.Length + 1; i < 10; i++) {
             _parameters[i] = string.Empty;
         }
+    }
 
-        // Open the file for reading using ASCII encoding
-        // Note: For full DOS compatibility, CP437 would be preferred but requires
-        // registering System.Text.Encoding.CodePages provider at startup
-        _reader = new StreamReader(filePath, Encoding.ASCII);
+    /// <summary>
+    /// Initializes a new batch context using the host file system.
+    /// </summary>
+    /// <param name="filePath">Path to the batch file.</param>
+    /// <param name="arguments">Command line arguments.</param>
+    /// <param name="currentEchoState">Current echo state to save.</param>
+    /// <remarks>
+    /// This constructor is kept for backward compatibility with existing tests.
+    /// For full DOS integration, use the constructor with IBatchLineReader.
+    /// </remarks>
+    public BatchContext(string filePath, string[] arguments, bool currentEchoState)
+        : this(filePath, arguments, currentEchoState,
+               new HostFileLineReader(filePath), EmptyBatchEnvironment.Instance) {
     }
 
     /// <summary>
@@ -624,8 +796,9 @@ internal sealed class BatchContext : IDisposable {
     /// <returns>True if found, false otherwise.</returns>
     public bool SeekToLabel(string label) {
         // Reset to beginning of file
-        _reader.BaseStream.Seek(0, SeekOrigin.Begin);
-        _reader.DiscardBufferedData();
+        if (!_reader.Reset()) {
+            return false;
+        }
 
         string labelToFind = label.ToUpperInvariant();
 
@@ -660,6 +833,15 @@ internal sealed class BatchContext : IDisposable {
                 return true;
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the environment value for a variable name.
+    /// </summary>
+    /// <param name="name">Variable name (case-insensitive).</param>
+    /// <returns>The value, or null if not found.</returns>
+    public string? GetEnvironmentValue(string name) {
+        return _environment.GetEnvironmentValue(name);
     }
 
     /// <summary>
