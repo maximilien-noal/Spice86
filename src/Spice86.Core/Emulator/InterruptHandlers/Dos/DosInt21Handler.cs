@@ -426,7 +426,7 @@ public class DosInt21Handler : InterruptHandler {
     /// AL = ASCII code of the input character
     /// </summary>
     /// <remarks>
-    /// This function waits for keyboard input (via INT 16h AH=00h pattern in WriteAssemblyInRam).
+    /// This function waits for keyboard input (via INT 16h AH=01h polling loop in WriteAssemblyInRam).
     /// When a key is available, it reads the character and echoes it to stdout.
     /// TODO: Check for Ctrl-C and Ctrl-Break in STDIN, and call INT23H if it happens.
     /// </remarks>
@@ -1167,9 +1167,8 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0xFC);
         memoryAsmWriter.WriteUInt8(0x01);
         
-        // JZ L_CHAR_INPUT (+8: skip next cmp+jz and callback+iret)
-        // Size calculation: cmp ah, imm8 = 3 bytes, jz = 2 bytes, callback = 4 bytes, iret = 1 byte
-        // Total to skip: 3 + 2 + 4 + 1 = 10, but jz is relative to NEXT instruction
+        // JZ L_CHAR_INPUT - skip to L_CHAR_INPUT section
+        // Bytes to skip: CMP AH,0Ah(3) + JZ(2) + callback(4) + IRET(1) = 10 bytes
         memoryAsmWriter.WriteJz(10);
 
         // CMP AH, 0Ah (BufferedInput)
@@ -1177,49 +1176,57 @@ public class DosInt21Handler : InterruptHandler {
         memoryAsmWriter.WriteUInt8(0xFC);
         memoryAsmWriter.WriteUInt8(0x0A);
         
-        // JZ L_BUFFERED_INPUT (+5 to skip callback + iret, then handled separately)
-        // This will jump to the L_BUFFERED_INPUT section after L_KEY_READY
-        memoryAsmWriter.WriteJz(17); // Skip callback(4) + iret(1) + push(1) + wait loop(8) + pop(1) + callback(4) + iret(1) - 3 = 17
+        // JZ L_BUFFERED_INPUT - skip to L_BUFFERED_INPUT section (at the end)
+        // Bytes to skip: callback(4) + IRET(1) + PUSH(1) + MOV(2) + INT16(2) + JNZ(2) + INT09(2) + JMP(2) + POP(1) + callback(4) + IRET(1) = 22 bytes
+        // But we need to skip past L_KEY_READY's callback+iret, so: 4+1 + 1+2+2+2+2+2 + 1+4+1 = 22 bytes
+        // Wait, the JZ offset is calculated from after JZ instruction ends, so:
+        // From end of JZ to L_BUFFERED_INPUT: callback(4)+IRET(1)+PUSH(1)+wait_loop(8)+POP(1)+callback(4)+IRET(1) = 20 bytes
+        // But we want to skip callback+IRET, then the whole CHAR_INPUT block, and land at BUFFERED_INPUT:
+        // callback(4)+IRET(1) + PUSH(1) + MOV(2)+INT(2)+JNZ(2)+INT(2)+JMP(2) + POP(1)+callback(4)+IRET(1) = 22 - 5 (for callback+iret at start) = 17
+        memoryAsmWriter.WriteJz(17);
 
-        // L_DEFAULT: callback Run then IRET
+        // L_DEFAULT: callback Run then IRET (5 bytes total)
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
         memoryAsmWriter.WriteIret();
 
-        // L_CHAR_INPUT:
+        // L_CHAR_INPUT: (1 byte)
         // PUSH AX - save original AX with function code (01h)
         memoryAsmWriter.WriteUInt8(0x50);
         
-        // L_WAIT_KEY: (this is shared between char input and buffered input)
-        // MOV AH, 01h - check keyboard status
+        // L_WAIT_KEY: (shared keyboard polling loop - 10 bytes total)
+        // MOV AH, 01h - check keyboard status (2 bytes)
         memoryAsmWriter.WriteUInt8(0xB4);
         memoryAsmWriter.WriteUInt8(0x01);
         
-        // INT 16h (check keyboard status - ZF=0 when key present)
+        // INT 16h - check keyboard status, ZF=0 when key present (2 bytes)
         memoryAsmWriter.WriteInt(0x16);
         
-        // JNZ L_KEY_READY (+4: skip INT 09h and JMP short)
+        // JNZ L_KEY_READY - skip INT 09h and JMP if key ready (2 bytes)
+        // Bytes to skip: INT09(2) + JMP(2) = 4 bytes
         memoryAsmWriter.WriteJnz(4);
         
-        // INT 09h - invoke hardware keyboard ISR to fetch a key
+        // INT 09h - invoke hardware keyboard ISR to fetch a key (2 bytes)
         memoryAsmWriter.WriteInt(0x09);
         
-        // JMP short L_WAIT_KEY (-8: back to MOV AH, 01h)
+        // JMP short L_WAIT_KEY - back to poll again (2 bytes)
+        // Bytes back: JMP(2) + INT09(2) + JNZ(2) + INT16(2) = -8 bytes (to start of MOV AH,01h)
         memoryAsmWriter.WriteJumpShort(-8);
 
-        // L_KEY_READY:
-        // POP AX - restore original AX with function code
+        // L_KEY_READY: (6 bytes total)
+        // POP AX - restore original AX with function code (1 byte)
         memoryAsmWriter.WriteUInt8(0x58);
         
-        // Callback to C# handler (uses auto-allocated callback number)
+        // Callback to C# handler - uses auto-allocated callback number (4 bytes)
         memoryAsmWriter.RegisterAndWriteCallback(Run);
+        // IRET (1 byte)
         memoryAsmWriter.WriteIret();
 
-        // L_BUFFERED_INPUT:
-        // PUSH AX - save original AX with function code (0Ah)
+        // L_BUFFERED_INPUT: (3 bytes total)
+        // PUSH AX - save original AX with function code (0Ah) (1 byte)
         memoryAsmWriter.WriteUInt8(0x50);
         
-        // JMP short L_WAIT_KEY (-15: back to the wait loop)
-        // Distance: push(1) back + iret(1) + callback(4) + pop(1) + jmp(2) + int09(2) + jnz(2) + int16(2) = 15
+        // JMP short L_WAIT_KEY - jump back to shared polling loop (2 bytes)
+        // Bytes back: PUSH(1) + IRET(1) + callback(4) + POP(1) + JMP(2) + INT09(2) + JNZ(2) + INT16(2) = -15 bytes
         memoryAsmWriter.WriteJumpShort(-15);
 
         return handlerAddress;
