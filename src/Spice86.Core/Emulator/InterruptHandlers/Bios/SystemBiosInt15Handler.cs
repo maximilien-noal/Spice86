@@ -427,51 +427,19 @@ public class SystemBiosInt15Handler : InterruptHandler {
     }
 
     /// <summary>
-    /// INT 15h, AH=90h - OS HOOK - DEVICE BUSY
-    /// <para>
-    /// This function is called by device drivers to notify the OS that a device is busy.
-    /// It allows the OS to perform task switching or other operations while waiting for
-    /// the device to become ready.
-    /// </para><br/>
-    /// <b>Inputs:</b><br/>
-    /// AH = 90h<br/>
-    /// AL = device type (00h-7Fh are serially reusable, 80h-BFh are reentrant, C0h-FFh are
-    ///      wait-only calls with no corresponding Device Post)<br/>
-    /// ES:BX = pointer to request block for device types 80h-BFh<br/>
-    /// <b>Outputs:</b><br/>
-    /// CF clear if wait was successful<br/>
-    /// CF set if the wait did not occur<br/>
-    /// AH = 00h<br/>
+    /// INT 15h, AH=90h - OS HOOK - DEVICE BUSY. Clears CF and sets AH=0.
     /// </summary>
     /// <param name="calledFromVm">Whether this function is called directly from the VM.</param>
     public void DeviceBusy(bool calledFromVm) {
-        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("INT 15h AH=90h: Device Busy called with device type AL={DeviceType:X2}", State.AL);
-        }
         SetCarryFlag(false, calledFromVm);
         State.AH = 0;
     }
 
     /// <summary>
-    /// INT 15h, AH=91h - OS HOOK - DEVICE POST
-    /// <para>
-    /// This function is called by device interrupt handlers to notify the OS that
-    /// a device has completed its operation. The OS can use this to resume any
-    /// processes that were waiting on the device.
-    /// </para><br/>
-    /// <b>Inputs:</b><br/>
-    /// AH = 91h<br/>
-    /// AL = device type (same values as for Device Busy, except C0h-FFh are invalid)<br/>
-    /// ES:BX = pointer to request block for device types 80h-BFh<br/>
-    /// <b>Outputs:</b><br/>
-    /// CF clear if operation was successful<br/>
-    /// AH = 00h<br/>
+    /// INT 15h, AH=91h - OS HOOK - DEVICE POST. Clears CF and sets AH=0.
     /// </summary>
     /// <param name="calledFromVm">Whether this function is called directly from the VM.</param>
     public void DevicePost(bool calledFromVm) {
-        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("INT 15h AH=91h: Device Post called with device type AL={DeviceType:X2}", State.AL);
-        }
         SetCarryFlag(false, calledFromVm);
         State.AH = 0;
     }
