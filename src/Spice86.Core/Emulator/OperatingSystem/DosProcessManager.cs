@@ -637,6 +637,25 @@ public class DosProcessManager : DosFileLoader {
             _loggerService.Debug("LoadFile: Resolved DOS path: {DosPath}", dosPath);
         }
 
+        // Set the current directory to the directory containing the executable.
+        // This is critical for programs like VB3/QuickBASIC that look for their runtime
+        // (e.g., BRUN30.EXE) in the current directory or relative to their own location.
+        // This matches DOSBox and real DOS behavior where the current directory is set
+        // to the program's directory when launched.
+        // Note: We use custom DOS path parsing because Path.GetDirectoryName doesn't
+        // correctly handle DOS-style paths (e.g., "C:\FILE.EXE") on Linux.
+        string dosDirectory = ExtractDosDirectory(dosPath);
+        if (!string.IsNullOrEmpty(dosDirectory)) {
+            DosFileOperationResult setDirResult = _fileManager.SetCurrentDir(dosDirectory);
+            if (setDirResult.IsError && _loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning(
+                    "LoadFile: Failed to set current directory to '{Directory}'",
+                    dosDirectory);
+            } else if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+                _loggerService.Debug("LoadFile: Set current directory to '{Directory}'", dosDirectory);
+            }
+        }
+
         // Call the EXEC API - this is how COMMAND.COM launches programs
         // The EXEC method handles all the PSP setup, environment block allocation,
         // and program loading internally
@@ -846,5 +865,39 @@ public class DosProcessManager : DosFileLoader {
     /// <returns>A uint representing the far pointer in offset:segment format.</returns>
     public static uint MakeFarPointer(ushort segment, ushort offset) {
         return ((uint)segment << 16) | offset;
+    }
+
+    /// <summary>
+    /// Extracts the directory portion from a DOS path.
+    /// </summary>
+    /// <param name="dosPath">A DOS path like "C:\FOLDER\FILE.EXE" or "C:\FILE.EXE".</param>
+    /// <returns>
+    /// The directory portion including the trailing backslash (e.g., "C:\" or "C:\FOLDER\"),
+    /// or an empty string if no directory component exists.
+    /// </returns>
+    /// <remarks>
+    /// This method is needed because Path.GetDirectoryName doesn't
+    /// correctly handle DOS-style paths on Linux (it returns empty string for "C:\FILE.EXE").
+    /// </remarks>
+    private static string ExtractDosDirectory(string dosPath) {
+        // Normalize to backslashes
+        string normalized = dosPath.Replace('/', '\\');
+        
+        // Find the last backslash
+        int lastBackslash = normalized.LastIndexOf('\\');
+        
+        if (lastBackslash < 0) {
+            // No backslash - no directory part (just a filename)
+            return "";
+        }
+        
+        // Check for drive letter pattern at the root (e.g., "C:\file.exe")
+        // In this case, the directory is "C:\"
+        if (lastBackslash == 2 && normalized.Length > 1 && normalized[1] == ':') {
+            return normalized[..3]; // "C:\"
+        }
+        
+        // Normal case - directory is everything up to and including the last backslash
+        return normalized[..(lastBackslash + 1)];
     }
 }
