@@ -896,7 +896,7 @@ public class DosProcessManager : DosFileLoader {
         uint parentPspAddress = MemoryUtils.ToPhysicalAddress(parentPspSegment, 0);
         DosProgramSegmentPrefix parentPsp = new(_memory, parentPspAddress);
         
-        // Copy file handle table from parent (create child PSP flag = true)
+        // Copy file handle table from parent
         CopyFileTableFromParent(childPsp, parentPsp);
         
         // Copy command tail from parent (offset 0x80)
@@ -914,8 +914,11 @@ public class DosProcessManager : DosFileLoader {
         // Inherit stack pointer from parent
         childPsp.StackPointer = parentPsp.StackPointer;
         
-        // Set the size (NextSegment = childSegment + sizeInParagraphs)
-        childPsp.NextSegment = (ushort)(childSegment + sizeInParagraphs);
+        // Note: We intentionally do NOT register this child PSP with _pspTracker.PushPspSegment().
+        // INT 21h/55h is used by debuggers and overlay managers that manage their own PSP tracking.
+        // The handler calls SetCurrentPspSegment() to update the SDA's current PSP, but the PSP
+        // is not added to the tracker's internal list. This matches DOSBox behavior where 
+        // DOS_ChildPSP() creates the PSP but the caller is responsible for managing PSP tracking.
         
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug(

@@ -627,7 +627,7 @@ public class DosInt21IntegrationTests {
             
             // Check AL = 0xF0 (destroyed value per DOSBox)
             0x3C, 0xF0,             // cmp al, 0F0h
-            0x0F, 0x85, 0x35, 0x00, // jne failed (near jump, +53 bytes from here)
+            0x0F, 0x85, 0x3E, 0x00, // jne failed (near jump)
             
             // Get current PSP to verify it changed to 0x2000
             0xB4, 0x62,             // mov ah, 62h
@@ -635,7 +635,7 @@ public class DosInt21IntegrationTests {
             
             // Check if current PSP is 0x2000
             0x81, 0xFB, 0x00, 0x20, // cmp bx, 2000h
-            0x0F, 0x85, 0x29, 0x00, // jne failed (near jump)
+            0x0F, 0x85, 0x32, 0x00, // jne failed (near jump)
             
             // Load new PSP segment to verify its contents
             0x8E, 0xC3,             // mov es, bx - ES = child PSP (0x2000)
@@ -643,16 +643,21 @@ public class DosInt21IntegrationTests {
             // Check INT 20h instruction at offset 0 (0xCD, 0x20)
             0x26, 0x8A, 0x06, 0x00, 0x00,  // mov al, es:[0000h]
             0x3C, 0xCD,             // cmp al, 0CDh
-            0x0F, 0x85, 0x1A, 0x00, // jne failed
+            0x0F, 0x85, 0x23, 0x00, // jne failed
             
             0x26, 0x8A, 0x06, 0x01, 0x00,  // mov al, es:[0001h]
             0x3C, 0x20,             // cmp al, 20h
-            0x0F, 0x85, 0x0F, 0x00, // jne failed
+            0x0F, 0x85, 0x18, 0x00, // jne failed
             
             // Check parent PSP segment at offset 0x16 matches original PSP (in BP)
             0x26, 0x8B, 0x1E, 0x16, 0x00,  // mov bx, es:[0016h] - parent PSP
             0x39, 0xEB,             // cmp bx, bp - compare with original PSP
-            0x0F, 0x85, 0x04, 0x00, // jne failed
+            0x0F, 0x85, 0x0D, 0x00, // jne failed
+            
+            // Check environment segment at offset 0x2C matches original (in DI)
+            0x26, 0x8B, 0x1E, 0x2C, 0x00,  // mov bx, es:[002Ch] - env segment
+            0x39, 0xFB,             // cmp bx, di - compare with original env
+            0x0F, 0x85, 0x02, 0x00, // jne failed
             
             // Success
             0xB0, 0x00,             // mov al, TestResult.Success
