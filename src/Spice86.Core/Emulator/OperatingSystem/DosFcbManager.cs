@@ -660,8 +660,6 @@ public class DosFcbManager {
         return (ushort)((seconds & 0x1F) | ((minutes & 0x3F) << 5) | ((hours & 0x1F) << 11));
     }
 
-    #region FCB Find First/Next
-
     /// <summary>
     /// Offset of the reserved area in the FCB structure, used for storing search state.
     /// </summary>
@@ -1038,6 +1036,4 @@ public class DosFcbManager {
         uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
         return _memory.UInt32[dtaAddress + reservedOffset];
     }
-
-    #endregion
 }
