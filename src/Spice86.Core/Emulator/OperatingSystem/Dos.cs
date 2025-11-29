@@ -196,7 +196,7 @@ public sealed class Dos {
         }
 
         DosSwappableDataArea = new(_memory,
-            MemoryUtils.ToPhysicalAddress(0xb2, 0));
+            MemoryUtils.ToPhysicalAddress(DosSwappableDataArea.BaseSegment, 0));
 
         DosStringDecoder dosStringDecoder = new(memory, state);
 
