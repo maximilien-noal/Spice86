@@ -5,6 +5,7 @@ using Serilog.Events;
 using Spice86.Shared.Interfaces;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -386,6 +387,10 @@ public sealed class BatchProcessor {
             return BatchCommand.Exit();
         }
 
+        if (upperCommand == "FOR") {
+            return HandleForCommand(arguments);
+        }
+
         // External command - execute program
         return BatchCommand.ExecuteProgram(command, arguments);
     }
@@ -687,6 +692,124 @@ public sealed class BatchProcessor {
         }
         return BatchCommand.Shift();
     }
+
+    /// <summary>
+    /// Handles the FOR command.
+    /// FOR %variable IN (set) DO command
+    /// </summary>
+    /// <remarks>
+    /// Based on DOSBox staging's CMD_FOR implementation.
+    /// The FOR command iterates over a set of values, substituting each value
+    /// for the variable in the command and executing it.
+    /// </remarks>
+    private BatchCommand HandleForCommand(string arguments) {
+        // Parse: %variable IN (set) DO command
+        string trimmed = arguments.Trim();
+        
+        // Find the variable (must start with %)
+        int firstSpace = trimmed.IndexOf(' ');
+        if (firstSpace < 0 || !trimmed.StartsWith('%') || trimmed.Length < 2) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing variable: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        string variable = trimmed[..firstSpace].Trim();
+        string rest = trimmed[firstSpace..].Trim();
+
+        // Check for IN keyword
+        if (!rest.StartsWith("IN ", StringComparison.OrdinalIgnoreCase) &&
+            !rest.StartsWith("IN(", StringComparison.OrdinalIgnoreCase)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing IN keyword: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        // Skip "IN" and optional whitespace
+        int inIndex = rest.IndexOf("IN", StringComparison.OrdinalIgnoreCase);
+        rest = rest[(inIndex + 2)..].TrimStart();
+
+        // Find the set in parentheses
+        if (!rest.StartsWith('(')) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing opening parenthesis: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        int closeParenIndex = rest.IndexOf(')');
+        if (closeParenIndex < 0) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing closing parenthesis: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        string setContent = rest[1..closeParenIndex].Trim();
+        rest = rest[(closeParenIndex + 1)..].Trim();
+
+        // Check for DO keyword
+        if (!rest.StartsWith("DO ", StringComparison.OrdinalIgnoreCase) &&
+            !rest.StartsWith("DO\t", StringComparison.OrdinalIgnoreCase)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing DO keyword: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        // Get the command after DO
+        string commandTemplate = rest[3..].TrimStart();
+
+        if (string.IsNullOrWhiteSpace(commandTemplate)) {
+            if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+                _loggerService.Warning("BatchProcessor: Invalid FOR syntax - missing command after DO: {Arguments}", arguments);
+            }
+            return BatchCommand.Empty();
+        }
+
+        // Parse the set (split by spaces, commas, semicolons, equals, tabs)
+        List<string> setItems = ParseForSet(setContent);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+            _loggerService.Debug("BatchProcessor: FOR {Variable} IN ({Set}) DO {Command}",
+                variable, string.Join(", ", setItems), commandTemplate);
+        }
+
+        return BatchCommand.For(variable, setItems.ToArray(), commandTemplate);
+    }
+
+    /// <summary>
+    /// Parses the set content for a FOR command.
+    /// </summary>
+    /// <remarks>
+    /// Items can be separated by spaces, commas, semicolons, equals, or tabs.
+    /// </remarks>
+    private static List<string> ParseForSet(string setContent) {
+        List<string> items = new();
+        StringBuilder current = new();
+        bool inQuote = false;
+
+        foreach (char c in setContent) {
+            if (c == '"') {
+                inQuote = !inQuote;
+            } else if (!inQuote && (c == ' ' || c == ',' || c == ';' || c == '=' || c == '\t')) {
+                if (current.Length > 0) {
+                    items.Add(current.ToString());
+                    current.Clear();
+                }
+            } else {
+                current.Append(c);
+            }
+        }
+
+        if (current.Length > 0) {
+            items.Add(current.ToString());
+        }
+
+        return items;
+    }
 }
 
 /// <summary>
@@ -961,6 +1084,48 @@ public readonly struct BatchCommand {
     /// </summary>
     public static BatchCommand Exit() =>
         new(BatchCommandType.Exit);
+
+    /// <summary>
+    /// Creates a FOR loop command.
+    /// </summary>
+    /// <param name="variable">The variable name (e.g., "%C").</param>
+    /// <param name="set">The set of values to iterate over.</param>
+    /// <param name="commandTemplate">The command template with variable placeholder.</param>
+    public static BatchCommand For(string variable, string[] set, string commandTemplate) {
+        // Encode the set as a semicolon-separated string in Arguments
+        // The variable is in Value, command template is appended after null separator
+        string encodedSet = string.Join(";", set);
+        return new(BatchCommandType.For, variable, encodedSet + "\0" + commandTemplate);
+    }
+
+    /// <summary>
+    /// Gets the FOR command's set items (only valid for For command type).
+    /// </summary>
+    public string[] GetForSet() {
+        if (Type != BatchCommandType.For) {
+            return Array.Empty<string>();
+        }
+        int nullIndex = Arguments.IndexOf('\0');
+        if (nullIndex < 0) {
+            return Array.Empty<string>();
+        }
+        string setString = Arguments[..nullIndex];
+        return setString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// Gets the FOR command's command template (only valid for For command type).
+    /// </summary>
+    public string GetForCommand() {
+        if (Type != BatchCommandType.For) {
+            return string.Empty;
+        }
+        int nullIndex = Arguments.IndexOf('\0');
+        if (nullIndex < 0 || nullIndex >= Arguments.Length - 1) {
+            return string.Empty;
+        }
+        return Arguments[(nullIndex + 1)..];
+    }
 }
 
 /// <summary>
@@ -1004,5 +1169,8 @@ public enum BatchCommandType {
     Pause,
 
     /// <summary>EXIT batch file.</summary>
-    Exit
+    Exit,
+
+    /// <summary>FOR loop command.</summary>
+    For
 }

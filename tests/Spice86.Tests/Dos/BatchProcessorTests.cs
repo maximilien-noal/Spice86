@@ -841,4 +841,110 @@ public class BatchProcessorTests : IDisposable {
     }
 
     #endregion
+
+    #region FOR Command Tests
+
+    [Fact]
+    public void ParseCommand_ForWithValidSyntax_ReturnsForCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %C IN (one two three) DO echo %C");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.For);
+        cmd.Value.Should().Be("%C");
+        cmd.GetForSet().Should().BeEquivalentTo(["one", "two", "three"]);
+        cmd.GetForCommand().Should().Be("echo %C");
+    }
+
+    [Fact]
+    public void ParseCommand_ForWithCommaDelimiters_ReturnsForCommandWithCorrectSet() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %X IN (a,b,c) DO dir %X");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.For);
+        cmd.Value.Should().Be("%X");
+        cmd.GetForSet().Should().BeEquivalentTo(["a", "b", "c"]);
+        cmd.GetForCommand().Should().Be("dir %X");
+    }
+
+    [Fact]
+    public void ParseCommand_ForMissingVariable_ReturnsEmptyCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR IN (one two) DO echo");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Empty);
+    }
+
+    [Fact]
+    public void ParseCommand_ForMissingIn_ReturnsEmptyCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %C (one two) DO echo");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Empty);
+    }
+
+    [Fact]
+    public void ParseCommand_ForMissingParentheses_ReturnsEmptyCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %C IN one two DO echo");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Empty);
+    }
+
+    [Fact]
+    public void ParseCommand_ForMissingDo_ReturnsEmptyCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %C IN (one two) echo");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Empty);
+    }
+
+    [Fact]
+    public void ParseCommand_ForMissingCommand_ReturnsEmptyCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("FOR %C IN (one two) DO");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Empty);
+    }
+
+    [Fact]
+    public void ParseCommand_ForCaseInsensitive_ReturnsForCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("for %c in (x y z) do echo %c");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.For);
+    }
+
+    #endregion
 }
