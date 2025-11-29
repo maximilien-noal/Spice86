@@ -25,13 +25,6 @@ using System.Text;
 /// </remarks>
 public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
-    
-    /// <summary>
-    /// Flag indicating that a file handle should not be inherited by child processes.
-    /// This corresponds to DOS_NOT_INHERIT in DOSBox and bit 7 of the open mode byte.
-    /// </summary>
-    private const byte NoInheritFlag = 0x80;
-    
     private readonly DosProgramSegmentPrefixTracker _pspTracker;
     private readonly DosMemoryManager _memoryManager;
     private readonly DosFileManager _fileManager;
@@ -1018,7 +1011,7 @@ public class DosProcessManager : DosFileLoader {
     /// </summary>
     /// <remarks>
     /// Based on DOSBox DOS_PSP::CopyFileTable() behavior when createchildpsp is true.
-    /// Files marked with the no-inherit flag (0x80) in their Flags property will not be
+    /// Files marked with <see cref="FileAccessMode.Private"/> in their Flags property will not be
     /// inherited by the child process - they get 0xFF (unused) instead.
     /// </remarks>
     private void CopyFileTableFromParent(DosProgramSegmentPrefix childPsp, DosProgramSegmentPrefix parentPsp) {
@@ -1031,10 +1024,10 @@ public class DosProcessManager : DosFileLoader {
                 continue;
             }
             
-            // Check if the file was opened with the no-inherit flag
+            // Check if the file was opened with the no-inherit flag (FileAccessMode.Private)
             if (parentHandle < _fileManager.OpenFiles.Length) {
                 VirtualFileBase? file = _fileManager.OpenFiles[parentHandle];
-                if (file is DosFile dosFile && (dosFile.Flags & NoInheritFlag) != 0) {
+                if (file is DosFile dosFile && (dosFile.Flags & (byte)FileAccessMode.Private) != 0) {
                     // File has no-inherit flag set, don't copy to child
                     childPsp.Files[i] = 0xFF;
                     continue;
