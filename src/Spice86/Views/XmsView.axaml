@@ -18,9 +18,16 @@
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Driver Name:" Margin="0,0,10,0" />
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DriverName}" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="XMS Version:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding XmsVersion}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}.{1:D2}">
+                                    <Binding Path="XmsMajorVersion" />
+                                    <Binding Path="XmsMinorVersion" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Base Address:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding XmsBaseAddress}" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding XmsBaseAddress, StringFormat='0x{0:X8}'}" />
                     </Grid>
                 </StackPanel>
             </Border>

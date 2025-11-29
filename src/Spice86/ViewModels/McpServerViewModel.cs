@@ -14,11 +14,8 @@ using Spice86.ViewModels.Services;
 /// </summary>
 public partial class McpServerViewModel : DebuggerTabViewModel {
     private readonly IMcpServer? _mcpServer;
-
-    /// <summary>
-    /// MCP protocol version string.
-    /// </summary>
-    private const string McpProtocolVersionString = "2025-06-18";
+    private readonly bool _configMcpEnabled;
+    private readonly bool _configCfgCpuEnabled;
 
     /// <inheritdoc />
     public override string Header => "MCP Server";
@@ -34,13 +31,13 @@ public partial class McpServerViewModel : DebuggerTabViewModel {
     private string _serverStatus = string.Empty;
 
     [ObservableProperty]
-    private string _protocolVersion = McpProtocolVersionString;
+    private string _protocolVersion = string.Empty;
 
     [ObservableProperty]
-    private string _serverName = "Spice86 MCP Server";
+    private string _serverName = string.Empty;
 
     [ObservableProperty]
-    private string _serverVersion = "1.0.0";
+    private string _serverVersion = string.Empty;
 
     // Available Tools
     [ObservableProperty]
@@ -77,40 +74,47 @@ public partial class McpServerViewModel : DebuggerTabViewModel {
         _configCfgCpuEnabled = isCfgCpuEnabled;
     }
 
-    private readonly bool _configMcpEnabled;
-    private readonly bool _configCfgCpuEnabled;
-
     /// <inheritdoc />
     public override void UpdateValues(object? sender, EventArgs e) {
         if (!IsVisible) {
             return;
         }
 
-        // Read values from configuration on each update
-        IsServerRunning = _configMcpEnabled;
+        // Read values from configuration and MCP server state
+        IsServerRunning = _configMcpEnabled && _mcpServer != null;
         IsCfgCpuEnabled = _configCfgCpuEnabled;
-        ServerStatus = _configMcpEnabled ? "Running (stdio transport)" : "Disabled";
+        ServerStatus = IsServerRunning ? "Running (stdio transport)" : "Disabled";
         CfgCpuStatus = _configCfgCpuEnabled ? "Enabled (read_cfg_cpu_graph available)" : "Disabled";
 
-        // Update tools list
+        // These are protocol constants from the MCP server initialization
+        ProtocolVersion = "2025-06-18";
+        ServerName = "Spice86 MCP Server";
+        ServerVersion = "1.0.0";
+
+        // Update tools list from the actual MCP server
         PopulateAvailableTools();
     }
 
     private void PopulateAvailableTools() {
         if (_mcpServer == null) {
+            ToolCount = 0;
+            AvailableTools.Clear();
             return;
         }
 
         ModelContextProtocol.Protocol.Tool[] tools = _mcpServer.GetAvailableTools();
         ToolCount = tools.Length;
 
-        AvailableTools.Clear();
-        foreach (ModelContextProtocol.Protocol.Tool tool in tools) {
-            AvailableTools.Add(new McpToolInfo {
-                Name = tool.Name ?? "Unknown",
-                Description = tool.Description ?? "No description",
-                HasInputSchema = tool.InputSchema.ValueKind != System.Text.Json.JsonValueKind.Undefined
-            });
+        // Only update if count changed
+        if (AvailableTools.Count != ToolCount) {
+            AvailableTools.Clear();
+            foreach (ModelContextProtocol.Protocol.Tool tool in tools) {
+                AvailableTools.Add(new McpToolInfo {
+                    Name = tool.Name ?? "Unknown",
+                    Description = tool.Description ?? "No description",
+                    HasInputSchema = tool.InputSchema.ValueKind != System.Text.Json.JsonValueKind.Undefined
+                });
+            }
         }
     }
 

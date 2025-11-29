@@ -21,12 +21,15 @@ public partial class EmsViewModel : DebuggerTabViewModel {
     /// <inheritdoc />
     public override string? IconKey => "Memory";
 
-    // EMS Version and Status
+    // EMS Version and Status - EMS 4.0 is the standard version (from EmsStatusCodes and LIM EMS 4.0 spec)
     [ObservableProperty]
-    private string _emsVersion = string.Empty;
+    private byte _emsMajorVersion;
 
     [ObservableProperty]
-    private string _pageFrameSegment = string.Empty;
+    private byte _emsMinorVersion;
+
+    [ObservableProperty]
+    private ushort _pageFrameSegment;
 
     // Memory Statistics
     [ObservableProperty]
@@ -73,9 +76,10 @@ public partial class EmsViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // Update EMS configuration from the Core
-        EmsVersion = "4.0"; // EMS 4.0 is the standard version emulated
-        PageFrameSegment = $"0x{ExpandedMemoryManager.EmmPageFrameSegment:X4}";
+        // Update EMS configuration from the Core - EMS 4.0 as per LIM EMS spec
+        EmsMajorVersion = 4;
+        EmsMinorVersion = 0;
+        PageFrameSegment = ExpandedMemoryManager.EmmPageFrameSegment;
         TotalPages = EmmMemory.TotalPages;
         TotalMemory = FormatMemorySize(EmmMemory.TotalPages * ExpandedMemoryManager.EmmPageSize);
 

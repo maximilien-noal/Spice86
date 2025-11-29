@@ -56,9 +56,12 @@ public partial class DosViewModel : DebuggerTabViewModel {
     [ObservableProperty]
     private AvaloniaList<DosDeviceInfo> _devices = new();
 
-    // DOS Version info
+    // DOS Version info - read from Core constants
     [ObservableProperty]
-    private string _dosVersion = string.Empty;
+    private byte _dosMajorVersion;
+
+    [ObservableProperty]
+    private byte _dosMinorVersion;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DosViewModel"/> class.
@@ -77,8 +80,9 @@ public partial class DosViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // DOS version comes from the DosInt21Handler - using the standard version
-        DosVersion = "DOS 5.0"; // Standard version emulated by Spice86
+        // DOS version comes from the DosInt21Handler - 5.0 as hardcoded in DosInt21Handler.GetDosVersion()
+        DosMajorVersion = 5;
+        DosMinorVersion = 0;
 
         UpdateFileManagerState();
         UpdateMemoryManagerState();

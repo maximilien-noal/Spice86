@@ -28,10 +28,13 @@ public partial class XmsViewModel : DebuggerTabViewModel {
 
     // XMS Version and Status
     [ObservableProperty]
-    private string _xmsVersion = string.Empty;
+    private byte _xmsMajorVersion;
 
     [ObservableProperty]
-    private string _driverName = ExtendedMemoryManager.XmsIdentifier;
+    private byte _xmsMinorVersion;
+
+    [ObservableProperty]
+    private string _driverName = string.Empty;
 
     // Memory Statistics
     [ObservableProperty]
@@ -44,7 +47,7 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     private string _largestFreeBlock = string.Empty;
 
     [ObservableProperty]
-    private string _xmsBaseAddress = string.Empty;
+    private uint _xmsBaseAddress;
 
     // A20 Line State
     [ObservableProperty]
@@ -93,9 +96,11 @@ public partial class XmsViewModel : DebuggerTabViewModel {
         }
 
         // Update XMS configuration from the Core
-        XmsVersion = $"{(ExtendedMemoryManager.XmsVersion >> 8) & 0xFF}.{ExtendedMemoryManager.XmsVersion & 0xFF:D2}";
+        XmsMajorVersion = (byte)((ExtendedMemoryManager.XmsVersion >> 8) & 0xFF);
+        XmsMinorVersion = (byte)(ExtendedMemoryManager.XmsVersion & 0xFF);
+        DriverName = ExtendedMemoryManager.XmsIdentifier;
         TotalXmsMemory = FormatMemorySize(ExtendedMemoryManager.XmsMemorySize * 1024L);
-        XmsBaseAddress = $"0x{ExtendedMemoryManager.XmsBaseAddress:X8}";
+        XmsBaseAddress = ExtendedMemoryManager.XmsBaseAddress;
 
         UpdateMemoryStatistics();
         UpdateA20State();
@@ -112,9 +117,8 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     }
 
     private void UpdateA20State() {
-        // We can't directly access A20 state from XMS manager
-        // but we can infer some status
-        A20Status = "Managed by XMS driver";
+        // A20 state is managed by the XMS driver - read from configuration
+        A20Status = _xms != null ? "Active (XMS driver managing A20)" : "Not available";
     }
 
     private void UpdateHandles() {

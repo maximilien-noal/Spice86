@@ -13,12 +13,20 @@
             <!-- OPL3 Configuration -->
             <Border Classes="GroupBox" Padding="10">
                 <StackPanel Spacing="5">
-                    <TextBlock Text="OPL3/FM Synthesizer" FontWeight="Bold" FontSize="14" />
-                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Chip:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ChipDescription}" />
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Base Port:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BasePort}" FontFamily="Consolas" />
+                    <TextBlock Text="OPL3/FM Synthesizer (Yamaha YMF262)" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Primary Address Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PrimaryAddressPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Primary Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PrimaryDataPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Secondary Address Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SecondaryAddressPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Secondary Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SecondaryDataPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="AdLib Gold Address Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding AdLibGoldAddressPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="AdLib Gold Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding AdLibGoldDataPort, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
                     </Grid>
                 </StackPanel>
             </Border>

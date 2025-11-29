@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using Spice86.Core.Emulator.Devices.Sound;
 using Spice86.Core.Emulator.VM;
+using Spice86.Libs.Sound.Devices.NukedOpl3;
 using Spice86.ViewModels.Services;
 
 /// <summary>
@@ -19,12 +20,24 @@ public partial class Opl3ViewModel : DebuggerTabViewModel {
     /// <inheritdoc />
     public override string? IconKey => "MusicNote";
 
-    // OPL3 Status
+    // OPL3 Status - read from Core constants
     [ObservableProperty]
-    private string _chipDescription = string.Empty;
+    private ushort _primaryAddressPort;
 
     [ObservableProperty]
-    private string _basePort = string.Empty;
+    private ushort _primaryDataPort;
+
+    [ObservableProperty]
+    private ushort _secondaryAddressPort;
+
+    [ObservableProperty]
+    private ushort _secondaryDataPort;
+
+    [ObservableProperty]
+    private ushort _adLibGoldAddressPort;
+
+    [ObservableProperty]
+    private ushort _adLibGoldDataPort;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Opl3ViewModel"/> class.
@@ -43,8 +56,12 @@ public partial class Opl3ViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // Read values from the Core
-        ChipDescription = "OPL3 FM Synthesizer (Yamaha YMF262)";
-        BasePort = "0x388 (AdLib compatible)";
+        // Read port values from the Core's OPL port constants
+        PrimaryAddressPort = IOplPort.PrimaryAddressPortNumber;
+        PrimaryDataPort = IOplPort.PrimaryDataPortNumber;
+        SecondaryAddressPort = IOplPort.SecondaryAddressPortNumber;
+        SecondaryDataPort = IOplPort.SecondaryDataPortNumber;
+        AdLibGoldAddressPort = IOplPort.AdLibGoldAddressPortNumber;
+        AdLibGoldDataPort = IOplPort.AdLibGoldDataPortNumber;
     }
 }

@@ -31,9 +31,9 @@ public partial class TimerViewModel : DebuggerTabViewModel {
     [ObservableProperty]
     private string _ticksUs = string.Empty;
 
-    // PIT constants
+    // PIT constants - read from Core on each update
     [ObservableProperty]
-    private int _pitTickRate = PitTimer.PitTickRate;
+    private int _pitTickRate;
 
     // Channel states
     [ObservableProperty]
@@ -57,6 +57,7 @@ public partial class TimerViewModel : DebuggerTabViewModel {
         }
 
         // Read values from the Core on each update
+        PitTickRate = PitTimer.PitTickRate;
         SystemStartTime = _pitTimer.SystemStartTime.ToString("yyyy-MM-dd HH:mm:ss");
         CurrentTicks = $"{_pitTimer.GetTicks():N0}";
         TicksUs = $"{_pitTimer.GetTicksUs():N0} µs";
