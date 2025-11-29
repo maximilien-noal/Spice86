@@ -18,8 +18,8 @@ using Spice86.Shared.Utils;
 /// back to their parent processes. COMMAND.COM's PSP points to itself as
 /// its own parent (marking it as the root).
 /// <para>
-/// This implementation is non-interactive. We don't support an interactive
-/// shell since Spice86 is focused on reverse engineering specific DOS programs.
+/// This implementation includes batch file processing support via the
+/// <see cref="BatchProcessor"/> class, which handles .BAT file execution.
 /// </para>
 /// <para>
 /// The initial program is launched via <see cref="DosProcessManager.LoadFile"/>,
@@ -47,9 +47,19 @@ public class CommandCom : DosProgramSegmentPrefix {
     private const ushort JftOffset = 0x18;
 
     /// <summary>
+    /// The batch file processor for this COMMAND.COM instance.
+    /// </summary>
+    private readonly BatchProcessor _batchProcessor;
+
+    /// <summary>
     /// Gets the segment address of COMMAND.COM's PSP.
     /// </summary>
     public ushort PspSegment => CommandComSegment;
+
+    /// <summary>
+    /// Gets the batch processor for handling .BAT files.
+    /// </summary>
+    public BatchProcessor BatchProcessor => _batchProcessor;
 
     /// <summary>
     /// Initializes a new instance of COMMAND.COM simulation.
@@ -59,6 +69,7 @@ public class CommandCom : DosProgramSegmentPrefix {
     /// <param name="loggerService">The logger service.</param>
     public CommandCom(IMemory memory, ILoggerService loggerService)
         : base(memory, MemoryUtils.ToPhysicalAddress(CommandComSegment, 0)) {
+        _batchProcessor = new BatchProcessor(loggerService);
         InitializePsp();
 
         if (loggerService.IsEnabled(LogEventLevel.Information)) {
