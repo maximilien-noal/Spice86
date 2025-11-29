@@ -947,4 +947,166 @@ public class BatchProcessorTests : IDisposable {
     }
 
     #endregion
+
+    #region AutoexecGenerator Tests
+
+    [Fact]
+    public void AutoexecGenerator_DefaultSettings_HasEchoOff() {
+        // Arrange
+        AutoexecGenerator generator = new();
+
+        // Act
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(1);
+        lines[0].Should().Be("@ECHO OFF");
+    }
+
+    [Fact]
+    public void AutoexecGenerator_ForProgram_GeneratesCorrectContent() {
+        // Arrange & Act
+        AutoexecGenerator generator = AutoexecGenerator.ForProgram("GAME.EXE", "arg1 arg2");
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(3);
+        lines[0].Should().Be("@ECHO OFF");
+        lines[1].Should().Be("GAME.EXE arg1 arg2");
+        lines[2].Should().Be("@EXIT");
+    }
+
+    [Fact]
+    public void AutoexecGenerator_ForBatch_GeneratesCallCommand() {
+        // Arrange & Act
+        AutoexecGenerator generator = AutoexecGenerator.ForBatch("SETUP.BAT", "%1");
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(3);
+        lines[0].Should().Be("@ECHO OFF");
+        lines[1].Should().Be("CALL SETUP.BAT %1");
+        lines[2].Should().Be("@EXIT");
+    }
+
+    [Fact]
+    public void AutoexecGenerator_WithEnvironmentVariable_IncludesSetCommand() {
+        // Arrange
+        AutoexecGenerator generator = new();
+        generator.SetEnvironmentVariable("TEMP", "C:\\TEMP");
+        generator.AddProgramExecution("MYPROG.EXE");
+
+        // Act
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(3);
+        lines[0].Should().Be("@ECHO OFF");
+        lines[1].Should().Be("@SET TEMP=C:\\TEMP");
+        lines[2].Should().Be("MYPROG.EXE");
+    }
+
+    [Fact]
+    public void AutoexecGenerator_SetPath_SetsPATHVariable() {
+        // Arrange
+        AutoexecGenerator generator = new();
+        generator.SetPath("C:\\DOS;C:\\UTILS");
+        generator.AddProgramExecution("MYPROG.EXE");
+
+        // Act
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().Contain("@SET PATH=C:\\DOS;C:\\UTILS");
+    }
+
+    [Fact]
+    public void AutoexecGenerator_GenerateAsString_UsesDosLineEndings() {
+        // Arrange
+        AutoexecGenerator generator = AutoexecGenerator.ForProgram("TEST.EXE");
+
+        // Act
+        string content = generator.GenerateAsString();
+
+        // Assert
+        content.Should().Contain("\r\n");
+        content.Should().NotContain("\n\r"); // Not reversed
+    }
+
+    [Fact]
+    public void AutoexecGenerator_WithoutExitAfter_DoesNotIncludeExit() {
+        // Arrange & Act
+        AutoexecGenerator generator = AutoexecGenerator.ForProgram("GAME.EXE", "", exitAfter: false);
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(2);
+        lines.Should().NotContain("@EXIT");
+    }
+
+    #endregion
+
+    #region StringArrayLineReader Tests
+
+    [Fact]
+    public void StringArrayLineReader_ReadsAllLines() {
+        // Arrange
+        string[] lines = ["line 1", "line 2", "line 3"];
+        StringArrayLineReader reader = new(lines);
+
+        // Act & Assert
+        reader.ReadLine().Should().Be("line 1");
+        reader.ReadLine().Should().Be("line 2");
+        reader.ReadLine().Should().Be("line 3");
+        reader.ReadLine().Should().BeNull();
+    }
+
+    [Fact]
+    public void StringArrayLineReader_Reset_RestartsFromBeginning() {
+        // Arrange
+        string[] lines = ["first", "second"];
+        StringArrayLineReader reader = new(lines);
+
+        // Act
+        reader.ReadLine(); // Read first
+        reader.ReadLine(); // Read second
+        bool resetResult = reader.Reset();
+        string? afterReset = reader.ReadLine();
+
+        // Assert
+        resetResult.Should().BeTrue();
+        afterReset.Should().Be("first");
+    }
+
+    [Fact]
+    public void StringArrayLineReader_EmptyArray_ReturnsNullImmediately() {
+        // Arrange
+        StringArrayLineReader reader = new([]);
+
+        // Act & Assert
+        reader.ReadLine().Should().BeNull();
+    }
+
+    #endregion
+
+    #region DosEnvironmentAdapter Tests
+
+    [Fact]
+    public void DosEnvironmentAdapter_CallsDelegate() {
+        // Arrange
+        Dictionary<string, string> env = new(StringComparer.OrdinalIgnoreCase) {
+            { "PATH", "C:\\DOS" },
+            { "TEMP", "C:\\TEMP" }
+        };
+        DosEnvironmentAdapter adapter = new(name =>
+            env.TryGetValue(name, out string? value) ? value : null);
+
+        // Act & Assert
+        adapter.GetEnvironmentValue("PATH").Should().Be("C:\\DOS");
+        adapter.GetEnvironmentValue("path").Should().Be("C:\\DOS"); // Case insensitive lookup
+        adapter.GetEnvironmentValue("TEMP").Should().Be("C:\\TEMP");
+        adapter.GetEnvironmentValue("UNDEFINED").Should().BeNull();
+    }
+
+    #endregion
 }

@@ -112,6 +112,238 @@ public sealed class EmptyBatchEnvironment : IBatchEnvironment {
 }
 
 /// <summary>
+/// Provides access to DOS environment variables through the DOS kernel.
+/// </summary>
+/// <remarks>
+/// This implementation integrates with the actual DOS environment block
+/// for full emulation compatibility, following DOSBox staging's pattern.
+/// </remarks>
+public sealed class DosEnvironmentAdapter : IBatchEnvironment {
+    private readonly Func<string, string?> _getEnvironmentValue;
+
+    /// <summary>
+    /// Initializes a new instance with a delegate to retrieve environment values.
+    /// </summary>
+    /// <param name="getEnvironmentValue">
+    /// A function that retrieves the value of an environment variable by name.
+    /// Returns null if the variable is not found.
+    /// </param>
+    public DosEnvironmentAdapter(Func<string, string?> getEnvironmentValue) {
+        _getEnvironmentValue = getEnvironmentValue;
+    }
+
+    /// <inheritdoc/>
+    public string? GetEnvironmentValue(string name) {
+        return _getEnvironmentValue(name);
+    }
+}
+
+/// <summary>
+/// Generates AUTOEXEC.BAT content for bootstrapping DOS programs.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Based on DOSBox staging's autoexec.cpp implementation.
+/// This class generates the content for a virtual AUTOEXEC.BAT file that:
+/// - Sets up environment variables
+/// - Mounts drives
+/// - Starts the user's program
+/// </para>
+/// <para>
+/// The generated AUTOEXEC.BAT provides a clean DOS environment without
+/// relying on host file system paths.
+/// </para>
+/// </remarks>
+public sealed class AutoexecGenerator {
+    private readonly List<string> _initialCommands = new();
+    private readonly List<string> _environmentVariables = new();
+    private readonly List<string> _finalCommands = new();
+    private bool _echoOff = true;
+
+    /// <summary>
+    /// Gets or sets whether ECHO is turned off at the start.
+    /// </summary>
+    public bool EchoOff {
+        get => _echoOff;
+        set => _echoOff = value;
+    }
+
+    /// <summary>
+    /// Adds an initial command (executed before the main program).
+    /// </summary>
+    /// <param name="command">The command to add.</param>
+    public void AddInitialCommand(string command) {
+        _initialCommands.Add(command);
+    }
+
+    /// <summary>
+    /// Sets an environment variable.
+    /// </summary>
+    /// <param name="name">Variable name.</param>
+    /// <param name="value">Variable value.</param>
+    public void SetEnvironmentVariable(string name, string value) {
+        _environmentVariables.Add($"@SET {name}={value}");
+    }
+
+    /// <summary>
+    /// Sets the PATH environment variable.
+    /// </summary>
+    /// <param name="path">The path value.</param>
+    public void SetPath(string path) {
+        SetEnvironmentVariable("PATH", path);
+    }
+
+    /// <summary>
+    /// Adds a command to execute the main program.
+    /// </summary>
+    /// <param name="programPath">The DOS path to the program.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    public void AddProgramExecution(string programPath, string arguments = "") {
+        string command = programPath;
+        if (!string.IsNullOrEmpty(arguments)) {
+            command += " " + arguments;
+        }
+        _finalCommands.Add(command);
+    }
+
+    /// <summary>
+    /// Adds a CALL command for a batch file.
+    /// </summary>
+    /// <param name="batchPath">The DOS path to the batch file.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    public void AddBatchCall(string batchPath, string arguments = "") {
+        string command = "CALL " + batchPath;
+        if (!string.IsNullOrEmpty(arguments)) {
+            command += " " + arguments;
+        }
+        _finalCommands.Add(command);
+    }
+
+    /// <summary>
+    /// Adds an exit command to exit COMMAND.COM after execution.
+    /// </summary>
+    public void AddExitCommand() {
+        _finalCommands.Add("@EXIT");
+    }
+
+    /// <summary>
+    /// Generates the AUTOEXEC.BAT content as a string array.
+    /// </summary>
+    /// <returns>An array of lines for the AUTOEXEC.BAT file.</returns>
+    public string[] Generate() {
+        List<string> lines = new();
+
+        // Add ECHO OFF if enabled
+        if (_echoOff) {
+            lines.Add("@ECHO OFF");
+        }
+
+        // Add environment variables
+        foreach (string envVar in _environmentVariables) {
+            lines.Add(envVar);
+        }
+
+        // Add initial commands
+        foreach (string cmd in _initialCommands) {
+            lines.Add(cmd);
+        }
+
+        // Add final commands (program execution)
+        foreach (string cmd in _finalCommands) {
+            lines.Add(cmd);
+        }
+
+        return lines.ToArray();
+    }
+
+    /// <summary>
+    /// Generates the AUTOEXEC.BAT content as a single string with DOS line endings.
+    /// </summary>
+    /// <returns>The complete AUTOEXEC.BAT content.</returns>
+    public string GenerateAsString() {
+        string[] lines = Generate();
+        StringBuilder sb = new();
+        foreach (string line in lines) {
+            sb.Append(line);
+            sb.Append("\r\n"); // DOS line endings
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Creates an AutoexecGenerator for a simple program execution.
+    /// </summary>
+    /// <param name="programPath">The DOS path to the program.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    /// <param name="exitAfter">Whether to exit COMMAND.COM after execution.</param>
+    /// <returns>A configured AutoexecGenerator instance.</returns>
+    public static AutoexecGenerator ForProgram(string programPath, string arguments = "", bool exitAfter = true) {
+        AutoexecGenerator generator = new();
+        generator.AddProgramExecution(programPath, arguments);
+        if (exitAfter) {
+            generator.AddExitCommand();
+        }
+        return generator;
+    }
+
+    /// <summary>
+    /// Creates an AutoexecGenerator for a batch file execution.
+    /// </summary>
+    /// <param name="batchPath">The DOS path to the batch file.</param>
+    /// <param name="arguments">Optional arguments.</param>
+    /// <param name="exitAfter">Whether to exit COMMAND.COM after execution.</param>
+    /// <returns>A configured AutoexecGenerator instance.</returns>
+    public static AutoexecGenerator ForBatch(string batchPath, string arguments = "", bool exitAfter = true) {
+        AutoexecGenerator generator = new();
+        generator.AddBatchCall(batchPath, arguments);
+        if (exitAfter) {
+            generator.AddExitCommand();
+        }
+        return generator;
+    }
+}
+
+/// <summary>
+/// A batch line reader that reads from an in-memory string array.
+/// </summary>
+/// <remarks>
+/// This is useful for reading auto-generated batch content (like AUTOEXEC.BAT)
+/// without needing a physical file. Based on DOSBox staging's virtual file pattern.
+/// </remarks>
+public sealed class StringArrayLineReader : IBatchLineReader {
+    private readonly string[] _lines;
+    private int _currentIndex;
+
+    /// <summary>
+    /// Initializes a new instance with the given lines.
+    /// </summary>
+    /// <param name="lines">The lines to read.</param>
+    public StringArrayLineReader(string[] lines) {
+        _lines = lines;
+        _currentIndex = 0;
+    }
+
+    /// <inheritdoc/>
+    public string? ReadLine() {
+        if (_currentIndex >= _lines.Length) {
+            return null;
+        }
+        return _lines[_currentIndex++];
+    }
+
+    /// <inheritdoc/>
+    public bool Reset() {
+        _currentIndex = 0;
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public void Dispose() {
+        // Nothing to dispose for in-memory strings
+    }
+}
+
+/// <summary>
 /// Processes DOS batch files (.BAT) for COMMAND.COM.
 /// </summary>
 /// <remarks>
