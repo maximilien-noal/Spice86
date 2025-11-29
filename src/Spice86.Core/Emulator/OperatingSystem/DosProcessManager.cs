@@ -878,8 +878,9 @@ public class DosProcessManager : DosFileLoader {
     /// <remarks>
     /// This method is needed because Path.GetDirectoryName doesn't
     /// correctly handle DOS-style paths on Linux (it returns empty string for "C:\FILE.EXE").
+    /// The method is internal (not private) to allow unit testing via InternalsVisibleTo.
     /// </remarks>
-    private static string ExtractDosDirectory(string dosPath) {
+    internal static string ExtractDosDirectory(string dosPath) {
         // Normalize to backslashes
         string normalized = dosPath.Replace('/', '\\');
         
