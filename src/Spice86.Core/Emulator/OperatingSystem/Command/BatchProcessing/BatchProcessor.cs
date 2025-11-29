@@ -410,6 +410,11 @@ public sealed class BatchProcessor : IDisposable {
                     result.Append('%');
                     i++;
                     continue;
+                } else {
+                    // No closing %, append literal %
+                    result.Append('%');
+                    i++;
+                    continue;
                 }
             }
 
