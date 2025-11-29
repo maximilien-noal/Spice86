@@ -94,6 +94,7 @@ public class DosInt21Handler : InterruptHandler {
     /// </summary>
     private void FillDispatchTable() {
         AddAction(0x00, QuitWithExitCode);
+        AddAction(0x01, CharacterInputWithEcho);
         AddAction(0x02, DisplayOutput);
         AddAction(0x03, ReadCharacterFromStdAux);
         AddAction(0x04, WriteCharacterToStdAux);
@@ -403,11 +404,50 @@ public class DosInt21Handler : InterruptHandler {
         if (_dosFileManager.TryGetStandardInput(out CharacterDevice? stdIn) &&
             stdIn.CanRead) {
             byte[] bytes = new byte[1];
-            var readCount = stdIn.Read(bytes, 0, 1);
+            int readCount = stdIn.Read(bytes, 0, 1);
             if (readCount < 1) {
                 State.AL = 0;
             } else {
                 State.AL = bytes[0];
+            }
+        } else {
+            State.AL = 0;
+        }
+    }
+
+    /// <summary>
+    /// INT 21h, AH=01h - Character Input with Echo.
+    /// <para>
+    /// Reads a single character from standard input and echoes it to standard output.
+    /// The program waits for input; the user just needs to press the intended key
+    /// WITHOUT pressing "enter" key.
+    /// </para>
+    /// <b>Returns:</b><br/>
+    /// AL = ASCII code of the input character
+    /// </summary>
+    /// <remarks>
+    /// This function waits for keyboard input (via INT 16h AH=00h pattern in WriteAssemblyInRam).
+    /// When a key is available, it reads the character and echoes it to stdout.
+    /// TODO: Check for Ctrl-C and Ctrl-Break in STDIN, and call INT23H if it happens.
+    /// </remarks>
+    public void CharacterInputWithEcho() {
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("CHARACTER INPUT WITH ECHO");
+        }
+        if (_dosFileManager.TryGetStandardInput(out CharacterDevice? stdIn) &&
+            stdIn.CanRead) {
+            byte[] bytes = new byte[1];
+            int readCount = stdIn.Read(bytes, 0, 1);
+            if (readCount < 1) {
+                State.AL = 0;
+            } else {
+                byte character = bytes[0];
+                State.AL = character;
+                // Echo the character to stdout
+                if (_dosFileManager.TryGetStandardOutput(out CharacterDevice? stdOut) &&
+                    stdOut.CanWrite) {
+                    stdOut.Write(character);
+                }
             }
         } else {
             State.AL = 0;
@@ -1087,65 +1127,100 @@ public class DosInt21Handler : InterruptHandler {
     public override byte VectorNumber => 0x21;
 
     /// <summary>
-    /// Emits the INT 21h handler stub into guest RAM with special handling for AH=0Ah (BufferedInput).
+    /// Emits the INT 21h handler stub into guest RAM with special handling for keyboard input functions.
     /// </summary>
     /// <remarks><![CDATA[
-    /// For AH=0Ah (BufferedInput), we need to wait for keyboard input before calling the C# handler.
-    /// This uses a simple polling loop with INT 16h AH=01h to check keyboard status.
+    /// For AH=01h (CharacterInputWithEcho) and AH=0Ah (BufferedInput), we need to wait for 
+    /// keyboard input before calling the C# handler. This uses a polling loop with INT 16h 
+    /// AH=01h to check keyboard status.
     /// 
     /// L_HANDLER:
+    ///     cmp ah, 01h            ; Is this CharacterInputWithEcho?
+    ///     jz  L_CHAR_INPUT       ; If yes, wait for key first
     ///     cmp ah, 0Ah            ; Is this BufferedInput?
     ///     jz  L_BUFFERED_INPUT   ; If yes, wait for key first
     /// L_DEFAULT:
     ///     callback Run           ; Call C# dispatcher
     ///     iret
-    /// L_BUFFERED_INPUT:
-    ///     mov ah, 01h            ; Check keyboard status
+    /// L_CHAR_INPUT:
+    ///     push ax                ; Save original AX (contains 01h in AH)
+    ///     ; fall through to keyboard wait loop
+    /// L_WAIT_KEY:
+    ///     mov ah, 01h            ; Check keyboard status (INT 16h AH=01h)
     ///     int 16h                ; ZF=0 if key available
-    ///     jnz L_KEY_READY        ; Key available, restore AH and handle
-    ///     jmp short L_BUFFERED_INPUT  ; No key, keep polling
+    ///     jnz L_KEY_READY        ; Key available, handle it
+    ///     int 09h                ; Process keyboard interrupt to get a key
+    ///     jmp short L_WAIT_KEY   ; Loop back to check again
     /// L_KEY_READY:
-    ///     mov ah, 0Ah            ; Restore AH to 0Ah
+    ///     pop ax                 ; Restore original AX with function code
     ///     callback Run           ; Call C# handler
     ///     iret
+    /// L_BUFFERED_INPUT:
+    ///     push ax                ; Save original AX (contains 0Ah in AH)
+    ///     jmp short L_WAIT_KEY   ; Share the keyboard wait loop
     /// ]]></remarks>
     public override SegmentedAddress WriteAssemblyInRam(MemoryAsmWriter memoryAsmWriter) {
         SegmentedAddress handlerAddress = memoryAsmWriter.CurrentAddress;
 
-        // CMP AH, 0Ah
+        // CMP AH, 01h (CharacterInputWithEcho)
+        memoryAsmWriter.WriteUInt8(0x80);
+        memoryAsmWriter.WriteUInt8(0xFC);
+        memoryAsmWriter.WriteUInt8(0x01);
+        
+        // JZ L_CHAR_INPUT (+8: skip next cmp+jz and callback+iret)
+        // Size calculation: cmp ah, imm8 = 3 bytes, jz = 2 bytes, callback = 4 bytes, iret = 1 byte
+        // Total to skip: 3 + 2 + 4 + 1 = 10, but jz is relative to NEXT instruction
+        memoryAsmWriter.WriteJz(10);
+
+        // CMP AH, 0Ah (BufferedInput)
         memoryAsmWriter.WriteUInt8(0x80);
         memoryAsmWriter.WriteUInt8(0xFC);
         memoryAsmWriter.WriteUInt8(0x0A);
         
-        // JZ L_BUFFERED_INPUT (+5 to skip callback + iret)
-        memoryAsmWriter.WriteJz(5);
+        // JZ L_BUFFERED_INPUT (+5 to skip callback + iret, then handled separately)
+        // This will jump to the L_BUFFERED_INPUT section after L_KEY_READY
+        memoryAsmWriter.WriteJz(17); // Skip callback(4) + iret(1) + push(1) + wait loop(8) + pop(1) + callback(4) + iret(1) - 3 = 17
 
         // L_DEFAULT: callback Run then IRET
         memoryAsmWriter.RegisterAndWriteCallback(VectorNumber, Run);
         memoryAsmWriter.WriteIret();
 
-        // L_BUFFERED_INPUT:
-        // MOV AH, 01h
+        // L_CHAR_INPUT:
+        // PUSH AX - save original AX with function code (01h)
+        memoryAsmWriter.WriteUInt8(0x50);
+        
+        // L_WAIT_KEY: (this is shared between char input and buffered input)
+        // MOV AH, 01h - check keyboard status
         memoryAsmWriter.WriteUInt8(0xB4);
         memoryAsmWriter.WriteUInt8(0x01);
         
         // INT 16h (check keyboard status - ZF=0 when key present)
         memoryAsmWriter.WriteInt(0x16);
         
-        // JNZ L_KEY_READY (+2 to skip the jmp short)
-        memoryAsmWriter.WriteJnz(2);
+        // JNZ L_KEY_READY (+4: skip INT 09h and JMP short)
+        memoryAsmWriter.WriteJnz(4);
         
-        // JMP short L_BUFFERED_INPUT (-6: back to MOV AH, 01h)
-        memoryAsmWriter.WriteJumpShort(-6);
+        // INT 09h - invoke hardware keyboard ISR to fetch a key
+        memoryAsmWriter.WriteInt(0x09);
+        
+        // JMP short L_WAIT_KEY (-8: back to MOV AH, 01h)
+        memoryAsmWriter.WriteJumpShort(-8);
 
         // L_KEY_READY:
-        // MOV AH, 0Ah - restore AH
-        memoryAsmWriter.WriteUInt8(0xB4);
-        memoryAsmWriter.WriteUInt8(0x0A);
+        // POP AX - restore original AX with function code
+        memoryAsmWriter.WriteUInt8(0x58);
         
         // Callback to C# handler (uses auto-allocated callback number)
         memoryAsmWriter.RegisterAndWriteCallback(Run);
         memoryAsmWriter.WriteIret();
+
+        // L_BUFFERED_INPUT:
+        // PUSH AX - save original AX with function code (0Ah)
+        memoryAsmWriter.WriteUInt8(0x50);
+        
+        // JMP short L_WAIT_KEY (-15: back to the wait loop)
+        // Distance: push(1) back + iret(1) + callback(4) + pop(1) + jmp(2) + int09(2) + jnz(2) + int16(2) = 15
+        memoryAsmWriter.WriteJumpShort(-15);
 
         return handlerAddress;
     }
