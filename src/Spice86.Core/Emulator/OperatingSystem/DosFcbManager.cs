@@ -986,7 +986,7 @@ public class DosFcbManager {
             if (isExtended) {
                 DosExtendedFileControlBlock xfcb = new(_memory, dtaAddress);
                 xfcb.Flag = DosExtendedFileControlBlock.ExtendedFcbFlag;
-                xfcb.Attribute = (byte)(DosFileAttributes)entryInfo.Attributes;
+                xfcb.Attribute = (byte)ConvertToDosFileAttributes(entryInfo.Attributes);
                 fcbOffset = DosExtendedFileControlBlock.HeaderSize;
             }
 
@@ -1035,5 +1035,32 @@ public class DosFcbManager {
     private uint GetFcbSearchState(uint fcbAddress, bool isExtended) {
         uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
         return _memory.UInt32[fcbAddress + reservedOffset];
+    }
+
+    /// <summary>
+    /// Converts .NET FileAttributes to DOS file attributes.
+    /// </summary>
+    /// <remarks>
+    /// This explicit conversion is safer than direct casting as it doesn't rely on
+    /// the underlying enum values matching between FileAttributes and DosFileAttributes.
+    /// </remarks>
+    private static DosFileAttributes ConvertToDosFileAttributes(FileAttributes attributes) {
+        DosFileAttributes result = DosFileAttributes.Normal;
+        if (attributes.HasFlag(FileAttributes.ReadOnly)) {
+            result |= DosFileAttributes.ReadOnly;
+        }
+        if (attributes.HasFlag(FileAttributes.Hidden)) {
+            result |= DosFileAttributes.Hidden;
+        }
+        if (attributes.HasFlag(FileAttributes.System)) {
+            result |= DosFileAttributes.System;
+        }
+        if (attributes.HasFlag(FileAttributes.Directory)) {
+            result |= DosFileAttributes.Directory;
+        }
+        if (attributes.HasFlag(FileAttributes.Archive)) {
+            result |= DosFileAttributes.Archive;
+        }
+        return result;
     }
 }
