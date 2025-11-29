@@ -671,7 +671,7 @@ public class DosFcbManager {
     private uint _fcbSearchIdCounter;
 
     /// <summary>
-    /// Tracks active FCB file searches. Key is the search ID stored in the DTA reserved area.
+    /// Tracks active FCB file searches. Key is the search ID stored in the FCB reserved area.
     /// </summary>
     private readonly Dictionary<uint, FcbSearchData> _fcbActiveSearches = new();
 
@@ -750,9 +750,9 @@ public class DosFcbManager {
                 return FcbError;
             }
 
-            // Store search state with cached file list
+            // Store search state in FCB reserved area (per DOS semantics)
             uint searchId = GenerateSearchId();
-            StoreFcbSearchState(dtaAddress, searchId, isExtended);
+            StoreFcbSearchState(fcbAddress, searchId, isExtended);
             _fcbActiveSearches[searchId] = new FcbSearchData(matchingFiles, 1, searchAttribute, driveNumber, isExtended);
 
             if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
@@ -786,8 +786,8 @@ public class DosFcbManager {
             _loggerService.Verbose("FCB Find Next, Extended: {Extended}", isExtended);
         }
 
-        // Get search ID from DTA
-        uint searchId = GetFcbSearchState(dtaAddress, isExtended);
+        // Get search ID from FCB reserved area (per DOS semantics)
+        uint searchId = GetFcbSearchState(fcbAddress, isExtended);
 
         if (!_fcbActiveSearches.TryGetValue(searchId, out FcbSearchData? searchData)) {
             if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
@@ -815,9 +815,9 @@ public class DosFcbManager {
                 return FcbError;
             }
 
-            // Update search state
+            // Update search state in FCB
             searchData.Index++;
-            StoreFcbSearchState(dtaAddress, searchId, isExtended);
+            StoreFcbSearchState(fcbAddress, searchId, isExtended);
 
             if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
                 _loggerService.Debug("FCB Find Next: Found {File}", matchingFile);
@@ -1020,20 +1020,20 @@ public class DosFcbManager {
     }
 
     /// <summary>
-    /// Stores the search ID in the DTA reserved area.
+    /// Stores the search ID in the FCB reserved area.
     /// </summary>
-    private void StoreFcbSearchState(uint dtaAddress, uint searchId, bool isExtended) {
-        // Store the search ID in the first 4 bytes of the DTA reserved area
+    private void StoreFcbSearchState(uint fcbAddress, uint searchId, bool isExtended) {
+        // Store the search ID in the first 4 bytes of the FCB reserved area
         // For extended FCB, skip the 7-byte header
         uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
-        _memory.UInt32[dtaAddress + reservedOffset] = searchId;
+        _memory.UInt32[fcbAddress + reservedOffset] = searchId;
     }
 
     /// <summary>
-    /// Gets the search ID from the DTA reserved area.
+    /// Gets the search ID from the FCB reserved area.
     /// </summary>
-    private uint GetFcbSearchState(uint dtaAddress, bool isExtended) {
+    private uint GetFcbSearchState(uint fcbAddress, bool isExtended) {
         uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
-        return _memory.UInt32[dtaAddress + reservedOffset];
+        return _memory.UInt32[fcbAddress + reservedOffset];
     }
 }
