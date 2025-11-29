@@ -90,7 +90,7 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
             CurrentDosDirectory = ""
         };
 
-        _driveMap.Add('Z', zDrive);
+        _driveMap['Z'] = zDrive;
 
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("Mounted Z: drive at {HostPath}", hostPath);
