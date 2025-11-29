@@ -762,8 +762,8 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         uint adjusted;
         if (IsDmaXfer16Bit()) {
             // 16-bit DMA uses special address layout
-            uint upper = (uint)(_dmaAddr & 0b1100_0000_0000_0000);
-            uint lower = (uint)(_dmaAddr & 0b0001_1111_1111_1111);
+            uint upper = _dmaAddr & GusConstants.Dma16BitUpperMask;
+            uint lower = _dmaAddr & GusConstants.Dma16BitLowerMask;
             adjusted = upper | (lower << 1);
         } else {
             adjusted = _dmaAddr;
@@ -777,14 +777,14 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private void UpdateDmaAddr(uint offset) {
         uint adjusted;
         if (IsDmaXfer16Bit()) {
-            uint upper = offset & 0b1100_0000_0000_0000_0000;
-            uint lower = offset & 0b0011_1111_1111_1111_1110;
+            uint upper = offset & GusConstants.Dma16BitAddr20UpperMask;
+            uint lower = offset & GusConstants.Dma16BitAddr20LowerMask;
             adjusted = upper | (lower >> 1);
         } else {
-            adjusted = offset & 0b1111_1111_1111_1111_0000;
+            adjusted = offset & GusConstants.Dma8BitAddressMask;
         }
         _dmaAddr = (ushort)(adjusted >> 4);
-        _dmaAddrNibble = (byte)(offset & 0xf);
+        _dmaAddrNibble = (byte)(offset & GusConstants.DmaNibbleMask);
     }
 
     /// <summary>

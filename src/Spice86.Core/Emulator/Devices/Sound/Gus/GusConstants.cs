@@ -125,4 +125,37 @@ public static class GusConstants {
     /// Default mix control register state (lines disabled, latches enabled).
     /// </summary>
     public const byte MixControlRegisterDefaultState = 0b0000_1011;
+
+    // DMA address manipulation masks for 16-bit mode
+    // In 16-bit mode, the address layout uses a different bit arrangement
+
+    /// <summary>
+    /// Upper bits mask for 16-bit DMA address (bits 18-19).
+    /// </summary>
+    public const uint Dma16BitUpperMask = 0b1100_0000_0000_0000;
+
+    /// <summary>
+    /// Lower bits mask for 16-bit DMA address (bits 0-16).
+    /// </summary>
+    public const uint Dma16BitLowerMask = 0b0001_1111_1111_1111;
+
+    /// <summary>
+    /// Upper bits mask for 16-bit DMA 20-bit address.
+    /// </summary>
+    public const uint Dma16BitAddr20UpperMask = 0b1100_0000_0000_0000_0000;
+
+    /// <summary>
+    /// Lower bits mask for 16-bit DMA 20-bit address (shifted by 1).
+    /// </summary>
+    public const uint Dma16BitAddr20LowerMask = 0b0011_1111_1111_1111_1110;
+
+    /// <summary>
+    /// Address mask for 8-bit DMA (upper 16 bits of 20-bit address).
+    /// </summary>
+    public const uint Dma8BitAddressMask = 0b1111_1111_1111_1111_0000;
+
+    /// <summary>
+    /// Nibble mask for DMA address (lower 4 bits).
+    /// </summary>
+    public const uint DmaNibbleMask = 0xf;
 }
