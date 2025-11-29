@@ -56,16 +56,22 @@ internal struct DmaControlRegister {
     }
 
     /// <summary>
-    /// Gets or sets whether samples are 16-bit (write) or if terminal count IRQ is pending (read).
-    /// Note: This bit has different meanings for read vs write operations.
+    /// Sets whether samples are 16-bit (write-only).
+    /// <para>
+    /// <b>Warning:</b> Bit 6 (0x40) has different meanings for read vs write operations.
+    /// Use this property <b>only</b> when writing to the register to set the sample format.
+    /// </para>
     /// </summary>
     public bool AreSamples16Bit {
-        readonly get => (_data & 0x40) != 0;
         set => _data = value ? (byte)(_data | 0x40) : (byte)(_data & ~0x40);
     }
 
     /// <summary>
-    /// Gets or sets whether terminal count IRQ is pending (read-only meaning of bit 6).
+    /// Gets whether terminal count IRQ is pending (read-only meaning of bit 6).
+    /// <para>
+    /// <b>Warning:</b> Bit 6 (0x40) has different meanings for read vs write operations.
+    /// Use this property <b>only</b> when reading the register to check IRQ status.
+    /// </para>
     /// </summary>
     public bool HasPendingTerminalCountIrq {
         readonly get => (_data & 0x40) != 0;

@@ -73,6 +73,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private ushort _voiceIndex;
     private byte _activeVoices;
     private uint _activeVoiceMask;
+
+    // Calculated sample rate based on active voice count (per Gravis SDK formula).
+    // The real GUS hardware reduces sample rate as more voices are active.
+    // Currently used for logging/debugging; sound channel uses fixed 44.1kHz output.
     private int _sampleRateHz = GusConstants.OutputSampleRate;
 
     // Register access state
@@ -330,7 +334,9 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         if ((value & 0x01) != 0) {
             if (!_timer1.IsCountingDown) {
                 _timer1.IsCountingDown = true;
-                // Timer would be started here via PIC events
+                // TODO: Implement timer events using PIC's event system.
+                // Timer-based IRQs are not currently functional, which may affect
+                // games that rely on GUS timers for timing or synchronization.
             }
         } else {
             _timer1.IsCountingDown = false;
@@ -339,7 +345,9 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         if ((value & 0x02) != 0) {
             if (!_timer2.IsCountingDown) {
                 _timer2.IsCountingDown = true;
-                // Timer would be started here via PIC events
+                // TODO: Implement timer events using PIC's event system.
+                // Timer-based IRQs are not currently functional, which may affect
+                // games that rely on GUS timers for timing or synchronization.
             }
         } else {
             _timer2.IsCountingDown = false;
@@ -636,10 +644,15 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         }
         CheckIrq();
 
+        byte startStatus = _voiceIrq.Status;
         while ((totalMask & (1u << _voiceIrq.Status)) == 0) {
             _voiceIrq.Status++;
             if (_voiceIrq.Status >= _activeVoices) {
                 _voiceIrq.Status = 0;
+            }
+            // Safety check to prevent infinite loop
+            if (_voiceIrq.Status == startStatus) {
+                break;
             }
         }
     }
@@ -676,7 +689,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     }
 
     private void StartDmaTransfers() {
-        // DMA transfers would be handled via events
+        // TODO: Implement DMA transfer from system memory to GUS RAM.
+        // Full implementation would use _dmaChannel.Read() to transfer data
+        // and respect _dmaControlRegister settings (direction, 8/16-bit mode,
+        // rate divisor, high bit inversion for sign conversion).
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug("GUS: DMA transfer started");
         }
@@ -694,6 +710,12 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         }
     }
 
+    /// <summary>
+    /// The PlaybackLoopBody method is called from a background thread (_deviceThread).
+    /// Thread safety note: The emulator architecture ensures that CPU execution and
+    /// device threads are properly synchronized. I/O port writes from CPU are
+    /// serialized with respect to the audio rendering performed here.
+    /// </summary>
     private void PlaybackLoopBody() {
         RenderFrames(_renderBuffer);
 
@@ -761,7 +783,9 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         ioPortDispatcher.AddIOPortHandler((ushort)(_basePort + DataHighPortOffset), this);
         ioPortDispatcher.AddIOPortHandler((ushort)(_basePort + DramIoPortOffset), this);
 
-        // Additional ports that some programs search for
+        // Legacy detection ports at fixed addresses regardless of base port configuration.
+        // Some programs probe these specific ports to detect GUS presence, even when
+        // the GUS is configured at a different base address.
         ushort[] additionalPorts = [0x243, 0x280, 0x281, 0x283, 0x2C0, 0x2C1, 0x2C3];
         foreach (ushort port in additionalPorts) {
             ioPortDispatcher.AddIOPortHandler(port, this);
@@ -777,11 +801,21 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
 
     /// <inheritdoc />
     public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases the unmanaged resources used by the GravisUltraSound and optionally releases the managed resources.
+    /// </summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    private void Dispose(bool disposing) {
         if (_disposed) {
             return;
         }
-
-        _deviceThread.Dispose();
+        if (disposing) {
+            _deviceThread.Dispose();
+        }
         _disposed = true;
     }
 }

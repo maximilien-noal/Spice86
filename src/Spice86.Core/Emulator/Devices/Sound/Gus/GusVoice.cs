@@ -122,12 +122,20 @@ internal sealed class GusVoice {
 
     /// <summary>
     /// Sets the volume rate register and calculates the increment value.
+    /// Four volume-index-rate "banks" are available (per GUS SDK):
+    /// - Bank 0 (0-63): single index increments
+    /// - Bank 1 (64-127): 1/8th fractional increments
+    /// - Bank 2 (128-191): 1/64th fractional increments
+    /// - Bank 3 (192-255): 1/512th fractional increments
     /// </summary>
     public void WriteVolRate(ushort val) {
         VolCtrl.Rate = val;
-        const byte bankLength = 63;
-        int posInBank = val & bankLength;
-        int decimator = 1 << (3 * (val >> 6));
+        // Bank length is 63 positions per bank (0-63 in each bank)
+        const int volumeRateBankLength = 63;
+        int posInBank = val & volumeRateBankLength;
+        // Clamp shift amount to prevent integer overflow (max 30 for int32)
+        int shiftAmount = Math.Min(3 * (val >> 6), 30);
+        int decimator = 1 << shiftAmount;
         VolCtrl.Inc = CeilDivide(posInBank * GusConstants.VolumeIncScalar, decimator);
     }
 
@@ -198,7 +206,15 @@ internal sealed class GusVoice {
 
         if (shouldInterpolate) {
             int nextAddr = addr + 1;
-            float nextSample = Is16Bit ? Read16BitSample(ram, nextAddr) : Read8BitSample(ram, nextAddr);
+            // Ensure nextAddr does not exceed the end of the sample data
+            int endAddr = WaveCtrl.End / GusConstants.WaveWidth;
+            float nextSample;
+            if (nextAddr > endAddr) {
+                // Use current sample to avoid discontinuity at sample end
+                nextSample = sample;
+            } else {
+                nextSample = Is16Bit ? Read16BitSample(ram, nextAddr) : Read8BitSample(ram, nextAddr);
+            }
             const float waveWidthInv = 1.0f / GusConstants.WaveWidth;
             sample += (nextSample - sample) * fraction * waveWidthInv;
         }
