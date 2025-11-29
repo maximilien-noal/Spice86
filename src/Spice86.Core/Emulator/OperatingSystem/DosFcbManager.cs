@@ -664,6 +664,16 @@ public class DosFcbManager {
     #region FCB Find First/Next
 
     /// <summary>
+    /// Offset of the reserved area in the FCB structure, used for storing search state.
+    /// </summary>
+    private const uint FcbReservedAreaOffset = 0x18;
+
+    /// <summary>
+    /// Counter for generating unique search IDs for FCB file searches.
+    /// </summary>
+    private uint _fcbSearchIdCounter;
+
+    /// <summary>
     /// Tracks active FCB file searches. Key is the search ID stored in the DTA reserved area.
     /// </summary>
     private readonly Dictionary<uint, FcbSearchData> _fcbActiveSearches = new();
@@ -1014,10 +1024,7 @@ public class DosFcbManager {
     /// Generates a new search ID for tracking FCB searches.
     /// </summary>
     private uint GenerateSearchId() {
-        if (_fcbActiveSearches.Count == 0) {
-            return 1;
-        }
-        return (uint)(_fcbActiveSearches.Keys.Max() + 1);
+        return ++_fcbSearchIdCounter;
     }
 
     /// <summary>
@@ -1026,7 +1033,7 @@ public class DosFcbManager {
     private void StoreFcbSearchState(uint dtaAddress, uint searchId, bool isExtended) {
         // Store the search ID in the first 4 bytes of the DTA reserved area
         // For extended FCB, skip the 7-byte header
-        uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + 0x18 : 0x18;
+        uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
         _memory.UInt32[dtaAddress + reservedOffset] = searchId;
     }
 
@@ -1034,7 +1041,7 @@ public class DosFcbManager {
     /// Gets the search ID from the DTA reserved area.
     /// </summary>
     private uint GetFcbSearchState(uint dtaAddress, bool isExtended) {
-        uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + 0x18 : 0x18;
+        uint reservedOffset = isExtended ? (uint)DosExtendedFileControlBlock.HeaderSize + FcbReservedAreaOffset : FcbReservedAreaOffset;
         return _memory.UInt32[dtaAddress + reservedOffset];
     }
 

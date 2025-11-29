@@ -18,9 +18,10 @@ using Xunit;
 /// <summary>
 /// Unit tests for DOS File Control Block (FCB) operations.
 /// </summary>
-public class DosFcbTests {
+public class DosFcbTests : IDisposable {
     private readonly ILoggerService _loggerService;
     private readonly IMemory _memory;
+    private string? _testDir;
 
     public DosFcbTests() {
         _loggerService = Substitute.For<ILoggerService>();
@@ -33,6 +34,31 @@ public class DosFcbTests {
         A20Gate a20Gate = new(enabled: false);
         _memory = new Memory(emulatorBreakpointsManager.MemoryReadWriteBreakpoints, ram, a20Gate,
             initializeResetVector: true);
+    }
+
+    /// <summary>
+    /// Creates a temporary test directory and returns the FCB manager set up to use it.
+    /// </summary>
+    private DosFcbManager CreateFcbManagerWithTestDirectory() {
+        _testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_testDir);
+        
+        string executablePath = Path.Combine(_testDir, "test.exe");
+        DosDriveManager driveManager = new(_loggerService, _testDir, executablePath);
+        DosStringDecoder stringDecoder = new(_memory, null!);
+        DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
+            new List<IVirtualDevice>());
+        
+        return new DosFcbManager(_memory, dosFileManager, driveManager, _loggerService);
+    }
+
+    /// <summary>
+    /// Cleans up the test directory if it was created.
+    /// </summary>
+    public void Dispose() {
+        if (_testDir != null && Directory.Exists(_testDir)) {
+            Directory.Delete(_testDir, true);
+        }
     }
 
     /// <summary>
@@ -264,45 +290,27 @@ public class DosFcbTests {
     /// </summary>
     [Fact]
     public void DosFcbManager_FindFirst_ReturnsSuccessWhenFileExists() {
-        // Arrange - Create a temp directory with a test file
-        string testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(testDir);
-        string testFile = Path.Combine(testDir, "TEST.TXT");
-        File.WriteAllText(testFile, "test content");
+        // Arrange
+        DosFcbManager fcbManager = CreateFcbManagerWithTestDirectory();
+        File.WriteAllText(Path.Combine(_testDir!, "TEST.TXT"), "test content");
+        
+        const uint fcbAddress = 0x1000;
+        const uint dtaAddress = 0x2000;
+        
+        DosFileControlBlock fcb = new(_memory, fcbAddress);
+        fcb.DriveNumber = 3; // C:
+        fcb.FileName = "TEST    ";
+        fcb.FileExtension = "TXT";
 
-        try {
-            string executablePath = Path.Combine(testDir, "test.exe");
-            DosDriveManager driveManager = new(_loggerService, testDir, executablePath);
-            DosStringDecoder stringDecoder = new(_memory, null!);
-            DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-                new List<IVirtualDevice>());
-            
-            DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
-            
-            // Set up the FCB at address 0x1000
-            const uint fcbAddress = 0x1000;
-            const uint dtaAddress = 0x2000;
-            
-            DosFileControlBlock fcb = new(_memory, fcbAddress);
-            fcb.DriveNumber = 3; // C:
-            fcb.FileName = "TEST    ";
-            fcb.FileExtension = "TXT";
+        // Act
+        byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
 
-            // Act
-            byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
-
-            // Assert
-            result.Should().Be(DosFcbManager.FcbSuccess);
-            
-            // Check that DTA was filled with the file info
-            // Drive number should be at DTA+0
-            _memory.UInt8[dtaAddress].Should().Be(3);
-        } finally {
-            // Cleanup
-            if (Directory.Exists(testDir)) {
-                Directory.Delete(testDir, true);
-            }
-        }
+        // Assert
+        result.Should().Be(DosFcbManager.FcbSuccess);
+        
+        // Check that DTA was filled with the file info
+        // Drive number should be at DTA+0
+        _memory.UInt8[dtaAddress].Should().Be(3);
     }
 
     /// <summary>
@@ -310,39 +318,22 @@ public class DosFcbTests {
     /// </summary>
     [Fact]
     public void DosFcbManager_FindFirst_ReturnsErrorWhenFileNotFound() {
-        // Arrange - Create an empty temp directory
-        string testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(testDir);
+        // Arrange
+        DosFcbManager fcbManager = CreateFcbManagerWithTestDirectory();
+        
+        const uint fcbAddress = 0x1000;
+        const uint dtaAddress = 0x2000;
+        
+        DosFileControlBlock fcb = new(_memory, fcbAddress);
+        fcb.DriveNumber = 3; // C:
+        fcb.FileName = "NOTFOUND";
+        fcb.FileExtension = "TXT";
 
-        try {
-            string executablePath = Path.Combine(testDir, "test.exe");
-            DosDriveManager driveManager = new(_loggerService, testDir, executablePath);
-            DosStringDecoder stringDecoder = new(_memory, null!);
-            DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-                new List<IVirtualDevice>());
-            
-            DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
-            
-            // Set up the FCB at address 0x1000
-            const uint fcbAddress = 0x1000;
-            const uint dtaAddress = 0x2000;
-            
-            DosFileControlBlock fcb = new(_memory, fcbAddress);
-            fcb.DriveNumber = 3; // C:
-            fcb.FileName = "NOTFOUND";
-            fcb.FileExtension = "TXT";
+        // Act
+        byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
 
-            // Act
-            byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
-
-            // Assert
-            result.Should().Be(DosFcbManager.FcbError);
-        } finally {
-            // Cleanup
-            if (Directory.Exists(testDir)) {
-                Directory.Delete(testDir, true);
-            }
-        }
+        // Assert
+        result.Should().Be(DosFcbManager.FcbError);
     }
 
     /// <summary>
@@ -350,42 +341,25 @@ public class DosFcbTests {
     /// </summary>
     [Fact]
     public void DosFcbManager_FindFirst_WithWildcards_FindsFirstMatch() {
-        // Arrange - Create a temp directory with multiple test files
-        string testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(testDir);
-        File.WriteAllText(Path.Combine(testDir, "FILE1.TXT"), "content1");
-        File.WriteAllText(Path.Combine(testDir, "FILE2.TXT"), "content2");
-        File.WriteAllText(Path.Combine(testDir, "OTHER.DAT"), "other");
+        // Arrange
+        DosFcbManager fcbManager = CreateFcbManagerWithTestDirectory();
+        File.WriteAllText(Path.Combine(_testDir!, "FILE1.TXT"), "content1");
+        File.WriteAllText(Path.Combine(_testDir!, "FILE2.TXT"), "content2");
+        File.WriteAllText(Path.Combine(_testDir!, "OTHER.DAT"), "other");
+        
+        const uint fcbAddress = 0x1000;
+        const uint dtaAddress = 0x2000;
+        
+        DosFileControlBlock fcb = new(_memory, fcbAddress);
+        fcb.DriveNumber = 3; // C:
+        fcb.FileName = "????????"; // All wildcards
+        fcb.FileExtension = "TXT";
 
-        try {
-            string executablePath = Path.Combine(testDir, "test.exe");
-            DosDriveManager driveManager = new(_loggerService, testDir, executablePath);
-            DosStringDecoder stringDecoder = new(_memory, null!);
-            DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-                new List<IVirtualDevice>());
-            
-            DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
-            
-            // Set up the FCB with wildcards at address 0x1000
-            const uint fcbAddress = 0x1000;
-            const uint dtaAddress = 0x2000;
-            
-            DosFileControlBlock fcb = new(_memory, fcbAddress);
-            fcb.DriveNumber = 3; // C:
-            fcb.FileName = "????????"; // All wildcards
-            fcb.FileExtension = "TXT";
+        // Act
+        byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
 
-            // Act
-            byte result = fcbManager.FindFirst(fcbAddress, dtaAddress);
-
-            // Assert
-            result.Should().Be(DosFcbManager.FcbSuccess);
-        } finally {
-            // Cleanup
-            if (Directory.Exists(testDir)) {
-                Directory.Delete(testDir, true);
-            }
-        }
+        // Assert
+        result.Should().Be(DosFcbManager.FcbSuccess);
     }
 
     /// <summary>
@@ -393,47 +367,30 @@ public class DosFcbTests {
     /// </summary>
     [Fact]
     public void DosFcbManager_FindNext_FindsSubsequentMatches() {
-        // Arrange - Create a temp directory with multiple test files
-        string testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(testDir);
-        File.WriteAllText(Path.Combine(testDir, "FILE1.TXT"), "content1");
-        File.WriteAllText(Path.Combine(testDir, "FILE2.TXT"), "content2");
+        // Arrange
+        DosFcbManager fcbManager = CreateFcbManagerWithTestDirectory();
+        File.WriteAllText(Path.Combine(_testDir!, "FILE1.TXT"), "content1");
+        File.WriteAllText(Path.Combine(_testDir!, "FILE2.TXT"), "content2");
+        
+        const uint fcbAddress = 0x1000;
+        const uint dtaAddress = 0x2000;
+        
+        DosFileControlBlock fcb = new(_memory, fcbAddress);
+        fcb.DriveNumber = 3; // C:
+        fcb.FileName = "????????"; // All wildcards
+        fcb.FileExtension = "TXT";
 
-        try {
-            string executablePath = Path.Combine(testDir, "test.exe");
-            DosDriveManager driveManager = new(_loggerService, testDir, executablePath);
-            DosStringDecoder stringDecoder = new(_memory, null!);
-            DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-                new List<IVirtualDevice>());
-            
-            DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
-            
-            // Set up the FCB with wildcards at address 0x1000
-            const uint fcbAddress = 0x1000;
-            const uint dtaAddress = 0x2000;
-            
-            DosFileControlBlock fcb = new(_memory, fcbAddress);
-            fcb.DriveNumber = 3; // C:
-            fcb.FileName = "????????"; // All wildcards
-            fcb.FileExtension = "TXT";
+        // Act - Find First
+        byte result1 = fcbManager.FindFirst(fcbAddress, dtaAddress);
+        result1.Should().Be(DosFcbManager.FcbSuccess);
 
-            // Act - Find First
-            byte result1 = fcbManager.FindFirst(fcbAddress, dtaAddress);
-            result1.Should().Be(DosFcbManager.FcbSuccess);
+        // Act - Find Next should find the second file
+        byte result2 = fcbManager.FindNext(fcbAddress, dtaAddress);
+        result2.Should().Be(DosFcbManager.FcbSuccess);
 
-            // Act - Find Next should find the second file
-            byte result2 = fcbManager.FindNext(fcbAddress, dtaAddress);
-            result2.Should().Be(DosFcbManager.FcbSuccess);
-
-            // Act - Find Next should return error (no more files)
-            byte result3 = fcbManager.FindNext(fcbAddress, dtaAddress);
-            result3.Should().Be(DosFcbManager.FcbError);
-        } finally {
-            // Cleanup
-            if (Directory.Exists(testDir)) {
-                Directory.Delete(testDir, true);
-            }
-        }
+        // Act - Find Next should return error (no more files)
+        byte result3 = fcbManager.FindNext(fcbAddress, dtaAddress);
+        result3.Should().Be(DosFcbManager.FcbError);
     }
 
     /// <summary>
@@ -442,36 +399,20 @@ public class DosFcbTests {
     [Fact]
     public void DosFcbManager_FindNext_ReturnsErrorWithoutFindFirst() {
         // Arrange
-        string testDir = Path.Combine(Path.GetTempPath(), "fcbtest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(testDir);
+        DosFcbManager fcbManager = CreateFcbManagerWithTestDirectory();
+        
+        const uint fcbAddress = 0x1000;
+        const uint dtaAddress = 0x2000;
+        
+        DosFileControlBlock fcb = new(_memory, fcbAddress);
+        fcb.DriveNumber = 3;
+        fcb.FileName = "TEST    ";
+        fcb.FileExtension = "TXT";
 
-        try {
-            string executablePath = Path.Combine(testDir, "test.exe");
-            DosDriveManager driveManager = new(_loggerService, testDir, executablePath);
-            DosStringDecoder stringDecoder = new(_memory, null!);
-            DosFileManager dosFileManager = new(_memory, stringDecoder, driveManager, _loggerService, 
-                new List<IVirtualDevice>());
-            
-            DosFcbManager fcbManager = new(_memory, dosFileManager, driveManager, _loggerService);
-            
-            const uint fcbAddress = 0x1000;
-            const uint dtaAddress = 0x2000;
-            
-            DosFileControlBlock fcb = new(_memory, fcbAddress);
-            fcb.DriveNumber = 3;
-            fcb.FileName = "TEST    ";
-            fcb.FileExtension = "TXT";
+        // Act - Call FindNext without FindFirst
+        byte result = fcbManager.FindNext(fcbAddress, dtaAddress);
 
-            // Act - Call FindNext without FindFirst
-            byte result = fcbManager.FindNext(fcbAddress, dtaAddress);
-
-            // Assert
-            result.Should().Be(DosFcbManager.FcbError);
-        } finally {
-            // Cleanup
-            if (Directory.Exists(testDir)) {
-                Directory.Delete(testDir, true);
-            }
-        }
+        // Assert
+        result.Should().Be(DosFcbManager.FcbError);
     }
 }
