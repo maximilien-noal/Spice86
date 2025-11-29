@@ -560,6 +560,68 @@ public class DosInt21IntegrationTests {
     }
 
     /// <summary>
+    /// Tests that the current directory is set to the executable's directory at startup.
+    /// This is critical for VB3/QuickBASIC programs that look for their runtime (e.g., BRUN30.EXE)
+    /// in the current directory or relative to their own location.
+    /// </summary>
+    /// <remarks>
+    /// VB3/QuickBASIC compiled programs need their runtime (BRUN30.EXE) in the same directory.
+    /// They find it by either:
+    /// 1. Looking in the current directory
+    /// 2. Extracting the directory from the program path in the environment block
+    /// 
+    /// This test verifies that INT 21h, AH=47h (Get Current Directory) returns
+    /// an empty string, indicating the current directory is the root of the drive
+    /// (which is correct when the executable is in the root of the mounted drive).
+    /// 
+    /// DOS path behavior:
+    /// - When current dir is root "C:\", INT 21h AH=47h returns empty string (without the drive letter)
+    /// - When current dir is "C:\GAMES\", it returns "GAMES" (without drive letter or leading backslash)
+    /// </remarks>
+    [Fact]
+    public void CurrentDirectory_IsSetToExecutableDirectory() {
+        // This test uses INT 21h, AH=47h to get the current directory
+        // Since the test COM file is written to the current working directory (root of mounted drive),
+        // the current directory should be empty (root directory has no path component)
+        byte[] program = new byte[] {
+            // Allocate buffer for current directory at DS:SI
+            // We'll use the area right after our code
+            
+            // Set up for INT 21h, AH=47h (Get Current Directory)
+            0xB4, 0x47,             // 0x00: mov ah, 47h - Get current directory
+            0xB2, 0x00,             // 0x02: mov dl, 0 - Current drive (0 = default)
+            0xBE, 0x20, 0x01,       // 0x04: mov si, 0120h - Buffer offset (after our code)
+            0xCD, 0x21,             // 0x07: int 21h
+            
+            // Check carry flag - if set, error occurred
+            0x72, 0x0F,             // 0x09: jc failed (jump if carry set)
+            
+            // Check if the buffer at DS:SI is empty (root directory returns empty string)
+            // For root directory, the first byte should be 0x00 (null terminator)
+            0x8A, 0x04,             // 0x0B: mov al, [si] - Load first byte of current dir
+            0x3C, 0x00,             // 0x0D: cmp al, 0 - Should be null for root dir
+            0x75, 0x08,             // 0x0F: jne failed
+            
+            // Success - current directory is root (empty string)
+            0xB0, 0x00,             // 0x11: mov al, TestResult.Success
+            0xEB, 0x02,             // 0x13: jmp writeResult
+            
+            // failed:
+            0xB0, 0xFF,             // 0x15: mov al, TestResult.Failure
+            
+            // writeResult:
+            0xBA, 0x99, 0x09,       // 0x17: mov dx, ResultPort
+            0xEE,                   // 0x1A: out dx, al
+            0xF4                    // 0x1B: hlt
+        };
+
+        DosTestHandler testHandler = RunDosTest(program);
+
+        testHandler.Results.Should().Contain((byte)TestResult.Success);
+        testHandler.Results.Should().NotContain((byte)TestResult.Failure);
+    }
+
+    /// <summary>
     /// Runs the DOS test program and returns a test handler with results
     /// </summary>
     private DosTestHandler RunDosTest(byte[] program,
