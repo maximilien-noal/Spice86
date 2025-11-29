@@ -555,17 +555,30 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
+    /// Initializes common PSP fields shared between regular and child PSP creation.
+    /// Sets the INT 20h instruction and parent PSP segment.
+    /// </summary>
+    /// <param name="psp">The PSP to initialize.</param>
+    /// <param name="parentPspSegment">The segment of the parent PSP.</param>
+    private static void InitializeCommonPspFields(DosProgramSegmentPrefix psp, ushort parentPspSegment) {
+        // Set the PSP's first 2 bytes to INT 20h (CP/M-style exit)
+        psp.Exit[0] = 0xCD;
+        psp.Exit[1] = 0x20;
+        
+        // Set parent PSP segment
+        psp.ParentProgramSegmentPrefix = parentPspSegment;
+    }
+
+    /// <summary>
     /// Initializes a PSP with the given parameters.
     /// </summary>
     private void InitializePsp(DosProgramSegmentPrefix psp, ushort parentPspSegment, 
         ushort envSegment, string? arguments) {
         
-        // Set the PSP's first 2 bytes to INT 20h
-        psp.Exit[0] = 0xCD;
-        psp.Exit[1] = 0x20;
+        // Initialize common PSP fields (INT 20h and parent PSP)
+        InitializeCommonPspFields(psp, parentPspSegment);
 
         psp.NextSegment = DosMemoryManager.LastFreeSegment;
-        psp.ParentProgramSegmentPrefix = parentPspSegment;
         psp.EnvironmentTableSegment = envSegment;
 
         // Load command-line arguments
@@ -938,6 +951,9 @@ public class DosProcessManager : DosFileLoader {
             _memory.UInt8[psp.BaseAddress + (uint)i] = 0;
         }
         
+        // Initialize common PSP fields (INT 20h and parent PSP)
+        InitializeCommonPspFields(psp, parentPspSegment);
+        
         // Set size (next_seg = psp_segment + size)
         psp.NextSegment = (ushort)(pspSegment + sizeInParagraphs);
         
@@ -947,17 +963,10 @@ public class DosProcessManager : DosFileLoader {
         // CPM entry point - faked address (0xDEAD:0xFFFF)
         psp.CpmServiceRequestAddress = MakeFarPointer(0xDEAD, 0xFFFF);
         
-        // Standard blocks: INT 20h at offset 0
-        psp.Exit[0] = 0xCD;
-        psp.Exit[1] = 0x20;
-        
         // INT 21h / RETF at offset 0x50
         psp.Service[0] = 0xCD;
         psp.Service[1] = 0x21;
         psp.Service[2] = 0xCB;
-        
-        // Set parent PSP
-        psp.ParentProgramSegmentPrefix = parentPspSegment;
         
         // Previous PSP set to 0xFFFFFFFF
         psp.PreviousPspAddress = 0xFFFFFFFF;
