@@ -10,6 +10,7 @@ using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Interfaces;
+using Spice86.Shared.Utils;
 
 using Xunit;
 
@@ -43,7 +44,8 @@ public class DosProgramSegmentPrefixTrackerTests {
         var configuration = new Configuration {
             ProgramEntryPointSegment = (ushort)0x1000
         };
-        _pspTracker = new(configuration, memory, loggerService);
+        DosSwappableDataArea dosSwappableDataArea = new(memory, MemoryUtils.ToPhysicalAddress(0xb2, 0));
+        _pspTracker = new(configuration, memory, dosSwappableDataArea, loggerService);
     }
 
     /// <summary>

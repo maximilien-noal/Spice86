@@ -40,16 +40,25 @@ public class DosProgramSegmentPrefixTracker {
 
     private readonly IMemory _memory;
     private readonly ILoggerService _loggerService;
+    private readonly DosSwappableDataArea _dosSwappableDataArea;
 
     /// <summary>
     /// The PSPs for each program that is currently loaded.
     /// </summary>
     private readonly List<DosProgramSegmentPrefix> _loadedPsps;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DosProgramSegmentPrefixTracker"/> class.
+    /// </summary>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="memory">The memory.</param>
+    /// <param name="dosSwappableDataArea">The DOS swappable data area.</param>
+    /// <param name="loggerService">The logger service.</param>
     public DosProgramSegmentPrefixTracker(Configuration configuration, IMemory memory,
-        ILoggerService loggerService) {
+        DosSwappableDataArea dosSwappableDataArea, ILoggerService loggerService) {
         _initialProgramEntryPointSegment = configuration.ProgramEntryPointSegment;
         _memory = memory;
+        _dosSwappableDataArea = dosSwappableDataArea;
         _loggerService = loggerService;
         _loadedPsps = new();
 
@@ -105,6 +114,14 @@ public class DosProgramSegmentPrefixTracker {
     public ushort GetCurrentPspSegment() {
         DosProgramSegmentPrefix? currentPsp = GetCurrentPsp();
         return currentPsp == null ? InitialPspSegment : MemoryUtils.ToSegment(currentPsp.BaseAddress);
+    }
+
+    /// <summary>
+    /// Sets the current Program Segment Prefix (PSP) segment value for the DOS swappable data area.
+    /// </summary>
+    /// <param name="segment">The segment value to assign as the current Program Segment Prefix. Must be a valid <see cref="DosProgramSegmentPrefix"/> structure.</param>
+    public void SetCurrentPspSegment(ushort segment) {
+        _dosSwappableDataArea.CurrentProgramSegmentPrefix = segment;
     }
 
     /// <summary>
