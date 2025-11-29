@@ -1109,4 +1109,34 @@ public class BatchProcessorTests : IDisposable {
     }
 
     #endregion
+
+    #region CommandCom Integration Tests
+
+    [Fact]
+    public void CommandCom_CreateAutoexecForProgram_ReturnsConfiguredGenerator() {
+        // Act
+        AutoexecGenerator generator = CommandCom.CreateAutoexecForProgram("GAME.EXE", "arg1");
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(3);
+        lines[0].Should().Be("@ECHO OFF");
+        lines[1].Should().Be("GAME.EXE arg1");
+        lines[2].Should().Be("@EXIT");
+    }
+
+    [Fact]
+    public void CommandCom_CreateAutoexecForBatch_ReturnsConfiguredGenerator() {
+        // Act
+        AutoexecGenerator generator = CommandCom.CreateAutoexecForBatch("SETUP.BAT", "%1");
+        string[] lines = generator.Generate();
+
+        // Assert
+        lines.Should().HaveCount(3);
+        lines[0].Should().Be("@ECHO OFF");
+        lines[1].Should().Be("CALL SETUP.BAT %1");
+        lines[2].Should().Be("@EXIT");
+    }
+
+    #endregion
 }

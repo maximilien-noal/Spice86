@@ -22,6 +22,11 @@ using Spice86.Shared.Utils;
 /// <see cref="BatchProcessor"/> class, which handles .BAT file execution.
 /// </para>
 /// <para>
+/// The implementation follows DOSBox staging's approach where an
+/// auto-generated AUTOEXEC.BAT can be used to bootstrap programs
+/// within the DOS environment.
+/// </para>
+/// <para>
 /// The initial program is launched via <see cref="DosProcessManager.LoadFile"/>,
 /// which converts the Configuration.Exe path to a DOS path and calls the EXEC API
 /// to simulate COMMAND.COM launching the program.
@@ -52,6 +57,11 @@ public class CommandCom : DosProgramSegmentPrefix {
     private readonly BatchProcessor _batchProcessor;
 
     /// <summary>
+    /// The logger service for diagnostic output.
+    /// </summary>
+    private readonly ILoggerService _loggerService;
+
+    /// <summary>
     /// Gets the segment address of COMMAND.COM's PSP.
     /// </summary>
     public ushort PspSegment => CommandComSegment;
@@ -69,6 +79,7 @@ public class CommandCom : DosProgramSegmentPrefix {
     /// <param name="loggerService">The logger service.</param>
     public CommandCom(IMemory memory, ILoggerService loggerService)
         : base(memory, MemoryUtils.ToPhysicalAddress(CommandComSegment, 0)) {
+        _loggerService = loggerService;
         _batchProcessor = new BatchProcessor(loggerService);
         InitializePsp();
 
@@ -77,6 +88,78 @@ public class CommandCom : DosProgramSegmentPrefix {
                 "COMMAND.COM PSP initialized at segment {Segment:X4}",
                 CommandComSegment);
         }
+    }
+
+    /// <summary>
+    /// Creates an AutoexecGenerator for launching a program.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Based on DOSBox staging's autoexec.cpp implementation.
+    /// This generates AUTOEXEC.BAT content that:
+    /// - Turns ECHO off for cleaner output
+    /// - Launches the specified program with arguments
+    /// - Optionally exits after execution
+    /// </para>
+    /// </remarks>
+    /// <param name="programPath">The DOS path to the program to execute.</param>
+    /// <param name="arguments">Optional command line arguments.</param>
+    /// <param name="exitAfter">Whether to exit COMMAND.COM after execution.</param>
+    /// <returns>An AutoexecGenerator configured for the program.</returns>
+    public static AutoexecGenerator CreateAutoexecForProgram(string programPath, string arguments = "", bool exitAfter = true) {
+        return AutoexecGenerator.ForProgram(programPath, arguments, exitAfter);
+    }
+
+    /// <summary>
+    /// Creates an AutoexecGenerator for launching a batch file.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Uses CALL to invoke the batch file so that execution continues
+    /// after the batch file completes.
+    /// </para>
+    /// </remarks>
+    /// <param name="batchPath">The DOS path to the batch file to execute.</param>
+    /// <param name="arguments">Optional command line arguments.</param>
+    /// <param name="exitAfter">Whether to exit COMMAND.COM after execution.</param>
+    /// <returns>An AutoexecGenerator configured for the batch file.</returns>
+    public static AutoexecGenerator CreateAutoexecForBatch(string batchPath, string arguments = "", bool exitAfter = true) {
+        return AutoexecGenerator.ForBatch(batchPath, arguments, exitAfter);
+    }
+
+    /// <summary>
+    /// Loads an in-memory batch file for execution by the batch processor.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is useful for executing auto-generated batch content without
+    /// needing a physical file. Based on DOSBox staging's virtual AUTOEXEC.BAT.
+    /// </para>
+    /// </remarks>
+    /// <param name="generator">The AutoexecGenerator containing the batch content.</param>
+    /// <param name="batchName">The name to give the batch file (for display/logging).</param>
+    /// <returns>True if the batch was loaded successfully.</returns>
+    public bool LoadAutoexecBatch(AutoexecGenerator generator, string batchName = "AUTOEXEC.BAT") {
+        string[] lines = generator.Generate();
+        StringArrayLineReader reader = new(lines);
+
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("Loading auto-generated {BatchName} with {LineCount} lines", batchName, lines.Length);
+        }
+
+        return _batchProcessor.StartBatchWithReader(batchName, [], reader);
+    }
+
+    /// <summary>
+    /// Loads batch content from a string array for execution.
+    /// </summary>
+    /// <param name="lines">The batch file lines to execute.</param>
+    /// <param name="batchName">The name to give the batch file.</param>
+    /// <param name="parameters">Optional batch file parameters (%1-%9).</param>
+    /// <returns>True if the batch was loaded successfully.</returns>
+    public bool LoadBatchFromLines(string[] lines, string batchName, string[]? parameters = null) {
+        StringArrayLineReader reader = new(lines);
+        return _batchProcessor.StartBatchWithReader(batchName, parameters ?? [], reader);
     }
 
     /// <summary>
