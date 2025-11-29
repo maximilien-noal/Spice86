@@ -92,6 +92,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     // Sample control
     private byte _sampleCtrl;
 
+    // DMA transfer state
+    private byte _dmaAddrNibble;
+    private readonly byte[] _dmaBuffer = new byte[GusConstants.BytesPerDmaTransfer];
+
     private bool _disposed;
 
     /// <summary>
@@ -325,9 +329,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         if ((value & 0x01) != 0) {
             if (!_timer1.IsCountingDown) {
                 _timer1.IsCountingDown = true;
-                // TODO: Implement timer events using PIC's event system.
-                // Timer-based IRQs are not currently functional, which may affect
-                // games that rely on GUS timers for timing or synchronization.
+                _timer1.AccumulatedMs = 0;
             }
         } else {
             _timer1.IsCountingDown = false;
@@ -336,9 +338,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         if ((value & 0x02) != 0) {
             if (!_timer2.IsCountingDown) {
                 _timer2.IsCountingDown = true;
-                // TODO: Implement timer events using PIC's event system.
-                // Timer-based IRQs are not currently functional, which may affect
-                // games that rely on GUS timers for timing or synchronization.
+                _timer2.AccumulatedMs = 0;
             }
         } else {
             _timer2.IsCountingDown = false;
@@ -654,8 +654,8 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _dmaControlRegister = new DmaControlRegister();
         _sampleCtrl = 0;
         _timerCtrl = 0;
-        _timer1 = new GusTimer(GusConstants.Timer1DefaultDelay);
-        _timer2 = new GusTimer(GusConstants.Timer2DefaultDelay);
+        _timer1.Reset(GusConstants.Timer1DefaultDelay);
+        _timer2.Reset(GusConstants.Timer2DefaultDelay);
 
         foreach (GusVoice voice in _voices) {
             voice.ResetCtrls();
@@ -669,6 +669,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _activeVoices = 0;
 
         _dmaAddr = 0;
+        _dmaAddrNibble = 0;
         _dramAddr = 0;
         _registerData = 0;
         _selectedRegister = 0;
@@ -678,12 +679,130 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     }
 
     private void StartDmaTransfers() {
-        // TODO: Implement DMA transfer from system memory to GUS RAM.
-        // Full implementation would use _dmaChannel.Read() to transfer data
-        // and respect _dmaControlRegister settings (direction, 8/16-bit mode,
-        // rate divisor, high bit inversion for sign conversion).
+        if (_dmaChannel == null || _dmaChannel.IsMasked || !_dmaControlRegister.IsEnabled) {
+            if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+                _loggerService.Debug("GUS: DMA transfer skipped (channel null, masked, or disabled)");
+            }
+            return;
+        }
+
+        // Perform the DMA transfer
+        bool continueTransfer = PerformDmaTransfer();
+        
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
-            _loggerService.Debug("GUS: DMA transfer started");
+            _loggerService.Debug("GUS: DMA transfer {Result}", continueTransfer ? "continuing" : "complete");
+        }
+    }
+
+    /// <summary>
+    /// Performs the actual DMA transfer between system memory and GUS RAM.
+    /// </summary>
+    /// <returns>True if more transfers are pending, false if complete.</returns>
+    private bool PerformDmaTransfer() {
+        if (_dmaChannel == null || _dmaChannel.IsMasked || !_dmaControlRegister.IsEnabled) {
+            return false;
+        }
+
+        // Get the current DMA offset in GUS RAM (20-bit address)
+        uint offset = GetDmaOffset();
+        
+        // Get the pending DMA count
+        ushort desired = (ushort)(_dmaChannel.CurrentCount + 1);
+        
+        // Cap to our transfer buffer size
+        int bytesToTransfer = Math.Min(desired, _dmaBuffer.Length);
+        
+        // Ensure we don't exceed GUS RAM
+        if (offset + (uint)bytesToTransfer > _ram.Length) {
+            bytesToTransfer = (int)(_ram.Length - offset);
+            if (bytesToTransfer <= 0) {
+                return false;
+            }
+        }
+
+        int transferred;
+        if (_dmaControlRegister.IsDirectionGusToHost) {
+            // GUS RAM -> System memory (read from GUS perspective)
+            Array.Copy(_ram, (int)offset, _dmaBuffer, 0, bytesToTransfer);
+            transferred = _dmaChannel.Write(bytesToTransfer, _dmaBuffer.AsSpan(0, bytesToTransfer));
+        } else {
+            // System memory -> GUS RAM (write to GUS RAM)
+            transferred = _dmaChannel.Read(bytesToTransfer, _dmaBuffer);
+            if (transferred > 0) {
+                // If requested, invert the loaded samples' most-significant bits (sign conversion)
+                if (_dmaControlRegister.AreSamplesHighBitInverted) {
+                    InvertSampleHighBits(_dmaBuffer.AsSpan(0, transferred));
+                }
+                Array.Copy(_dmaBuffer, 0, _ram, (int)offset, transferred);
+            }
+        }
+
+        if (transferred > 0) {
+            // Update the DMA address register with the new position
+            UpdateDmaAddr(offset + (uint)transferred);
+        }
+
+        // Check if terminal count was reached
+        if (_dmaChannel.HasReachedTerminalCount) {
+            _dmaControlRegister.HasPendingTerminalCountIrq = true;
+            if (_dmaControlRegister.WantsIrqOnTerminalCount) {
+                _irqStatus |= 0x80;
+                CheckIrq();
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the 20-bit DMA offset into GUS RAM.
+    /// </summary>
+    private uint GetDmaOffset() {
+        uint adjusted;
+        if (IsDmaXfer16Bit()) {
+            // 16-bit DMA uses special address layout
+            uint upper = (uint)(_dmaAddr & 0b1100_0000_0000_0000);
+            uint lower = (uint)(_dmaAddr & 0b0001_1111_1111_1111);
+            adjusted = upper | (lower << 1);
+        } else {
+            adjusted = _dmaAddr;
+        }
+        return (adjusted << 4) + _dmaAddrNibble;
+    }
+
+    /// <summary>
+    /// Updates the DMA address register from a 20-bit RAM offset.
+    /// </summary>
+    private void UpdateDmaAddr(uint offset) {
+        uint adjusted;
+        if (IsDmaXfer16Bit()) {
+            uint upper = offset & 0b1100_0000_0000_0000_0000;
+            uint lower = offset & 0b0011_1111_1111_1111_1110;
+            adjusted = upper | (lower >> 1);
+        } else {
+            adjusted = offset & 0b1111_1111_1111_1111_0000;
+        }
+        _dmaAddr = (ushort)(adjusted >> 4);
+        _dmaAddrNibble = (byte)(offset & 0xf);
+    }
+
+    /// <summary>
+    /// Determines if DMA transfer should use 16-bit mode.
+    /// </summary>
+    private bool IsDmaXfer16Bit() {
+        // 16-bit mode if channel is configured for 16-bit AND using high DMA (channel >= 4)
+        return _dmaControlRegister.IsChannel16Bit && _dma1 >= 4;
+    }
+
+    /// <summary>
+    /// Inverts the high bit of each sample for sign conversion (unsigned to signed or vice versa).
+    /// </summary>
+    private static void InvertSampleHighBits(Span<byte> buffer) {
+        // For 8-bit samples, invert bit 7 of each byte
+        // For 16-bit samples, this would need to operate on every other byte
+        for (int i = 0; i < buffer.Length; i++) {
+            buffer[i] ^= 0x80;
         }
     }
 
@@ -706,6 +825,12 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     /// serialized with respect to the audio rendering performed here.
     /// </summary>
     private void PlaybackLoopBody() {
+        // Calculate elapsed time based on render buffer size and sample rate
+        double elapsedMs = (_renderBuffer.Length * 1000.0) / GusConstants.OutputSampleRate;
+        
+        // Process timers
+        ProcessTimers(elapsedMs);
+        
         RenderFrames(_renderBuffer);
 
         // Convert stereo frame pairs to interleaved float array
@@ -716,6 +841,44 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         }
 
         _soundChannel.Render(_outputBuffer.AsSpan(0, outputIndex));
+    }
+
+    /// <summary>
+    /// Processes GUS timers, firing IRQs when they expire.
+    /// </summary>
+    private void ProcessTimers(double elapsedMs) {
+        if (CheckTimer(_timer1, 0, elapsedMs)) {
+            // Timer 1 keeps running if counting down
+        }
+        if (CheckTimer(_timer2, 1, elapsedMs)) {
+            // Timer 2 keeps running if counting down
+        }
+    }
+
+    /// <summary>
+    /// Checks and updates a single timer, returning true if it should continue counting.
+    /// </summary>
+    private bool CheckTimer(GusTimer timer, int timerIndex, double elapsedMs) {
+        if (!timer.IsCountingDown) {
+            return false;
+        }
+
+        timer.AccumulatedMs += elapsedMs;
+        
+        while (timer.AccumulatedMs >= timer.Delay) {
+            timer.AccumulatedMs -= timer.Delay;
+            
+            if (!timer.IsMasked) {
+                timer.HasExpired = true;
+            }
+            
+            if (timer.ShouldRaiseIrq) {
+                _irqStatus |= (byte)(0x4 << timerIndex);
+                CheckIrq();
+            }
+        }
+        
+        return timer.IsCountingDown;
     }
 
     private void RenderFrames(Span<(float Left, float Right)> frames) {

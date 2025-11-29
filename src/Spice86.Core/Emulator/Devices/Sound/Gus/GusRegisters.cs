@@ -281,9 +281,27 @@ internal sealed class GusTimer {
     public bool ShouldRaiseIrq { get; set; }
 
     /// <summary>
+    /// Accumulated time for this timer in milliseconds.
+    /// </summary>
+    public double AccumulatedMs { get; set; }
+
+    /// <summary>
     /// Initializes a new timer with the specified default delay.
     /// </summary>
     public GusTimer(double defaultDelay) {
         Delay = defaultDelay;
+    }
+
+    /// <summary>
+    /// Resets the timer to initial state.
+    /// </summary>
+    public void Reset(double defaultDelay) {
+        Delay = defaultDelay;
+        Value = 0xff;
+        HasExpired = true;
+        IsCountingDown = false;
+        IsMasked = false;
+        ShouldRaiseIrq = false;
+        AccumulatedMs = 0;
     }
 }
