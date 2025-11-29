@@ -562,7 +562,7 @@ public class DosInt21IntegrationTests {
     /// <summary>
     /// Tests that the current directory is set to the executable's directory at startup.
     /// This is critical for VB3/QuickBASIC programs that look for their runtime (e.g., BRUN30.EXE)
-    /// in the current directory or relative to their own location.
+    /// in the current directory or relative to the directory containing the executable.
     /// </summary>
     /// <remarks>
     /// VB3/QuickBASIC compiled programs need their runtime (BRUN30.EXE) in the same directory.
