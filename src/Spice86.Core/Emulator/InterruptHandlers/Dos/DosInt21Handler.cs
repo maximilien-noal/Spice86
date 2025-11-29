@@ -1583,13 +1583,14 @@ public class DosInt21Handler : InterruptHandler {
         string fileName = _dosStringDecoder.GetZeroTerminatedStringAtDsDx();
         byte accessMode = State.AL;
         FileAccessMode fileAccessMode = (FileAccessMode)(accessMode & 0b111);
+        bool noInherit = (accessMode & (byte)FileAccessMode.Private) != 0;
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-            LoggerService.Verbose("OPEN FILE {FileName} with mode {AccessMode} : {FileAccessModeByte}",
-                fileName, fileAccessMode,
+            LoggerService.Verbose("OPEN FILE {FileName} with mode {AccessMode}, noInherit={NoInherit} : {FileAccessModeByte}",
+                fileName, fileAccessMode, noInherit,
                 ConvertUtils.ToHex8(State.AL));
         }
         DosFileOperationResult dosFileOperationResult = _dosFileManager.OpenFileOrDevice(
-            fileName, fileAccessMode);
+            fileName, fileAccessMode, noInherit);
         SetStateFromDosFileOperationResult(calledFromVm, dosFileOperationResult);
     }
 
