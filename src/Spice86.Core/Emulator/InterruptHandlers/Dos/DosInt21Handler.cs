@@ -31,6 +31,11 @@ public class DosInt21Handler : InterruptHandler {
     /// This must match the value in <c>Dos.DosSysVarSegment</c> (private const in Dos.cs, line 47).
     /// </summary>
     private const ushort DosSysVarsSegment = 0x80;
+    
+    /// <summary>
+    /// Value set in AL after CreateChildPsp (per DOSBox behavior: reg_al=0xf0, "destroyed" value).
+    /// </summary>
+    private const byte CreateChildPspAlDestroyedValue = 0xF0;
 
     private readonly DosMemoryManager _dosMemoryManager;
     private readonly DosDriveManager _dosDriveManager;
@@ -1246,8 +1251,8 @@ public class DosInt21Handler : InterruptHandler {
         // Set current PSP to the new child PSP (per DOSBox behavior: dos.psp(reg_dx))
         _dosPspTracker.SetCurrentPspSegment(childSegment);
         
-        // AL is destroyed, set to 0xF0 (per DOSBox: reg_al=0xf0)
-        State.AL = 0xF0;
+        // AL is destroyed (per DOSBox: reg_al=0xf0)
+        State.AL = CreateChildPspAlDestroyedValue;
     }
 
     /// <summary>
@@ -1581,13 +1586,14 @@ public class DosInt21Handler : InterruptHandler {
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
     public void OpenFileorDevice(bool calledFromVm) {
         string fileName = _dosStringDecoder.GetZeroTerminatedStringAtDsDx();
-        byte accessMode = State.AL;
-        FileAccessMode fileAccessMode = (FileAccessMode)(accessMode & 0b111);
-        bool noInherit = (accessMode & (byte)FileAccessMode.Private) != 0;
+        byte accessModeByte = State.AL;
+        // Pass the full access mode byte - bits 0-2 are access mode, bits 4-6 are sharing mode, bit 7 is no-inherit
+        FileAccessMode fileAccessMode = (FileAccessMode)accessModeByte;
+        bool noInherit = (accessModeByte & (byte)FileAccessMode.Private) != 0;
         if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
             LoggerService.Verbose("OPEN FILE {FileName} with mode {AccessMode}, noInherit={NoInherit} : {FileAccessModeByte}",
                 fileName, fileAccessMode, noInherit,
-                ConvertUtils.ToHex8(State.AL));
+                ConvertUtils.ToHex8(accessModeByte));
         }
         DosFileOperationResult dosFileOperationResult = _dosFileManager.OpenFileOrDevice(
             fileName, fileAccessMode, noInherit);

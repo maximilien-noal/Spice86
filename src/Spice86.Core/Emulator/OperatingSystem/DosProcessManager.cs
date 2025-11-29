@@ -25,6 +25,82 @@ using System.Text;
 /// </remarks>
 public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
+    
+    /// <summary>
+    /// Far call opcode (JMP FAR instruction).
+    /// </summary>
+    private const byte FarCallOpcode = 0xEA;
+    
+    /// <summary>
+    /// INT instruction opcode.
+    /// </summary>
+    private const byte IntOpcode = 0xCD;
+    
+    /// <summary>
+    /// INT 21h interrupt number.
+    /// </summary>
+    private const byte Int21Number = 0x21;
+    
+    /// <summary>
+    /// RETF instruction opcode (far return).
+    /// </summary>
+    private const byte RetfOpcode = 0xCB;
+    
+    /// <summary>
+    /// Faked CPM segment address (intentionally invalid).
+    /// </summary>
+    private const ushort FakeCpmSegment = 0xDEAD;
+    
+    /// <summary>
+    /// Faked CPM offset address (intentionally invalid).
+    /// </summary>
+    private const ushort FakeCpmOffset = 0xFFFF;
+    
+    /// <summary>
+    /// Indicates no previous PSP in the chain.
+    /// </summary>
+    private const uint NoPreviousPsp = 0xFFFFFFFF;
+    
+    /// <summary>
+    /// Default DOS major version number.
+    /// </summary>
+    private const byte DefaultDosVersionMajor = 5;
+    
+    /// <summary>
+    /// Default DOS minor version number.
+    /// </summary>
+    private const byte DefaultDosVersionMinor = 0;
+    
+    /// <summary>
+    /// Offset within PSP where the file table is stored.
+    /// </summary>
+    private const ushort FileTableOffset = 0x18;
+    
+    /// <summary>
+    /// Default maximum number of open files per process.
+    /// </summary>
+    private const byte DefaultMaxOpenFiles = 20;
+    
+    /// <summary>
+    /// Value indicating an unused file handle in the PSP file table.
+    /// </summary>
+    private const byte UnusedFileHandle = 0xFF;
+    
+    /// <summary>
+    /// Offset within PSP where command tail data begins.
+    /// </summary>
+    private const ushort CommandTailDataOffset = 0x81;
+    
+    /// <summary>
+    /// Maximum length of the command tail (127 bytes).
+    /// </summary>
+    private const int MaxCommandTailLength = 127;
+    
+    /// <summary>
+    /// Size of a File Control Block (FCB) in bytes.
+    /// </summary>
+    private const int FcbSize = 16;
+    
     private readonly DosProgramSegmentPrefixTracker _pspTracker;
     private readonly DosMemoryManager _memoryManager;
     private readonly DosFileManager _fileManager;
@@ -957,34 +1033,34 @@ public class DosProcessManager : DosFileLoader {
         // Set size (next_seg = psp_segment + size)
         psp.NextSegment = (ushort)(pspSegment + sizeInParagraphs);
         
-        // Far call opcode (0xEA)
-        psp.FarCall = 0xEA;
+        // Far call opcode
+        psp.FarCall = FarCallOpcode;
         
-        // CPM entry point - faked address (0xDEAD:0xFFFF)
-        psp.CpmServiceRequestAddress = MakeFarPointer(0xDEAD, 0xFFFF);
+        // CPM entry point - faked address
+        psp.CpmServiceRequestAddress = MakeFarPointer(FakeCpmSegment, FakeCpmOffset);
         
         // INT 21h / RETF at offset 0x50
-        psp.Service[0] = 0xCD;
-        psp.Service[1] = 0x21;
-        psp.Service[2] = 0xCB;
+        psp.Service[0] = IntOpcode;
+        psp.Service[1] = Int21Number;
+        psp.Service[2] = RetfOpcode;
         
-        // Previous PSP set to 0xFFFFFFFF
-        psp.PreviousPspAddress = 0xFFFFFFFF;
+        // Previous PSP set to indicate no previous PSP
+        psp.PreviousPspAddress = NoPreviousPsp;
         
         // Set DOS version
-        psp.DosVersionMajor = 5;
-        psp.DosVersionMinor = 0;
+        psp.DosVersionMajor = DefaultDosVersionMajor;
+        psp.DosVersionMinor = DefaultDosVersionMinor;
         
         // Save current interrupt vectors 22h, 23h, 24h into the PSP
         SaveInterruptVectors(psp, interruptVectorTable);
         
-        // Initialize file table pointer to point to internal file table (offset 0x18)
-        psp.FileTableAddress = MakeFarPointer(pspSegment, 0x18);
-        psp.MaximumOpenFiles = 20;
+        // Initialize file table pointer to point to internal file table
+        psp.FileTableAddress = MakeFarPointer(pspSegment, FileTableOffset);
+        psp.MaximumOpenFiles = DefaultMaxOpenFiles;
         
-        // Initialize file handles to 0xFF (unused)
-        for (int i = 0; i < 20; i++) {
-            psp.Files[i] = 0xFF;
+        // Initialize file handles to unused
+        for (int i = 0; i < DefaultMaxOpenFiles; i++) {
+            psp.Files[i] = UnusedFileHandle;
         }
     }
 
@@ -1015,12 +1091,12 @@ public class DosProcessManager : DosFileLoader {
     /// inherited by the child process - they get 0xFF (unused) instead.
     /// </remarks>
     private void CopyFileTableFromParent(DosProgramSegmentPrefix childPsp, DosProgramSegmentPrefix parentPsp) {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < DefaultMaxOpenFiles; i++) {
             byte parentHandle = parentPsp.Files[i];
             
-            // If handle is unused (0xFF), keep it unused in child
-            if (parentHandle == 0xFF) {
-                childPsp.Files[i] = 0xFF;
+            // If handle is unused, keep it unused in child
+            if (parentHandle == UnusedFileHandle) {
+                childPsp.Files[i] = UnusedFileHandle;
                 continue;
             }
             
@@ -1029,7 +1105,7 @@ public class DosProcessManager : DosFileLoader {
                 VirtualFileBase? file = _fileManager.OpenFiles[parentHandle];
                 if (file is DosFile dosFile && (dosFile.Flags & (byte)FileAccessMode.Private) != 0) {
                     // File has no-inherit flag set, don't copy to child
-                    childPsp.Files[i] = 0xFF;
+                    childPsp.Files[i] = UnusedFileHandle;
                     continue;
                 }
             }
@@ -1046,11 +1122,11 @@ public class DosProcessManager : DosFileLoader {
         // Copy the command tail length byte and command string
         childPsp.DosCommandTail.Length = parentPsp.DosCommandTail.Length;
         
-        // Copy up to 127 bytes of command tail data
-        uint parentTailAddr = parentPsp.BaseAddress + 0x81;
-        uint childTailAddr = childPsp.BaseAddress + 0x81;
+        // Copy up to MaxCommandTailLength bytes of command tail data
+        uint parentTailAddr = parentPsp.BaseAddress + CommandTailDataOffset;
+        uint childTailAddr = childPsp.BaseAddress + CommandTailDataOffset;
         
-        for (int i = 0; i < 127; i++) {
+        for (int i = 0; i < MaxCommandTailLength; i++) {
             _memory.UInt8[childTailAddr + (uint)i] = _memory.UInt8[parentTailAddr + (uint)i];
         }
     }
@@ -1059,7 +1135,7 @@ public class DosProcessManager : DosFileLoader {
     /// Copies FCB1 from parent PSP (offset 0x5C) to child PSP.
     /// </summary>
     private static void CopyFcb1FromParent(DosProgramSegmentPrefix childPsp, DosProgramSegmentPrefix parentPsp) {
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < FcbSize; i++) {
             childPsp.FirstFileControlBlock[i] = parentPsp.FirstFileControlBlock[i];
         }
     }
@@ -1068,7 +1144,7 @@ public class DosProcessManager : DosFileLoader {
     /// Copies FCB2 from parent PSP (offset 0x6C) to child PSP.
     /// </summary>
     private static void CopyFcb2FromParent(DosProgramSegmentPrefix childPsp, DosProgramSegmentPrefix parentPsp) {
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < FcbSize; i++) {
             childPsp.SecondFileControlBlock[i] = parentPsp.SecondFileControlBlock[i];
         }
     }

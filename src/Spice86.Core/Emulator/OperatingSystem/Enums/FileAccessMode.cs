@@ -1,8 +1,5 @@
 ﻿namespace Spice86.Core.Emulator.OperatingSystem.Enums;
 
-using System;
-using System.Diagnostics;
-
 /// <summary>
 /// Represents file access modes, sharing modes, and inheritance attributes.
 /// Based on DOS file open mode byte layout:
