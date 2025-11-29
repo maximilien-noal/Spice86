@@ -5,7 +5,6 @@ using Serilog.Events;
 using Spice86.Shared.Interfaces;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
