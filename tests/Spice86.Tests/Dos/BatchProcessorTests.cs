@@ -528,4 +528,191 @@ public class BatchProcessorTests : IDisposable {
         line4.Should().BeNull();
         processor.IsProcessingBatch.Should().BeFalse();
     }
+
+    #region SET Command Tests
+
+    [Fact]
+    public void ParseCommand_SetWithoutArgs_ReturnsShowVariables() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("SET");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.ShowVariables);
+    }
+
+    [Fact]
+    public void ParseCommand_SetWithName_ReturnsShowVariable() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("SET PATH");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.ShowVariable);
+        cmd.Value.Should().Be("PATH");
+    }
+
+    [Fact]
+    public void ParseCommand_SetWithNameValue_ReturnsSetVariable() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("SET PATH=C:\\DOS");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.SetVariable);
+        cmd.Value.Should().Be("PATH");
+        cmd.Arguments.Should().Be("C:\\DOS");
+    }
+
+    [Fact]
+    public void ParseCommand_SetWithEmptyValue_ReturnsSetVariable() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("SET PATH=");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.SetVariable);
+        cmd.Value.Should().Be("PATH");
+        cmd.Arguments.Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region IF Command Tests
+
+    [Fact]
+    public void ParseCommand_IfExist_ReturnsIfCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("IF EXIST test.txt echo found");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.If);
+        cmd.Value.Should().Be("EXIST");
+        cmd.Arguments.Should().StartWith("test.txt echo found");
+    }
+
+    [Fact]
+    public void ParseCommand_IfNotExist_ReturnsIfCommandWithNegation() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("IF NOT EXIST test.txt echo not found");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.If);
+        cmd.Value.Should().Be("EXIST");
+        // The negate flag is encoded in the last byte of Arguments
+        cmd.Arguments.Should().EndWith("\x01");
+    }
+
+    [Fact]
+    public void ParseCommand_IfErrorlevel_ReturnsIfCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("IF ERRORLEVEL 1 echo error");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.If);
+        cmd.Value.Should().Be("ERRORLEVEL");
+        cmd.Arguments.Should().StartWith("1 echo error");
+    }
+
+    [Fact]
+    public void ParseCommand_IfStringCompare_ReturnsIfCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("IF %1==test echo matched");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.If);
+        cmd.Value.Should().Be("COMPARE");
+    }
+
+    #endregion
+
+    #region SHIFT Command Tests
+
+    [Fact]
+    public void ParseCommand_Shift_ReturnsShiftCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("SHIFT");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Shift);
+    }
+
+    [Fact]
+    public void ReadNextLine_AfterShift_ShiftsParameters() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+        string content = "echo %1 %2 %3\nshift\necho %1 %2 %3";
+        string batchPath = CreateBatchFile("test.bat", content);
+        processor.StartBatch(batchPath, ["a", "b", "c", "d"]);
+
+        // Act - First line with original parameters
+        string? line1 = processor.ReadNextLine(out _);
+        line1.Should().Be("echo a b c");
+
+        // Read SHIFT command
+        string? shiftLine = processor.ReadNextLine(out _);
+        shiftLine.Should().Be("shift");
+        processor.ParseCommand(shiftLine!); // This triggers the shift
+
+        // Act - After shift, parameters are shifted
+        string? line2 = processor.ReadNextLine(out _);
+        line2.Should().Be("echo b c d");
+    }
+
+    #endregion
+
+    #region PAUSE Command Tests
+
+    [Fact]
+    public void ParseCommand_Pause_ReturnsPauseCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("PAUSE");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Pause);
+    }
+
+    #endregion
+
+    #region EXIT Command Tests
+
+    [Fact]
+    public void ParseCommand_Exit_ReturnsExitCommand() {
+        // Arrange
+        BatchProcessor processor = new(_loggerService);
+
+        // Act
+        BatchCommand cmd = processor.ParseCommand("EXIT");
+
+        // Assert
+        cmd.Type.Should().Be(BatchCommandType.Exit);
+    }
+
+    #endregion
 }

@@ -233,6 +233,26 @@ public sealed class BatchProcessor {
             return HandleCallCommand(arguments);
         }
 
+        if (upperCommand == "SET") {
+            return HandleSetCommand(arguments);
+        }
+
+        if (upperCommand == "IF") {
+            return HandleIfCommand(arguments);
+        }
+
+        if (upperCommand == "SHIFT") {
+            return HandleShiftCommand();
+        }
+
+        if (upperCommand == "PAUSE") {
+            return BatchCommand.Pause();
+        }
+
+        if (upperCommand == "EXIT") {
+            return BatchCommand.Exit();
+        }
+
         // External command - execute program
         return BatchCommand.ExecuteProgram(command, arguments);
     }
@@ -428,6 +448,100 @@ public sealed class BatchProcessor {
         SplitCommand(arguments, out string batchFile, out string batchArgs);
         return BatchCommand.CallBatch(batchFile, batchArgs);
     }
+
+    /// <summary>
+    /// Handles the SET command.
+    /// </summary>
+    /// <remarks>
+    /// SET without arguments shows all environment variables.
+    /// SET NAME shows the value of NAME.
+    /// SET NAME=VALUE sets NAME to VALUE.
+    /// </remarks>
+    private static BatchCommand HandleSetCommand(string arguments) {
+        string trimmed = arguments.Trim();
+
+        // SET without arguments - show all variables
+        if (string.IsNullOrEmpty(trimmed)) {
+            return BatchCommand.ShowVariables();
+        }
+
+        // Find the equals sign
+        int equalsIndex = trimmed.IndexOf('=');
+        if (equalsIndex == -1) {
+            // SET NAME - show specific variable
+            return BatchCommand.ShowVariable(trimmed.ToUpperInvariant());
+        }
+
+        // SET NAME=VALUE
+        string name = trimmed[..equalsIndex].Trim().ToUpperInvariant();
+        string value = trimmed[(equalsIndex + 1)..];
+
+        if (string.IsNullOrEmpty(name)) {
+            return BatchCommand.Empty();
+        }
+
+        return BatchCommand.SetVariable(name, value);
+    }
+
+    /// <summary>
+    /// Handles the IF command.
+    /// </summary>
+    /// <remarks>
+    /// Supports:
+    /// - IF [NOT] EXIST filename command
+    /// - IF [NOT] ERRORLEVEL number command
+    /// - IF [NOT] string1==string2 command
+    /// </remarks>
+    private BatchCommand HandleIfCommand(string arguments) {
+        string trimmed = arguments.Trim();
+        bool negate = false;
+
+        // Check for NOT
+        if (trimmed.StartsWith("NOT ", StringComparison.OrdinalIgnoreCase)) {
+            negate = true;
+            trimmed = trimmed[4..].TrimStart();
+        }
+
+        // Check for EXIST
+        if (trimmed.StartsWith("EXIST ", StringComparison.OrdinalIgnoreCase)) {
+            string rest = trimmed[6..].TrimStart();
+            return BatchCommand.If("EXIST", rest, negate);
+        }
+
+        // Check for ERRORLEVEL
+        if (trimmed.StartsWith("ERRORLEVEL ", StringComparison.OrdinalIgnoreCase)) {
+            string rest = trimmed[11..].TrimStart();
+            return BatchCommand.If("ERRORLEVEL", rest, negate);
+        }
+
+        // String comparison (string1==string2)
+        int doubleEquals = trimmed.IndexOf("==", StringComparison.Ordinal);
+        if (doubleEquals > 0) {
+            return BatchCommand.If("COMPARE", trimmed, negate);
+        }
+
+        if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
+            _loggerService.Warning("BatchProcessor: Invalid IF syntax: {Arguments}", arguments);
+        }
+        return BatchCommand.Empty();
+    }
+
+    /// <summary>
+    /// Handles the SHIFT command.
+    /// </summary>
+    private BatchCommand HandleShiftCommand() {
+        if (_currentContext is not null) {
+            _currentContext.Shift();
+        }
+        return BatchCommand.Shift();
+    }
+
+    /// <summary>
+    /// Shifts the batch parameters by one position.
+    /// </summary>
+    public void ShiftParameters() {
+        _currentContext?.Shift();
+    }
 }
 
 /// <summary>
@@ -435,7 +549,8 @@ public sealed class BatchProcessor {
 /// </summary>
 internal sealed class BatchContext : IDisposable {
     private readonly StreamReader _reader;
-    private readonly string[] _parameters;
+    private string[] _parameters;
+    private int _shiftOffset = 0;
 
     /// <summary>
     /// Gets the full path to the batch file.
@@ -485,10 +600,20 @@ internal sealed class BatchContext : IDisposable {
     /// <param name="index">Parameter index (0 = batch file name, 1-9 = arguments).</param>
     /// <returns>The parameter value, or empty string if not defined.</returns>
     public string GetParameter(int index) {
-        if (index < 0 || index >= _parameters.Length) {
+        // Apply shift offset for parameters 1-9 (not %0 which is always the batch file)
+        int actualIndex = index == 0 ? 0 : index + _shiftOffset;
+        if (actualIndex < 0 || actualIndex >= _parameters.Length) {
             return string.Empty;
         }
-        return _parameters[index];
+        return _parameters[actualIndex];
+    }
+
+    /// <summary>
+    /// Shifts the parameters by one position.
+    /// After SHIFT, %1 becomes what was %2, %2 becomes what was %3, etc.
+    /// </summary>
+    public void Shift() {
+        _shiftOffset++;
     }
 
     /// <summary>
@@ -611,6 +736,51 @@ public readonly struct BatchCommand {
     /// </summary>
     public static BatchCommand CallBatch(string batchFile, string arguments) =>
         new(BatchCommandType.CallBatch, batchFile, arguments);
+
+    /// <summary>
+    /// Creates a SET command to set an environment variable.
+    /// </summary>
+    public static BatchCommand SetVariable(string name, string value) =>
+        new(BatchCommandType.SetVariable, name, value);
+
+    /// <summary>
+    /// Creates a command to show all environment variables.
+    /// </summary>
+    public static BatchCommand ShowVariables() =>
+        new(BatchCommandType.ShowVariables);
+
+    /// <summary>
+    /// Creates a command to show a specific environment variable.
+    /// </summary>
+    public static BatchCommand ShowVariable(string name) =>
+        new(BatchCommandType.ShowVariable, name);
+
+    /// <summary>
+    /// Creates an IF conditional command.
+    /// </summary>
+    /// <param name="condition">The condition type (EXIST, ERRORLEVEL, or string comparison).</param>
+    /// <param name="arguments">The condition arguments and command to execute.</param>
+    /// <param name="negate">True if the condition should be negated (IF NOT).</param>
+    public static BatchCommand If(string condition, string arguments, bool negate = false) =>
+        new(BatchCommandType.If, condition, arguments + (negate ? "\x01" : "\x00"));
+
+    /// <summary>
+    /// Creates a SHIFT command.
+    /// </summary>
+    public static BatchCommand Shift() =>
+        new(BatchCommandType.Shift);
+
+    /// <summary>
+    /// Creates a PAUSE command.
+    /// </summary>
+    public static BatchCommand Pause() =>
+        new(BatchCommandType.Pause);
+
+    /// <summary>
+    /// Creates an EXIT command.
+    /// </summary>
+    public static BatchCommand Exit() =>
+        new(BatchCommandType.Exit);
 }
 
 /// <summary>
@@ -633,5 +803,26 @@ public enum BatchCommandType {
     Goto,
 
     /// <summary>CALL another batch file.</summary>
-    CallBatch
+    CallBatch,
+
+    /// <summary>SET environment variable.</summary>
+    SetVariable,
+
+    /// <summary>Show all environment variables.</summary>
+    ShowVariables,
+
+    /// <summary>Show a specific environment variable.</summary>
+    ShowVariable,
+
+    /// <summary>IF conditional command.</summary>
+    If,
+
+    /// <summary>SHIFT parameters.</summary>
+    Shift,
+
+    /// <summary>PAUSE execution.</summary>
+    Pause,
+
+    /// <summary>EXIT batch file.</summary>
+    Exit
 }
