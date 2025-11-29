@@ -611,65 +611,6 @@ public class DosInt21IntegrationTests {
         // - SI = size in paragraphs (0x10)
         byte[] program = new byte[] {
             // Get current PSP address (save for comparison)
-            0xB4, 0x62,             // 0x00: mov ah, 62h - Get PSP address
-            0xCD, 0x21,             // 0x02: int 21h - BX = current PSP segment
-            0x89, 0xDD,             // 0x04: mov bp, bx - save original PSP in BP
-            
-            // Save the environment segment from the original PSP
-            0x8E, 0xC3,             // 0x06: mov es, bx - ES = current PSP segment
-            0x26, 0x8B, 0x3E, 0x2C, 0x00,  // 0x08: mov di, es:[002Ch] - DI = env segment
-            
-            // Create child PSP at segment 0x2000, size 0x10 paragraphs
-            0xBA, 0x00, 0x20,       // 0x0D: mov dx, 2000h - child PSP segment
-            0xBE, 0x10, 0x00,       // 0x10: mov si, 0010h - size in paragraphs
-            0xB4, 0x55,             // 0x13: mov ah, 55h - Create Child PSP
-            0xCD, 0x21,             // 0x15: int 21h
-            
-            // Check AL = 0xF0 (destroyed value per DOSBox)
-            0x3C, 0xF0,             // 0x17: cmp al, 0F0h
-            0x75, 0x31,             // 0x19: jne failed (offset 0x4C)
-            
-            // Get current PSP to verify it changed to 0x2000
-            0xB4, 0x62,             // 0x1B: mov ah, 62h
-            0xCD, 0x21,             // 0x1D: int 21h - BX = current PSP (should be 2000h)
-            
-            // Check if current PSP is 0x2000
-            0x81, 0xFB, 0x00, 0x20, // 0x1F: cmp bx, 2000h
-            0x75, 0x27,             // 0x23: jne failed (offset 0x4C)
-            
-            // Load new PSP segment to verify its contents
-            0x8E, 0xC3,             // 0x25: mov es, bx - ES = child PSP (0x2000)
-            
-            // Check INT 20h instruction at offset 0 (0xCD, 0x20)
-            0x26, 0x8A, 0x06, 0x00, 0x00,  // 0x27: mov al, es:[0000h]
-            0x3C, 0xCD,             // 0x2C: cmp al, 0CDh
-            0x75, 0x1C,             // 0x2E: jne failed (offset 0x4C)
-            
-            0x26, 0x8A, 0x06, 0x01, 0x00,  // 0x30: mov al, es:[0001h]
-            0x3C, 0x20,             // 0x35: cmp al, 20h
-            0x75, 0x13,             // 0x37: jne failed (offset 0x4C)
-            
-            // Check parent PSP segment at offset 0x16 matches original PSP (in BP)
-            0x26, 0x8B, 0x1E, 0x16, 0x00,  // 0x39: mov bx, es:[0016h] - parent PSP
-            0x39, 0xEB,             // 0x3E: cmp bx, bp - compare with original PSP
-            0x75, 0x0A,             // 0x40: jne failed (offset 0x4C)
-            
-            // Check environment segment at offset 0x2C matches original (in DI)
-            0x26, 0x8B, 0x1E, 0x2C, 0x00,  // 0x42: mov bx, es:[002Ch] - env segment
-            0x39, 0xFB,             // 0x47: cmp bx, di - compare with original env
-            0x75, 0x01,             // 0x49: jne failed (offset 0x4C)
-            
-            // Success
-            0xB0, 0x00,             // 0x4B: mov al, TestResult.Success
-            // (falls through to writeResult since jne wasn't taken)
-            
-            // failed: (actually at 0x4C, but we only jump here on failure)
-            // We need to reorganize - put success path first
-        };
-
-        // Let me write cleaner code with correct offsets
-        program = new byte[] {
-            // Get current PSP address (save for comparison)
             0xB4, 0x62,             // mov ah, 62h - Get PSP address
             0xCD, 0x21,             // int 21h - BX = current PSP segment
             0x89, 0xDD,             // mov bp, bx - save original PSP in BP
