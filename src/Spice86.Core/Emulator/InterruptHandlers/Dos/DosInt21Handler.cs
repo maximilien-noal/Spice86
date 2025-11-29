@@ -163,6 +163,7 @@ public class DosInt21Handler : InterruptHandler {
         AddAction(0x4F, () => FindNextMatchingFile(true));
         AddAction(0x51, GetPspAddress);
         AddAction(0x52, GetListOfLists);
+        AddAction(0x55, CreateChildPsp);
         // INT 21h/58h: Get/Set Memory Allocation Strategy (related to memory functions 48h-4Ah)
         AddAction(0x58, () => GetSetMemoryAllocationStrategy(true));
         AddAction(0x62, GetPspAddress);
@@ -1194,6 +1195,59 @@ public class DosInt21Handler : InterruptHandler {
             LoggerService.Verbose("GET PSP ADDRESS {PspSegment}",
                 ConvertUtils.ToHex16(pspSegment));
         }
+    }
+
+    /// <summary>
+    /// INT 21h, AH=55h - Create Child PSP.
+    /// <para>
+    /// Creates a new Program Segment Prefix at the specified segment address,
+    /// copying relevant data from the parent (current) PSP.
+    /// </para>
+    /// <b>Expects:</b><br/>
+    /// DX = segment for new PSP<br/>
+    /// SI = size in paragraphs (16-byte units)
+    /// <b>Returns:</b><br/>
+    /// AL = 0xF0 (destroyed - per DOSBox behavior)<br/>
+    /// Current PSP is set to DX
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Based on DOSBox staging implementation and DOS 4.0 behavior.
+    /// This function is typically used by:
+    /// <list type="bullet">
+    /// <item>Debuggers that need to create process contexts</item>
+    /// <item>Overlay managers</item>
+    /// <item>Programs that manage multiple execution contexts</item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// The child PSP inherits:
+    /// <list type="bullet">
+    /// <item>File handle table from parent</item>
+    /// <item>Command tail from parent (offset 0x80)</item>
+    /// <item>FCB1 and FCB2 from parent</item>
+    /// <item>Environment segment from parent</item>
+    /// <item>Stack pointer from parent</item>
+    /// </list>
+    /// </para>
+    /// </remarks>
+    public void CreateChildPsp() {
+        ushort childSegment = State.DX;
+        ushort sizeInParagraphs = State.SI;
+        
+        if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+            LoggerService.Verbose("CREATE CHILD PSP at segment {Segment:X4}, size {Size} paragraphs",
+                childSegment, sizeInParagraphs);
+        }
+        
+        // Create the child PSP
+        _dosProcessManager.CreateChildPsp(childSegment, sizeInParagraphs, _interruptVectorTable);
+        
+        // Set current PSP to the new child PSP (per DOSBox behavior: dos.psp(reg_dx))
+        _dosPspTracker.SetCurrentPspSegment(childSegment);
+        
+        // AL is destroyed, set to 0xF0 (per DOSBox: reg_al=0xf0)
+        State.AL = 0xF0;
     }
 
     /// <summary>
