@@ -1,5 +1,7 @@
 ﻿namespace Spice86.Core.Emulator.OperatingSystem;
 
+using Serilog.Events;
+
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;
@@ -8,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 
 /// <summary>
@@ -42,6 +45,91 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
     /// The currently selected drive.
     /// </summary>
     public VirtualDrive CurrentDrive { get; set; }
+
+    /// <summary>
+    /// Gets whether the Z: drive is mounted.
+    /// </summary>
+    public bool HasSystemDrive => _driveMap.ContainsKey('Z') && _driveMap['Z'] is not null;
+
+    /// <summary>
+    /// Mounts the Z: drive as a system utilities drive.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Based on DOSBox staging's Z: drive implementation.
+    /// The Z: drive contains system utilities like COMMAND.COM, MOUNT.COM, etc.
+    /// </para>
+    /// <para>
+    /// This creates a temporary directory on the host system to serve as the
+    /// virtual Z: drive. In a full implementation, this would contain virtual
+    /// files for system utilities.
+    /// </para>
+    /// </remarks>
+    /// <param name="hostPath">
+    /// Optional host path to mount as Z:. If null, creates a temporary directory.
+    /// </param>
+    /// <returns>True if the drive was mounted successfully.</returns>
+    public bool MountSystemDrive(string? hostPath = null) {
+        if (_driveMap.ContainsKey('Z') && _driveMap['Z'] is not null) {
+            if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+                _loggerService.Debug("Z: drive already mounted");
+            }
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(hostPath)) {
+            // Create a temporary directory for the Z: drive
+            hostPath = Path.Combine(Path.GetTempPath(), "Spice86_Z_Drive");
+            try {
+                if (!Directory.Exists(hostPath)) {
+                    Directory.CreateDirectory(hostPath);
+                }
+            } catch (IOException ex) {
+                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
+                    _loggerService.Error(ex, "Failed to create Z: drive directory");
+                }
+                return false;
+            }
+        }
+
+        hostPath = ConvertUtils.ToSlashFolderPath(hostPath);
+
+        VirtualDrive zDrive = new() {
+            DriveLetter = 'Z',
+            MountedHostDirectory = hostPath,
+            CurrentDosDirectory = ""
+        };
+
+        if (_driveMap.ContainsKey('Z')) {
+            _driveMap['Z'] = zDrive;
+        } else {
+            _driveMap.Add('Z', zDrive);
+        }
+
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("Mounted Z: drive at {HostPath}", hostPath);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Unmounts the Z: drive.
+    /// </summary>
+    /// <returns>True if the drive was unmounted successfully.</returns>
+    public bool UnmountSystemDrive() {
+        if (!_driveMap.ContainsKey('Z') || _driveMap['Z'] is null) {
+            return true; // Already unmounted
+        }
+
+        _driveMap['Z'] = null;
+
+        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
+            _loggerService.Information("Unmounted Z: drive");
+        }
+
+        return true;
+    }
 
     internal static readonly ImmutableSortedDictionary<char, byte> DriveLetters = new Dictionary<char, byte>() {
             { 'A', 0 },
