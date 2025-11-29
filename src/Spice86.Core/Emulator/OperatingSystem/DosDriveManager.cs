@@ -10,7 +10,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 
 /// <summary>
@@ -81,22 +80,9 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
             return true;
         }
 
-        if (string.IsNullOrWhiteSpace(hostPath)) {
-            // Create a temporary directory for the Z: drive
-            hostPath = Path.Combine(Path.GetTempPath(), "Spice86_Z_Drive");
-            try {
-                if (!Directory.Exists(hostPath)) {
-                    Directory.CreateDirectory(hostPath);
-                }
-            } catch (IOException ex) {
-                if (_loggerService.IsEnabled(LogEventLevel.Error)) {
-                    _loggerService.Error(ex, "Failed to create Z: drive directory");
-                }
-                return false;
-            }
-        }
-
-        hostPath = ConvertUtils.ToSlashFolderPath(hostPath);
+        // Use a virtual path if no host path is provided
+        // The Z: drive is a simulated drive for system utilities
+        hostPath = string.IsNullOrWhiteSpace(hostPath) ? "Z:\\" : ConvertUtils.ToSlashFolderPath(hostPath);
 
         VirtualDrive zDrive = new() {
             DriveLetter = 'Z',
@@ -104,11 +90,7 @@ public class DosDriveManager : IDictionary<char, VirtualDrive> {
             CurrentDosDirectory = ""
         };
 
-        if (_driveMap.ContainsKey('Z')) {
-            _driveMap['Z'] = zDrive;
-        } else {
-            _driveMap.Add('Z', zDrive);
-        }
+        _driveMap.Add('Z', zDrive);
 
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information("Mounted Z: drive at {HostPath}", hostPath);

@@ -1,8 +1,9 @@
-namespace Spice86.Core.Emulator.OperatingSystem;
+namespace Spice86.Core.Emulator.OperatingSystem.Command;
 
 using Serilog.Events;
 
 using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.OperatingSystem.Command.BatchProcessing;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Shared.Interfaces;
 using Spice86.Shared.Utils;

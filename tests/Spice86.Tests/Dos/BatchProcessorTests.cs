@@ -4,7 +4,8 @@ using FluentAssertions;
 
 using NSubstitute;
 
-using Spice86.Core.Emulator.OperatingSystem;
+using Spice86.Core.Emulator.OperatingSystem.Command;
+using Spice86.Core.Emulator.OperatingSystem.Command.BatchProcessing;
 using Spice86.Shared.Interfaces;
 
 using Xunit;
