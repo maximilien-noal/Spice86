@@ -807,6 +807,8 @@ public class DosFcbManager {
                     _loggerService.Debug("FCB Find Next: No more matching files (index {Index}, total {Total})",
                         searchData.Index, matchingFiles.Length);
                 }
+                // Clean up exhausted search to prevent memory leak
+                _fcbActiveSearches.Remove(searchId);
                 return FcbError;
             }
 
