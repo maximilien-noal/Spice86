@@ -60,7 +60,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private MixControlRegister _mixControlRegister = new();
 
     // Timer state
-    private GusTimer _timer1;
+    private readonly GusTimer _timer1;
     private GusTimer _timer2;
     private byte _timerCtrl;
 
