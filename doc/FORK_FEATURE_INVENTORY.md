@@ -12,6 +12,116 @@ This document provides a detailed inventory of all unique features in the fork (
 
 ---
 
+## Category 0: RTC/CMOS and Time Services
+
+### RealTimeClock (CMOS) Implementation 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/Devices/Cmos/RealTimeClock.cs`
+- `src/Spice86.Core/Emulator/Devices/Cmos/CmosRegisters.cs`
+- `src/Spice86.Core/Emulator/Devices/Cmos/CmosRegisterAddresses.cs`
+
+**Description:**
+Complete MC146818 RTC/CMOS chip emulation with:
+- Time-based event scheduling with pause awareness
+- BCD mode support
+- NMI control
+- Periodic interrupt control
+
+**Dependencies:** None
+
+**Estimated Size:** Large PR (~400 lines)
+
+---
+
+### RTC INT 70h Handler 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/InterruptHandlers/Bios/RtcInt70Handler.cs`
+- `tests/Spice86.Tests/Bios/RtcIntegrationTests.cs`
+- `tests/Spice86.Tests/Bios/RtcIntegrationTests_New.cs`
+- `tests/Spice86.Tests/Resources/RtcTests/`
+
+**Description:**
+Implements INT 70h (IRQ 8) RTC periodic interrupt handler based on DOSBox pattern:
+- Periodic interrupt handling
+- Wait timeout countdown
+- User callback support at INT 4Ah
+
+**Dependencies:** RealTimeClock
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### INT 1Ah BIOS Time Services 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/InterruptHandlers/Bios/BiosInt1AHandler.cs` (modifications)
+
+**Description:**
+Implements BIOS INT 1Ah time functions:
+- Read/Write system clock
+- Read/Write RTC date/time
+- Set/Clear alarm
+- BCD to binary conversions
+
+**Dependencies:** RealTimeClock
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### INT 15h AH=86h BIOS Wait 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/InterruptHandlers/Bios/SystemBiosInt15Handler.cs` (modifications)
+
+**Description:**
+Implements BIOS Wait function with:
+- PIC event scheduling instead of blocking loops
+- ASM handler placed in guest memory
+- Non-blocking wait using callbacks
+
+**Dependencies:** DualPic, BiosDataArea
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### INT 15h AH=83h Event Wait 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/InterruptHandlers/Bios/SystemBiosInt15Handler.cs` (modifications)
+
+**Description:**
+Implements INT 15h AH=83h event wait function based on DOSBox Staging:
+- RTC periodic interrupt control
+- Wait counter in BDA
+- User flag notification
+
+**Dependencies:** RealTimeClock, BiosDataArea
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### DOS INT 21h Date/Time Functions 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/OperatingSystem/DosInt21Handler.cs` (modifications)
+
+**Description:**
+DOS date/time functions that access CMOS via I/O ports (not DateTime.Now):
+- Get/Set Date (AH=2Ah/2Bh)
+- Get/Set Time (AH=2Ch/2Dh)
+
+**Dependencies:** RealTimeClock
+
+**Estimated Size:** Small PR (~100 lines)
+
+---
+
 ## Category 1: Sound Emulation
 
 ### Gravis UltraSound (GUS) Emulation 🔴
@@ -228,6 +338,43 @@ Reads character from STDIN and echoes to STDOUT.
 
 ---
 
+### DOS CDS and DBCS Structures 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/OperatingSystem/Structures/DosCds.cs` (if exists)
+- `src/Spice86.Core/Emulator/OperatingSystem/Structures/DosDbcs.cs` (if exists)
+- `src/Spice86.Core/Emulator/OperatingSystem/DosInt21Handler.cs`
+
+**Description:**
+Current Directory Structure (CDS) and Double Byte Character Set (DBCS) support:
+- INT 21h AH=63h Get DBCS Lead Byte Table
+- CDS table for drive current directories
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### IOCTL Refactoring with Enums 🔴
+
+**Source Files:**
+- `src/Spice86.Core/Emulator/OperatingSystem/Enums/DeviceInformationFlags.cs`
+- `src/Spice86.Core/Emulator/OperatingSystem/Enums/GenericIoctlCategory.cs`
+- `src/Spice86.Core/Emulator/OperatingSystem/Structures/DosDeviceHeader.cs`
+
+**Description:**
+Refactors IOCTL implementation:
+- Replace magic numbers with descriptive enums
+- Use MemoryBasedDataStructure for DosDeviceHeader
+- Comprehensive ASM-based IOCTL integration tests
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
 ## Category 3: BIOS and Hardware
 
 ### VESA VBE 1.0 Functions (INT 10h/4Fh) 🔴
@@ -371,18 +518,299 @@ Adds read_cfg_cpu_graph tool to MCP server for CFG CPU state inspection.
 
 ---
 
-### Themed Debugger UI Docks 🔴
+## Category 5b: User Interface Views and ViewModels
+
+### Debugger Window with Docking Framework 🔴
 
 **Source Files:**
-- `src/Spice86/Views/*.axaml`
-- `src/Spice86/ViewModels/*.cs`
+- `src/Spice86/Views/DebugWindow.axaml`
+- `src/Spice86/Views/DebugWindow.axaml.cs`
 
 **Description:**
-Adds debugger docks for DOS, BIOS, EMS, XMS, Sound Blaster, PIT, PIC, DMA, OPL3.
+Implements docking framework using wieslawsoltes/Dock library:
+- Detachable, dockable debug panels
+- Persistent dock layout
+- Document-based tab structure
+
+**Dependencies:** Dock.Avalonia NuGet packages
+
+**Estimated Size:** Medium PR (~300 lines)
+
+---
+
+### BIOS View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/BiosView.axaml`
+- `src/Spice86/Views/BiosView.axaml.cs`
+- `src/Spice86/ViewModels/BiosViewModel.cs`
+
+**Description:**
+Comprehensive BIOS Data Area (BDA) observability dock:
+- Video mode, keyboard state, equipment info
+- Serial/parallel port configuration
+- Timer tick count, break key state
+- Live updates via DispatcherTimer
 
 **Dependencies:** None
 
-**Estimated Size:** Very Large PR (~1500 lines)
+**Estimated Size:** Large PR (~400 lines)
+
+---
+
+### DOS View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/DosView.axaml`
+- `src/Spice86/Views/DosView.axaml.cs`
+- `src/Spice86/ViewModels/DosViewModel.cs`
+
+**Description:**
+DOS subsystem observability dock:
+- MCB chain visualization
+- PSP details and file handle table
+- SysVars inspection
+- Current drive/directory, DOS version
+
+**Dependencies:** None
+
+**Estimated Size:** Large PR (~450 lines)
+
+---
+
+### EMS View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/EmsView.axaml`
+- `src/Spice86/Views/EmsView.axaml.cs`
+- `src/Spice86/ViewModels/EmsViewModel.cs`
+
+**Description:**
+Expanded Memory Manager observability:
+- EMS version, page frame address
+- Handle allocation and page mapping
+- Memory usage statistics
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~250 lines)
+
+---
+
+### XMS View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/XmsView.axaml` (if exists)
+- `src/Spice86/ViewModels/XmsViewModel.cs` (if exists)
+
+**Description:**
+Extended Memory Manager observability:
+- XMS version and driver info
+- Handle table with block details
+- Free/used memory statistics
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### Timer (PIT) View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/TimerView.axaml`
+- `src/Spice86/ViewModels/TimerViewModel.cs`
+
+**Description:**
+Intel 8254 PIT observability:
+- Channel 0/1/2 state and count
+- Mode, reload value, output state
+- Timer IRQ statistics
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### PIC View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/PicView.axaml`
+- `src/Spice86/Views/PicView.axaml.cs`
+- `src/Spice86/ViewModels/PicViewModel.cs`
+
+**Description:**
+Dual 8259 PIC observability:
+- IRR, ISR, IMR registers
+- Master/slave configuration
+- Pending interrupt visualization
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### DMA View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/DmaView.axaml`
+- `src/Spice86/Views/DmaView.axaml.cs`
+- `src/Spice86/ViewModels/DmaViewModel.cs`
+
+**Description:**
+DMA controller observability:
+- Channel 0-7 state and addressing
+- Transfer mode and direction
+- Current address and count
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### OPL3/FM View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/Opl3View.axaml`
+- `src/Spice86/Views/Opl3View.axaml.cs`
+- `src/Spice86/ViewModels/Opl3ViewModel.cs`
+
+**Description:**
+OPL3 FM synthesizer observability:
+- Register state
+- Channel/operator status
+- Audio output status
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~100 lines)
+
+---
+
+### Sound Blaster View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/SoundBlasterView.axaml`
+- `src/Spice86/ViewModels/SoundBlasterViewModel.cs`
+
+**Description:**
+Sound Blaster DSP observability:
+- DSP version and ports
+- DMA channel configuration
+- IRQ settings, mixer state
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### GDB Server View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/GdbServerView.axaml`
+- `src/Spice86/Views/GdbServerView.axaml.cs`
+- `src/Spice86/ViewModels/GdbServerViewModel.cs`
+
+**Description:**
+GDB remote debugging server observability:
+- Connection status
+- Port configuration
+- Debug session state
+
+**Dependencies:** None
+
+**Estimated Size:** Small PR (~80 lines)
+
+---
+
+### MCP Server View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/McpServerView.axaml`
+- `src/Spice86/Views/McpServerView.axaml.cs`
+- `src/Spice86/ViewModels/McpServerViewModel.cs`
+
+**Description:**
+MCP server observability:
+- Server status and configuration
+- Available tools list
+- Request/response logging
+
+**Dependencies:** MCP Server
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### MCB Graph View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/McbGraphView.axaml`
+- `src/Spice86/Views/McbGraphView.axaml.cs`
+- `src/Spice86/ViewModels/McbGraphViewModel.cs`
+
+**Description:**
+Memory Control Block chain visualization:
+- Graph-based MCB visualization using AvaloniaGraphControl
+- Block ownership and size display
+- Chain integrity validation
+
+**Dependencies:** AvaloniaGraphControl NuGet package
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### PSP Graph View and ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/PspGraphView.axaml`
+- `src/Spice86/Views/PspGraphView.axaml.cs`
+- `src/Spice86/ViewModels/PspGraphViewModel.cs`
+
+**Description:**
+Program Segment Prefix chain visualization:
+- PSP parent/child relationships
+- Process tree visualization
+- File handle table display
+
+**Dependencies:** AvaloniaGraphControl NuGet package
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### Software Mixer ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/ViewModels/SoftwareMixerViewModel.cs`
+
+**Description:**
+Audio software mixer observability for combined audio output.
+
+**Dependencies:** None
+
+**Estimated Size:** Small PR (~80 lines)
+
+---
+
+### MIDI ViewModel 🔴
+
+**Source Files:**
+- `src/Spice86/Views/MidiView.axaml`
+- `src/Spice86/Views/MidiView.axaml.cs`
+- `src/Spice86/ViewModels/MidiViewModel.cs`
+
+**Description:**
+MIDI output status observability.
+
+**Dependencies:** None
+
+**Estimated Size:** Small PR (~60 lines)
 
 ---
 
@@ -457,10 +885,14 @@ Adds comprehensive XML documentation to public APIs.
 
 | Category | Features | Est. PRs | Est. Lines |
 |----------|----------|----------|------------|
+| RTC/CMOS & Time | 6 | 5 | ~1200 |
 | Sound | 3 | 3 | ~580 |
-| DOS Subsystem | 12 | 10 | ~2000 |
+| DOS Subsystem | 14 | 12 | ~2350 |
 | BIOS/Hardware | 4 | 4 | ~320 |
 | Batch Processing | 3 | 3 | ~1150 |
-| Developer Tools | 3 | 3 | ~2100 |
+| Developer Tools | 3 | 3 | ~600 |
+| UI Views/ViewModels | 17 | 15 | ~2800 |
 | Infrastructure | 3 | 3 | ~325 |
-| **Total** | **28** | **26** | **~6475** |
+| **Total** | **53** | **48** | **~9325** |
+
+*Note: Some features may be combined into fewer PRs. Actual line counts will vary.*

@@ -109,69 +109,94 @@ git push origin master
 
 The goal is to close the fork by contributing all changes back to upstream through small, reviewable PRs.
 
-### Phase 1: Infrastructure and Documentation (Week 1)
+### Phase 0: RTC/CMOS and Time Services (Week 1)
 
 | PR # | Title | Files | Priority |
 |------|-------|-------|----------|
-| 1 | Add comprehensive XML documentation to shared projects | `Bufdio.Spice86/`, `Spice86.Logging/`, `Spice86.Shared/` | Low |
-| 2 | Block Avalonia telemetry via Directory.Build.props | `Directory.Build.props` | Medium |
-| 3 | Update CONTRIBUTING.md with development guidelines | `CONTRIBUTING.md` | Low |
+| 1 | Implement RealTimeClock (CMOS) MC146818 emulation | `RealTimeClock.cs`, `CmosRegisters.cs`, `CmosRegisterAddresses.cs` | High |
+| 2 | Add RTC INT 70h handler | `RtcInt70Handler.cs` | High |
+| 3 | Implement INT 1Ah BIOS time services | `BiosInt1AHandler.cs` | High |
+| 4 | Add INT 15h AH=86h BIOS Wait function | `SystemBiosInt15Handler.cs` | Medium |
+| 5 | Implement INT 15h AH=83h Event Wait | `SystemBiosInt15Handler.cs` | Medium |
+| 6 | Add DOS INT 21h date/time CMOS access | `DosInt21Handler.cs` | Medium |
 
-### Phase 2: Core DOS Improvements (Week 2-3)
-
-| PR # | Title | Files | Priority |
-|------|-------|-------|----------|
-| 4 | Add DOS memory allocation strategy support (INT 21h/58h) | `DosMemoryManager.cs`, `DosMemoryAllocationStrategy.cs` | High |
-| 5 | Fix DOS environment block to preserve full program path | `DosFileManager.cs`, `DosProcessManager.cs` | High |
-| 6 | Add COMMAND.COM simulation as PSP chain root | `CommandCom.cs`, `Dos.cs` | Medium |
-| 7 | Implement FCB (File Control Block) support | `DosFileControlBlock.cs`, `DosFcbManager.cs` | Medium |
-| 8 | Add FCB Find First/Next (INT 21h 0x11/0x12) | `DosFcbManager.cs`, `DosInt21Handler.cs` | Medium |
-| 9 | Implement TSR support (INT 21h/31h) | `DosProcessManager.cs`, `DosInt21Handler.cs` | Medium |
-| 10 | Add DOS process lifecycle management (INT 21h/4Dh) | `DosProcessManager.cs`, `DosProgramSegmentPrefix.cs` | High |
-| 11 | Implement INT 21h/52h Get DOS SYSVARS pointer | `DosInt21Handler.cs` | Low |
-| 12 | Add Create Child PSP (INT 21h/55h) | `DosProcessManager.cs` | Low |
-| 13 | Implement character input with echo (INT 21h/01h) | `DosInt21Handler.cs` | Low |
-
-### Phase 3: BIOS and Hardware (Week 4)
+### Phase 1: Infrastructure and Documentation (Week 2)
 
 | PR # | Title | Files | Priority |
 |------|-------|-------|----------|
-| 14 | Implement VESA VBE 1.0 functions (INT 10h/4Fh) | `VgaBios.cs`, `VideoModeInfo.cs` | Medium |
-| 15 | Add RateGenerator mode to PC Speaker | `PcSpeaker.cs` | Low |
-| 16 | Add OS HOOK Device Busy/Post handlers (INT 15h) | `BiosInt15Handler.cs` | Low |
-| 17 | Fix EMS implementation bugs (handle ID, save/restore) | `ExpandedMemoryManager.cs` | Medium |
+| 7 | Add comprehensive XML documentation to shared projects | `Bufdio.Spice86/`, `Spice86.Logging/`, `Spice86.Shared/` | Low |
+| 8 | Block Avalonia telemetry via Directory.Build.props | `Directory.Build.props` | Medium |
+| 9 | Update CONTRIBUTING.md with development guidelines | `CONTRIBUTING.md` | Low |
 
-### Phase 4: Sound (Week 5)
-
-| PR # | Title | Files | Priority |
-|------|-------|-------|----------|
-| 18 | Implement Sound Blaster DSP command 0xE2 (DMA ID) | `SoundBlaster.cs` | Low |
-| 19 | Implement Sound Blaster DSP command 0xE4/0xE8 (Test Register) | `SoundBlaster.cs` | Low |
-| 20 | Implement complete Gravis UltraSound emulation | `GravisUltraSound.cs`, `GusVoice.cs` | Medium |
-
-### Phase 5: Developer Tools (Week 6)
+### Phase 2: Core DOS Improvements (Week 3-4)
 
 | PR # | Title | Files | Priority |
 |------|-------|-------|----------|
-| 21 | Add MCP server with stdio transport | `McpServer.cs`, `McpStdioTransport.cs` | High |
-| 22 | Add CFG CPU graph inspection to MCP server | `McpServer.cs` | Medium |
-| 23 | Add themed debugger UI docks | `Views/`, `ViewModels/` | Medium |
+| 10 | Add DOS memory allocation strategy support (INT 21h/58h) | `DosMemoryManager.cs`, `DosMemoryAllocationStrategy.cs` | High |
+| 11 | Fix DOS environment block to preserve full program path | `DosFileManager.cs`, `DosProcessManager.cs` | High |
+| 12 | Add COMMAND.COM simulation as PSP chain root | `CommandCom.cs`, `Dos.cs` | Medium |
+| 13 | Implement FCB (File Control Block) support | `DosFileControlBlock.cs`, `DosFcbManager.cs` | Medium |
+| 14 | Add FCB Find First/Next (INT 21h 0x11/0x12) | `DosFcbManager.cs`, `DosInt21Handler.cs` | Medium |
+| 15 | Implement TSR support (INT 21h/31h) | `DosProcessManager.cs`, `DosInt21Handler.cs` | Medium |
+| 16 | Add DOS process lifecycle management (INT 21h/4Dh) | `DosProcessManager.cs`, `DosProgramSegmentPrefix.cs` | High |
+| 17 | Implement INT 21h/52h Get DOS SYSVARS pointer | `DosInt21Handler.cs` | Low |
+| 18 | Add Create Child PSP (INT 21h/55h) | `DosProcessManager.cs` | Low |
+| 19 | Implement character input with echo (INT 21h/01h) | `DosInt21Handler.cs` | Low |
+| 20 | Add CDS/DBCS structures and INT 21h/63h | `DosInt21Handler.cs` | Low |
+| 21 | Refactor IOCTL with enums and DosDeviceHeader improvements | `DeviceInformationFlags.cs`, `DosDeviceHeader.cs` | Low |
 
-### Phase 6: Batch Processing (Week 7)
+### Phase 3: BIOS and Hardware (Week 5)
 
 | PR # | Title | Files | Priority |
 |------|-------|-------|----------|
-| 24 | Add DOS batch file processing support | `BatchProcessor.cs`, `BatchExecutor.cs` | Medium |
-| 25 | Implement FOR, IF, GOTO, CALL batch commands | `BatchCommands/` | Medium |
-| 26 | Add AutoexecGenerator and Z: drive support | `AutoexecGenerator.cs`, `DosDriveManager.cs` | Low |
+| 22 | Implement VESA VBE 1.0 functions (INT 10h/4Fh) | `VgaBios.cs`, `VideoModeInfo.cs` | Medium |
+| 23 | Add RateGenerator mode to PC Speaker | `PcSpeaker.cs` | Low |
+| 24 | Add OS HOOK Device Busy/Post handlers (INT 15h) | `BiosInt15Handler.cs` | Low |
+| 25 | Fix EMS implementation bugs (handle ID, save/restore) | `ExpandedMemoryManager.cs` | Medium |
 
-### Phase 7: Final Cleanup (Week 8)
+### Phase 4: Sound (Week 6)
 
 | PR # | Title | Files | Priority |
 |------|-------|-------|----------|
-| 27 | Fix IOCTL improvements | `DosInt21Handler.cs` | Low |
-| 28 | .NET 10 migration | `*.csproj`, `Directory.Build.props` | High |
-| 29 | Final documentation updates | `doc/`, `README.md` | Low |
+| 26 | Implement Sound Blaster DSP command 0xE2 (DMA ID) | `SoundBlaster.cs` | Low |
+| 27 | Implement Sound Blaster DSP command 0xE4/0xE8 (Test Register) | `SoundBlaster.cs` | Low |
+| 28 | Implement complete Gravis UltraSound emulation | `GravisUltraSound.cs`, `GusVoice.cs` | Medium |
+
+### Phase 5: Developer Tools (Week 7)
+
+| PR # | Title | Files | Priority |
+|------|-------|-------|----------|
+| 29 | Add MCP server with stdio transport | `McpServer.cs`, `McpStdioTransport.cs` | High |
+| 30 | Add CFG CPU graph inspection to MCP server | `McpServer.cs` | Medium |
+
+### Phase 6: User Interface Views/ViewModels (Week 8-9)
+
+| PR # | Title | Files | Priority |
+|------|-------|-------|----------|
+| 31 | Add docking framework to DebugWindow | `DebugWindow.axaml`, Dock.* packages | High |
+| 32 | Add BIOS View and ViewModel | `BiosView.axaml`, `BiosViewModel.cs` | Medium |
+| 33 | Add DOS View and ViewModel | `DosView.axaml`, `DosViewModel.cs` | Medium |
+| 34 | Add EMS/XMS Views and ViewModels | `EmsView.axaml`, `EmsViewModel.cs`, etc. | Medium |
+| 35 | Add Timer/PIC/DMA Views and ViewModels | `TimerView.axaml`, `PicView.axaml`, etc. | Medium |
+| 36 | Add Sound Blaster/OPL3 Views and ViewModels | `SoundBlasterView.axaml`, `Opl3View.axaml` | Medium |
+| 37 | Add MCB/PSP Graph Views | `McbGraphView.axaml`, `PspGraphView.axaml` | Medium |
+| 38 | Add MCP/GDB Server Views | `McpServerView.axaml`, `GdbServerView.axaml` | Low |
+
+### Phase 7: Batch Processing (Week 10)
+
+| PR # | Title | Files | Priority |
+|------|-------|-------|----------|
+| 39 | Add DOS batch file processing support | `BatchProcessor.cs`, `BatchExecutor.cs` | Medium |
+| 40 | Implement FOR, IF, GOTO, CALL batch commands | `BatchCommands/` | Medium |
+| 41 | Add AutoexecGenerator and Z: drive support | `AutoexecGenerator.cs`, `DosDriveManager.cs` | Low |
+
+### Phase 8: Final Cleanup (Week 11)
+
+| PR # | Title | Files | Priority |
+|------|-------|-------|----------|
+| 42 | Fix IOCTL improvements | `DosInt21Handler.cs` | Low |
+| 43 | .NET 10 migration | `*.csproj`, `Directory.Build.props` | High |
+| 44 | Final documentation updates | `doc/`, `README.md` | Low |
 
 ## PR Best Practices
 
@@ -210,15 +235,17 @@ When upstream changes conflict with pending PRs:
 
 | Phase | Description | Duration |
 |-------|-------------|----------|
-| Week 1 | Infrastructure & Documentation | 3-5 PRs |
-| Week 2-3 | Core DOS Improvements | 8-10 PRs |
-| Week 4 | BIOS and Hardware | 4 PRs |
-| Week 5 | Sound | 3 PRs |
-| Week 6 | Developer Tools | 3 PRs |
-| Week 7 | Batch Processing | 3 PRs |
-| Week 8 | Final Cleanup | 3 PRs |
+| Week 1 | RTC/CMOS & Time Services | 6 PRs |
+| Week 2 | Infrastructure & Documentation | 3 PRs |
+| Week 3-4 | Core DOS Improvements | 12 PRs |
+| Week 5 | BIOS and Hardware | 4 PRs |
+| Week 6 | Sound | 3 PRs |
+| Week 7 | Developer Tools | 2 PRs |
+| Week 8-9 | UI Views/ViewModels | 8 PRs |
+| Week 10 | Batch Processing | 3 PRs |
+| Week 11 | Final Cleanup | 3 PRs |
 
-**Total: ~8 weeks, ~29 PRs**
+**Total: ~11 weeks, ~44 PRs**
 
 ## Handling Keyboard/Input Conflicts
 
