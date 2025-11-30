@@ -45,9 +45,6 @@ public partial class BiosViewModel : DebuggerTabViewModel {
     private byte _currentVideoMode;
 
     [ObservableProperty]
-    private string _videoModeDescription = string.Empty;
-
-    [ObservableProperty]
     private ushort _screenColumnsCount;
 
     [ObservableProperty]
@@ -80,9 +77,6 @@ public partial class BiosViewModel : DebuggerTabViewModel {
     // Keyboard
     [ObservableProperty]
     private byte _keyboardShiftFlags1;
-
-    [ObservableProperty]
-    private string _keyboardShiftFlags1Description = string.Empty;
 
     [ObservableProperty]
     private byte _keyboardShiftFlags2;
@@ -204,7 +198,6 @@ public partial class BiosViewModel : DebuggerTabViewModel {
 
         // Video
         CurrentVideoMode = _biosDataArea.VideoMode;
-        VideoModeDescription = GetVideoModeDescription(_biosDataArea.VideoMode);
         ScreenColumnsCount = _biosDataArea.ScreenColumns;
         ScreenRowsCount = _biosDataArea.ScreenRows;
         ActivePage = _biosDataArea.CurrentVideoPage;
@@ -219,7 +212,6 @@ public partial class BiosViewModel : DebuggerTabViewModel {
 
         // Keyboard
         KeyboardShiftFlags1 = _biosDataArea.KeyboardStatusFlag;
-        KeyboardShiftFlags1Description = GetKeyboardShiftDescription(_biosDataArea.KeyboardStatusFlag);
         KeyboardShiftFlags2 = _biosDataArea.KeyboardStatusFlag2;
         KeyboardShiftFlags3 = _biosDataArea.KeyboardStatusFlag3;
         KeyboardLedStatus = _biosDataArea.KeyboardLedStatus;
@@ -272,61 +264,4 @@ public partial class BiosViewModel : DebuggerTabViewModel {
         LastUnexpectedIrq = _biosDataArea.LastUnexpectedIrq;
     }
 
-    private static string GetVideoModeDescription(byte mode) {
-        return mode switch {
-            0x00 => "40x25 Text (B/W)",
-            0x01 => "40x25 Text (Color)",
-            0x02 => "80x25 Text (B/W)",
-            0x03 => "80x25 Text (Color)",
-            0x04 => "320x200 4-Color CGA",
-            0x05 => "320x200 4-Color CGA (B/W)",
-            0x06 => "640x200 2-Color CGA",
-            0x07 => "80x25 Mono Text",
-            0x0D => "320x200 16-Color EGA",
-            0x0E => "640x200 16-Color EGA",
-            0x0F => "640x350 Mono EGA",
-            0x10 => "640x350 16-Color EGA",
-            0x11 => "640x480 2-Color VGA",
-            0x12 => "640x480 16-Color VGA",
-            0x13 => "320x200 256-Color VGA",
-            _ => $"Mode 0x{mode:X2}"
-        };
-    }
-
-    private static string GetKeyboardShiftDescription(byte flags) {
-        System.Collections.Generic.List<string> parts = new();
-        if ((flags & 0x01) != 0) {
-            parts.Add("RShift");
-        }
-
-        if ((flags & 0x02) != 0) {
-            parts.Add("LShift");
-        }
-
-        if ((flags & 0x04) != 0) {
-            parts.Add("Ctrl");
-        }
-
-        if ((flags & 0x08) != 0) {
-            parts.Add("Alt");
-        }
-
-        if ((flags & 0x10) != 0) {
-            parts.Add("Scroll");
-        }
-
-        if ((flags & 0x20) != 0) {
-            parts.Add("Num");
-        }
-
-        if ((flags & 0x40) != 0) {
-            parts.Add("Caps");
-        }
-
-        if ((flags & 0x80) != 0) {
-            parts.Add("Ins");
-        }
-
-        return parts.Count > 0 ? string.Join("+", parts) : "None";
-    }
 }
