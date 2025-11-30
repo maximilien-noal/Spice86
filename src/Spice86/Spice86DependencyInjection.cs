@@ -633,7 +633,7 @@ public class Spice86DependencyInjection : IDisposable {
                 canCloseTab: false);
 
             // Create new subsystem ViewModels for observing DOS, BIOS, EMS, XMS, and MCP Server state
-            DosViewModel dosViewModel = new(dos, pauseHandler, uiDispatcher);
+            DosViewModel dosViewModel = new(dos, memory, pauseHandler, uiDispatcher);
 
             BiosViewModel biosViewModel = new(biosDataArea, pauseHandler, uiDispatcher);
 
