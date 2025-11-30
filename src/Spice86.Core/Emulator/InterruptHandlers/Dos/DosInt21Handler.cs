@@ -1588,6 +1588,15 @@ public class DosInt21Handler : InterruptHandler {
                 ushort parentReturnIP = Stack.Peek16(0);  // IP at SP+0
                 ushort parentReturnCS = Stack.Peek16(2);  // CS at SP+2
                 
+                // DEBUG: Log stack values
+                LoggerService.Warning(
+                    "EXEC DEBUG: Before call - SS={SS:X4} SP={SP:X4} parentReturnCS={PCS:X4} parentReturnIP={PIP:X4}",
+                    State.SS, State.SP, parentReturnCS, parentReturnIP);
+                
+                // Save parent's stack pointer before EXEC changes it
+                ushort parentSS = State.SS;
+                ushort parentSP = State.SP;
+                
                 // Call EXEC with the interrupt vector table so it can save vectors to child PSP
                 // and set up INT 22h correctly
                 result = _dosProcessManager.Exec(
@@ -1600,18 +1609,36 @@ public class DosInt21Handler : InterruptHandler {
                     parentReturnIP);
                 
                 // If EXEC succeeded, the child should run now
-                // Modify the stack so IRET jumps to the child's entry point
+                // Modify the PARENT's interrupt stack so IRET jumps to the child's entry point
+                // Note: EXEC changed State.SS/SP to the child's stack, so we need to
+                // write to the parent's stack using the saved SS:SP values
                 if (result.Success) {
-                    // State.CS and State.IP were set to the child's entry point by EXEC
-                    // Modify the interrupt stack so IRET goes there
-                    Stack.Poke16(0, State.IP);  // Child's IP at SP+0
-                    Stack.Poke16(2, State.CS);  // Child's CS at SP+2
+                    // Log child entry point set by EXEC
+                    ushort childCS = State.CS;
+                    ushort childIP = State.IP;
+                    LoggerService.Warning(
+                        "EXEC DEBUG: After EXEC - ChildCS=0x{0:X4} ChildIP=0x{1:X4} ChildSS=0x{2:X4} ChildSP=0x{3:X4}",
+                        childCS, childIP, State.SS, State.SP);
                     
-                    if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                        LoggerService.Debug(
-                            "EXEC: Modified stack for child entry at {CS:X4}:{IP:X4}, parent return at {ParentCS:X4}:{ParentIP:X4}",
-                            State.CS, State.IP, parentReturnCS, parentReturnIP);
-                    }
+                    // State.CS and State.IP were set to the child's entry point by EXEC
+                    // Poke into the PARENT's stack (not the child's current stack)
+                    uint parentStackAddress = MemoryUtils.ToPhysicalAddress(parentSS, parentSP);
+                    
+                    LoggerService.Warning(
+                        "EXEC DEBUG: Writing childIP=0x{0:X4} and childCS=0x{1:X4} to stack at 0x{2:X8}",
+                        childIP, childCS, parentStackAddress);
+                    
+                    Memory.UInt16[parentStackAddress] = childIP;      // Child's IP at parent's SP+0
+                    Memory.UInt16[parentStackAddress + 2] = childCS;  // Child's CS at parent's SP+2
+                    
+                    // Restore parent's SS:SP so IRET uses the correct stack
+                    // (The child's SS:SP will be set up when we actually start executing the child)
+                    State.SS = parentSS;
+                    State.SP = parentSP;
+                    
+                    LoggerService.Warning(
+                        "EXEC DEBUG: After stack mod - SS=0x{0:X4} SP=0x{1:X4}",
+                        State.SS, State.SP);
                 }
             } else {
                 // For LoadOnly, call the simpler version

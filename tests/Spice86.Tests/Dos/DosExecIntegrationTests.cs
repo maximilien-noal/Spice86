@@ -121,6 +121,12 @@ public class DosExecIntegrationTests {
             
             spice86DependencyInjection.ProgramExecutor.Run();
 
+            // Debug output
+            Console.WriteLine($"Simple test - All writes captured: {testHandler.AllWrites.Count}");
+            foreach ((ushort port, byte val) in testHandler.AllWrites) {
+                Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
+            }
+            
             // Should have received the marker
             testHandler.ChildResults.Should().Contain((byte)0x42);
         }
