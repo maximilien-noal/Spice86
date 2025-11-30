@@ -3,8 +3,10 @@ namespace Spice86.ViewModels;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Spice86.Core.Emulator.InterruptHandlers.Bios.Structures;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Memory;
+using Spice86.Shared.Utils;
 using Spice86.ViewModels.Services;
 
 /// <summary>
@@ -186,9 +188,9 @@ public partial class BiosViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // BDA Location (fixed addresses)
-        BdaSegment = "0x0040";
-        BdaLinearAddress = "0x00400";
+        // BDA Location - read from Core MemoryMap constants
+        BdaSegment = $"0x{MemoryMap.BiosDataSegment:X4}";
+        BdaLinearAddress = $"0x{MemoryUtils.ToPhysicalAddress(MemoryMap.BiosDataSegment, 0):X5}";
 
         // Equipment
         EquipmentWord = _biosDataArea.EquipmentListFlags;

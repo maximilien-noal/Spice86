@@ -213,6 +213,7 @@ public partial class XmsViewModel : DebuggerTabViewModel {
             HandleCount = 0;
         }
 
+        // We cannot read MaxHandles from Core as it's private, so compute free handles relative to used
         FreeHandles = MaxHandles - HandleCount;
     }
 

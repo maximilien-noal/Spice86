@@ -145,13 +145,17 @@ public partial class DosViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // DOS version comes from the DosInt21Handler - 5.0 as hardcoded in DosInt21Handler.GetDosVersion()
-        DosMajorVersion = 5;
-        DosMinorVersion = 0;
+        UpdateProcessManagerState();
+        
+        // DOS version comes from the current PSP
+        if (CurrentPspSegment != 0) {
+            DosProgramSegmentPrefix psp = new(_memory, MemoryUtils.ToPhysicalAddress(CurrentPspSegment, 0));
+            DosMajorVersion = psp.DosVersionMajor;
+            DosMinorVersion = psp.DosVersionMinor;
+        }
 
         UpdateFileManagerState();
         UpdateMemoryManagerState();
-        UpdateProcessManagerState();
         UpdateSysVarsState();
         UpdateDriveManagerState();
         UpdateDevicesState();
