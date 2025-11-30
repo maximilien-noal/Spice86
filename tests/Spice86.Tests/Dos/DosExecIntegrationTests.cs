@@ -63,6 +63,12 @@ public class DosExecIntegrationTests {
         
         ExecTestHandler testHandler = RunExecTest(parentProgram, childProgram, "parent.com", "CHILD.COM");
 
+        // Debug: Print all captured writes
+        Console.WriteLine($"All writes captured: {testHandler.AllWrites.Count}");
+        foreach ((ushort port, byte val) in testHandler.AllWrites) {
+            Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
+        }
+        
         // Verify that child ran (wrote its marker)
         testHandler.ChildResults.Should().Contain((byte)TestResult.ChildRan,
             "child program should have executed and written its marker");
@@ -342,6 +348,7 @@ public class DosExecIntegrationTests {
     private class ExecTestHandler : DefaultIOPortHandler {
         public List<byte> Results { get; } = new();
         public List<byte> ChildResults { get; } = new();
+        public List<(ushort Port, byte Value)> AllWrites { get; } = new();
 
         public ExecTestHandler(State state, ILoggerService loggerService,
             IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService) {
@@ -350,6 +357,7 @@ public class DosExecIntegrationTests {
         }
 
         public override void WriteByte(ushort port, byte value) {
+            AllWrites.Add((port, value));
             if (port == ResultPort) {
                 Results.Add(value);
             } else if (port == ChildResultPort) {
