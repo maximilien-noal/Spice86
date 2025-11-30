@@ -108,9 +108,9 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         DriverIdentifier = ExpandedMemoryManager.EmsIdentifier;
         DosDeviceSegment = ExpandedMemoryManager.DosDeviceSegment;
 
-        // Update EMS configuration from the Core - EMS reports 3.2 for compatibility but supports 4.0 functions
-        EmsMajorVersion = 3;
-        EmsMinorVersion = 2;
+        // Update EMS version from the Core constant (BCD format: 0x32 = 3.2)
+        EmsMajorVersion = (byte)(ExpandedMemoryManager.EmsVersion >> 4);
+        EmsMinorVersion = (byte)(ExpandedMemoryManager.EmsVersion & 0x0F);
 
         // Page frame configuration
         PageFrameSegment = ExpandedMemoryManager.EmmPageFrameSegment;
