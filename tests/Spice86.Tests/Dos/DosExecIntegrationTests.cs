@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Xunit;
-using Xunit.Abstractions;
 
 /// <summary>
 /// Integration tests for DOS EXEC (INT 21h, AH=4Bh) functionality.
