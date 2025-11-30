@@ -61,7 +61,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
 
     // Timer state
     private readonly GusTimer _timer1;
-    private GusTimer _timer2;
+    private readonly GusTimer _timer2;
     private byte _timerCtrl;
 
     // Voice state
