@@ -14,13 +14,46 @@
             <Border Classes="GroupBox" Padding="10">
                 <StackPanel Spacing="5">
                     <TextBlock Text="Sound Blaster Configuration" FontWeight="Bold" FontSize="14" />
-                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="BLASTER String:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BlasterString}" FontFamily="Consolas" />
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Sound Blaster Type:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BlasterString}" FontFamily="Consolas" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Card Type:" Margin="0,0,10,0" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SbType}" />
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="IRQ:" Margin="0,0,10,0" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Irq}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Description:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SbTypeDescription}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="DSP Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DspVersion}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="IRQ:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Irq}" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Low DMA Channel:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding LowDma}" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="High DMA Channel:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding HighDma}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- I/O Port Addresses -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="I/O Port Addresses" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Base Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BaseAddress}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Reset Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ResetPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Read Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ReadDataPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Write Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding WriteDataPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Read Status Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ReadStatusPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Mixer Address Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MixerAddressPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Mixer Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding MixerDataPort}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="MPU-401 Data Port:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Mpu401DataPort}" FontFamily="Consolas" />
                     </Grid>
                 </StackPanel>
             </Border>

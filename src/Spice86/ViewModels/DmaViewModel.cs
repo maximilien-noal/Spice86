@@ -10,7 +10,7 @@ using Spice86.ViewModels.Services;
 
 /// <summary>
 /// ViewModel for observing DMA (Direct Memory Access) system state in the debugger.
-/// Displays information about the DMA controllers and channels.
+/// Displays comprehensive information about the DMA controllers and channels for reverse engineering.
 /// </summary>
 public partial class DmaViewModel : DebuggerTabViewModel {
     private readonly DmaSystem _dmaSystem;
@@ -20,6 +20,13 @@ public partial class DmaViewModel : DebuggerTabViewModel {
 
     /// <inheritdoc />
     public override string? IconKey => "ArrowSwap";
+
+    // Controller Info
+    [ObservableProperty]
+    private string _controller1Description = "Controller 1 (8-bit, Channels 0-3)";
+
+    [ObservableProperty]
+    private string _controller2Description = "Controller 2 (16-bit, Channels 4-7)";
 
     // DMA Channels
     [ObservableProperty]
@@ -37,7 +44,24 @@ public partial class DmaViewModel : DebuggerTabViewModel {
 
         // Initialize 8 DMA channels (0-3 for 8-bit, 4-7 for 16-bit)
         for (int i = 0; i < 8; i++) {
-            Channels.Add(new DmaChannelInfo { ChannelNumber = i, Type = i < 4 ? "8-bit" : "16-bit" });
+            string channelType = i < 4 ? "8-bit" : "16-bit";
+            string channelDescription = i switch {
+                0 => "Memory Refresh (typically)",
+                1 => "Sound Blaster (typical)",
+                2 => "Floppy Disk Controller",
+                3 => "Available",
+                4 => "Cascade (to controller 1)",
+                5 => "Sound Blaster 16 (typical)",
+                6 => "Available",
+                7 => "Available",
+                _ => "Unknown"
+            };
+            Channels.Add(new DmaChannelInfo {
+                ChannelNumber = i,
+                Type = channelType,
+                TypicalUsage = channelDescription,
+                ChannelNumberDisplay = $"Channel {i}"
+            });
         }
     }
 
@@ -50,11 +74,12 @@ public partial class DmaViewModel : DebuggerTabViewModel {
         for (int i = 0; i < 8; i++) {
             DmaChannel? channel = _dmaSystem.GetChannel((byte)i);
             if (channel != null) {
-                Channels[i].IsActive = true;
+                Channels[i].IsConfigured = true;
                 Channels[i].ChannelNumberDisplay = $"Channel {channel.ChannelNumber}";
+                Channels[i].Status = "Configured";
             } else {
-                Channels[i].IsActive = false;
-                Channels[i].ChannelNumberDisplay = $"Channel {i}";
+                Channels[i].IsConfigured = false;
+                Channels[i].Status = "Not Configured";
             }
         }
     }
@@ -82,9 +107,21 @@ public partial class DmaViewModel : DebuggerTabViewModel {
         private string _type = string.Empty;
 
         /// <summary>
-        /// Gets or sets whether the channel is active.
+        /// Gets or sets the typical usage description.
         /// </summary>
         [ObservableProperty]
-        private bool _isActive;
+        private string _typicalUsage = string.Empty;
+
+        /// <summary>
+        /// Gets or sets whether the channel is configured.
+        /// </summary>
+        [ObservableProperty]
+        private bool _isConfigured;
+
+        /// <summary>
+        /// Gets or sets the channel status.
+        /// </summary>
+        [ObservableProperty]
+        private string _status = string.Empty;
     }
 }

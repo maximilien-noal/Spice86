@@ -7,9 +7,22 @@
     x:Class="Spice86.Views.DmaView"
     x:DataType="vm:DmaViewModel"
     mc:Ignorable="d"
-    d:DesignWidth="800" d:DesignHeight="600">
+    d:DesignWidth="900" d:DesignHeight="500">
     <ScrollViewer>
         <StackPanel Margin="10" Spacing="15">
+            <!-- Controller Info -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="DMA Controllers" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Controller 1:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Controller1Description}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Controller 2:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Controller2Description}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- DMA Channels -->
             <Border Classes="GroupBox" Padding="10">
                 <StackPanel Spacing="5">
@@ -17,12 +30,14 @@
                     <DataGrid ItemsSource="{Binding Channels}" 
                               AutoGenerateColumns="False" 
                               IsReadOnly="True"
-                              MaxHeight="300"
+                              MaxHeight="400"
                               GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Channel" Binding="{Binding ChannelNumberDisplay}" Width="100" />
                             <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="80" />
-                            <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="70" />
+                            <DataGridTextColumn Header="Typical Usage" Binding="{Binding TypicalUsage}" Width="200" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120" />
+                            <DataGridCheckBoxColumn Header="Configured" Binding="{Binding IsConfigured}" Width="100" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </StackPanel>
