@@ -860,6 +860,187 @@ Adds comprehensive XML documentation to public APIs.
 
 ---
 
+## Category 8: Integration Tests
+
+### RTC/CMOS Integration Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Bios/RtcIntegrationTests.cs`
+- `tests/Spice86.Tests/Bios/RtcIntegrationTests_New.cs`
+- `tests/Spice86.Tests/Resources/RtcTests/*.asm`
+- `tests/Spice86.Tests/Resources/RtcTests/*.com`
+
+**Description:**
+ASM-based integration tests for RTC/CMOS functionality:
+- CMOS port access tests
+- BIOS INT 1Ah time services tests
+- INT 15h AH=83h event wait tests
+- INT 70h wait tests
+- DOS INT 21h date/time tests
+
+**Dependencies:** RTC/CMOS implementation
+
+**Estimated Size:** Large PR (~500 lines + ASM binaries)
+
+---
+
+### DOS INT 21h Integration Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Dos/DosInt21IntegrationTests.cs`
+- `tests/Spice86.Tests/Dos/DosMemoryAllocationStrategyIntegrationTests.cs`
+- `tests/Spice86.Tests/Dos/TsrIntegrationTests.cs`
+- `tests/Spice86.Tests/Dos/IoctlIntegrationTests.cs`
+
+**Description:**
+ASM-based integration tests for DOS services:
+- Memory allocation strategy tests
+- TSR (Terminate and Stay Resident) tests
+- IOCTL function tests
+- File handle and device tests
+
+**Dependencies:** DOS subsystem
+
+**Estimated Size:** Large PR (~600 lines)
+
+---
+
+### Batch Processing Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Dos/BatchProcessorTests.cs`
+- `tests/Spice86.Tests/Dos/BatchExecutorTests.cs`
+
+**Description:**
+Comprehensive unit tests for DOS batch file processing:
+- FOR, IF, GOTO, CALL command tests
+- Variable expansion tests
+- Label handling tests
+- Nested batch file tests
+
+**Dependencies:** Batch processing
+
+**Estimated Size:** Large PR (~700 lines)
+
+---
+
+### FCB and File Manager Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Dos/DosFcbTests.cs`
+- `tests/Spice86.Tests/Dos/DosFileManagerTests.cs`
+
+**Description:**
+Unit tests for FCB and file operations:
+- FCB parsing and manipulation
+- File open/close/read/write
+- Directory operations
+
+**Dependencies:** FCB support
+
+**Estimated Size:** Medium PR (~200 lines)
+
+---
+
+### EMS/XMS Integration Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Dos/Ems/EmsIntegrationTests.cs`
+- `tests/Spice86.Tests/Dos/Ems/EmsUnitTests.cs`
+- `tests/Spice86.Tests/Dos/Xms/XmsIntegrationTests.cs`
+- `tests/Spice86.Tests/Dos/Xms/XmsUnitTests.cs`
+- `tests/Spice86.Tests/Dos/Xms/Xms32BitUnitTests.cs`
+
+**Description:**
+Integration and unit tests for expanded/extended memory:
+- EMS page mapping tests
+- XMS block allocation tests
+- 32-bit XMS API tests
+
+**Dependencies:** EMS/XMS implementations
+
+**Estimated Size:** Large PR (~500 lines)
+
+---
+
+### MCP Server Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/McpServerTest.cs`
+
+**Description:**
+Unit tests for Model Context Protocol server:
+- Tool registration tests
+- Request/response handling
+- State inspection tests
+
+**Dependencies:** MCP Server
+
+**Estimated Size:** Medium PR (~300 lines)
+
+---
+
+### Keyboard Integration Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Bios/KeyboardIntegrationTests.cs`
+
+**Description:**
+Integration tests for keyboard input processing:
+- Key press/release handling
+- Scan code translation
+- Buffer management
+
+**Dependencies:** Keyboard implementation
+
+**Estimated Size:** Medium PR (~150 lines)
+
+---
+
+### PIT/PIC/DMA Device Tests 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/Pit8254Tests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/PitTimerTests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/PitModeTests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/DualPicTests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/DualPicIntegrationTests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/ExternalInput/DeviceSchedulerTests.cs`
+- `tests/Spice86.Tests/Emulator/Devices/DirectMemoryAccess/DmaSystemTests.cs`
+
+**Description:**
+Unit tests for hardware devices:
+- PIT timer mode tests
+- PIC interrupt routing tests
+- DMA transfer tests
+- Device scheduler tests
+
+**Dependencies:** Device implementations
+
+**Estimated Size:** Large PR (~600 lines)
+
+---
+
+### Test Resources (ASM Binaries) 🔴
+
+**Source Files:**
+- `tests/Spice86.Tests/Resources/RtcTests/`
+- `tests/Spice86.Tests/Resources/NativeDosTests/`
+- `tests/Spice86.Tests/Resources/cpuTests/`
+- `tests/Spice86.Tests/Resources/MountPoint/`
+
+**Description:**
+Pre-compiled ASM test binaries and test fixtures:
+- .COM binaries for integration tests
+- Assembly source files with Makefile
+- Test file system mount points
+
+**Dependencies:** None
+
+**Estimated Size:** Medium PR (~200 lines + binaries)
+
+---
+
 ## Keyboard/Input (Special Case) ⏸️
 
 **Note:** Both fork and upstream have made significant changes to keyboard handling. This requires careful coordination:
@@ -893,6 +1074,7 @@ Adds comprehensive XML documentation to public APIs.
 | Developer Tools | 3 | 3 | ~600 |
 | UI Views/ViewModels | 17 | 8 | ~2800 |
 | Infrastructure | 3 | 3 | ~325 |
-| **Total** | **53** | **44** | **~9325** |
+| Integration Tests | 9 | 6 | ~3750 |
+| **Total** | **62** | **50** | **~13,075** |
 
-*Note: UI Views/ViewModels will be combined into 8 PRs (grouped by theme: BIOS/DOS, EMS/XMS, Timer/PIC/DMA, Sound, Graphs, GDB/MCP, Docking framework, MIDI/Mixer). Actual line counts will vary.*
+*Note: UI Views/ViewModels will be combined into 8 PRs (grouped by theme: BIOS/DOS, EMS/XMS, Timer/PIC/DMA, Sound, Graphs, GDB/MCP, Docking framework, MIDI/Mixer). Test PRs will be bundled with their corresponding feature PRs where possible. Actual line counts will vary.*

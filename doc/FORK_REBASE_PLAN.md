@@ -12,12 +12,15 @@ The fork has significantly diverged from upstream with many new features:
 
 | Category | Features |
 |----------|----------|
+| **RTC/CMOS** | RealTimeClock (MC146818) emulation, INT 70h handler, INT 1Ah/15h time services |
 | **Sound** | Gravis UltraSound (GUS) emulation, Sound Blaster DSP commands (0xE2, 0xE4, 0xE8) |
 | **DOS** | FCB support, TSR support (INT 21h/31h), batch file processing, COMMAND.COM simulation, PSP lifecycle management, memory allocation strategies |
 | **BIOS/Hardware** | VESA VBE 1.0 functions, RateGenerator mode for PC Speaker, OS HOOK handlers |
 | **Developer Tools** | MCP server with stdio transport, themed debugger UI docks |
+| **UI** | 17 new Views/ViewModels (BIOS, DOS, EMS, XMS, Timer, PIC, DMA, OPL3, etc.) |
 | **Infrastructure** | .NET 10 migration, comprehensive XML documentation |
 | **Input** | Improved keyboard infrastructure with InputEventQueue |
+| **Tests** | Extensive integration tests (RTC, DOS, batch, EMS/XMS, PIT/PIC/DMA) |
 
 ### Upstream (OpenRakis/Spice86)
 
@@ -243,9 +246,12 @@ When upstream changes conflict with pending PRs:
 | Week 7 | Developer Tools | 2 PRs |
 | Week 8-9 | UI Views/ViewModels | 8 PRs |
 | Week 10 | Batch Processing | 3 PRs |
-| Week 11 | Final Cleanup | 3 PRs |
+| Week 11 | Integration Tests | 6 PRs |
+| Week 12 | Final Cleanup | 3 PRs |
 
-**Total: ~11 weeks, ~44 PRs**
+**Total: ~12 weeks, ~50 PRs**
+
+*Note: Test PRs may be bundled with corresponding feature PRs to simplify review.*
 
 ## Handling Keyboard/Input Conflicts
 
