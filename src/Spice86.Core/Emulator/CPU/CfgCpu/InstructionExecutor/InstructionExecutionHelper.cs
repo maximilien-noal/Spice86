@@ -182,30 +182,9 @@ public class InstructionExecutionHelper {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void HandleInterruptRet<T>(T instruction) where T : CfgInstruction, IReturnInstruction {
-        // Log state before IRET
-        if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Warning)) {
-            _loggerService.Debug(
-                "IRET: BEFORE - SS:SP={SS:X4}:{SP:X4}, will pop from stack",
-                State.SS, State.SP);
-            ushort peekIP = Stack.Peek16(0);
-            ushort peekCS = Stack.Peek16(2);
-            ushort peekFlags = Stack.Peek16(4);
-            _loggerService.Debug(
-                "IRET: Stack contents - [SP+0]=IP:{IP:X4}, [SP+2]=CS:{CS:X4}, [SP+4]=FLAGS:{FLAGS:X4}",
-                peekIP, peekCS, peekFlags);
-        }
-        
         CurrentFunctionHandler.Ret(CallType.INTERRUPT, instruction);
         State.IpSegmentedAddress = Stack.PopSegmentedAddress();
         State.Flags.FlagRegister = Stack.Pop16();
-        
-        // Log state after IRET
-        if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Warning)) {
-            _loggerService.Debug(
-                "IRET: AFTER - jumped to CS:IP={CS:X4}:{IP:X4}, SS:SP={SS:X4}:{SP:X4}",
-                State.CS, State.IP, State.SS, State.SP);
-        }
-        
         SetNextNodeToSuccessorAtCsIp(instruction);
     }
 
