@@ -155,15 +155,20 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         Handles.Clear();
         foreach (KeyValuePair<int, EmmHandle> handle in _ems.EmmHandles) {
             int pageCount = handle.Value.LogicalPages.Count;
-            TotalAllocatedPages += pageCount;
+            // Handle 0 is the system handle - don't count it as program usage
+            bool isSystemHandle = handle.Value.HandleNumber == 0;
+            if (!isSystemHandle) {
+                TotalAllocatedPages += pageCount;
+            }
 
             Handles.Add(new EmsHandleInfo {
                 HandleNumber = handle.Value.HandleNumber,
-                Name = string.IsNullOrEmpty(handle.Value.Name) ? "(unnamed)" : handle.Value.Name,
+                Name = string.IsNullOrEmpty(handle.Value.Name) ? (isSystemHandle ? "(system)" : "(unnamed)") : handle.Value.Name,
                 LogicalPagesCount = pageCount,
                 TotalSize = FormatMemorySize(pageCount * ExpandedMemoryManager.EmmPageSize),
                 TotalSizeBytes = pageCount * ExpandedMemoryManager.EmmPageSize,
-                HasSavedPageMap = handle.Value.SavedPageMap
+                HasSavedPageMap = handle.Value.SavedPageMap,
+                IsSystemHandle = isSystemHandle
             });
         }
     }
@@ -235,6 +240,11 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         /// Gets or sets whether this handle has a saved page map.
         /// </summary>
         public bool HasSavedPageMap { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether this is the system handle (handle 0).
+        /// </summary>
+        public bool IsSystemHandle { get; set; }
     }
 
     /// <summary>

@@ -71,6 +71,24 @@ public partial class McbGraphViewModel : ViewModelBase {
         int count = 0;
         McbNodeInfo? previousNode = null;
 
+        // If first MCB segment is 0 or invalid, show a message
+        if (mcbSegment == 0) {
+            StatusMessage = "MCB chain not initialized (FirstMCB = 0)";
+            Graph = currentGraph;
+            NodeCount = 0;
+            McbNodes.Clear();
+            return;
+        }
+
+        DosMemoryControlBlock firstMcb = new(_memory, MemoryUtils.ToPhysicalAddress(mcbSegment, 0));
+        if (!firstMcb.IsValid) {
+            StatusMessage = $"First MCB at {mcbSegment:X4} is invalid (TypeField = 0x{firstMcb.TypeField:X2}, expected 'M'=0x4D or 'Z'=0x5A)";
+            Graph = currentGraph;
+            NodeCount = 0;
+            McbNodes.Clear();
+            return;
+        }
+
         while (mcbSegment != 0 && count < 256) {
             DosMemoryControlBlock mcb = new(_memory, MemoryUtils.ToPhysicalAddress(mcbSegment, 0));
 

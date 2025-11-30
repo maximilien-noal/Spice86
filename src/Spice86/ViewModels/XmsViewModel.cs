@@ -131,9 +131,9 @@ public partial class XmsViewModel : DebuggerTabViewModel {
         DosDeviceSegment = ExtendedMemoryManager.DosDeviceSegment;
         CallbackAddress = $"{_xms.CallbackAddress.Segment:X4}:{_xms.CallbackAddress.Offset:X4}";
 
-        // Memory configuration
+        // Memory configuration - read actual size from XmsRam
         XmsBaseAddress = ExtendedMemoryManager.XmsBaseAddress;
-        TotalXmsMemoryBytes = ExtendedMemoryManager.XmsMemorySize * 1024L;
+        TotalXmsMemoryBytes = _xms.XmsRam.Size;
         TotalXmsMemory = FormatMemorySize(TotalXmsMemoryBytes);
 
         // HMA addresses
@@ -150,10 +150,12 @@ public partial class XmsViewModel : DebuggerTabViewModel {
             return;
         }
 
+        // TotalFreeMemory returns sum of all free blocks in bytes
         FreeXmsMemoryBytes = _xms.TotalFreeMemory;
         FreeXmsMemory = FormatMemorySize(FreeXmsMemoryBytes);
 
-        UsedXmsMemoryBytes = TotalXmsMemoryBytes - FreeXmsMemoryBytes;
+        // Calculate used memory - ensure it doesn't go negative
+        UsedXmsMemoryBytes = Math.Max(0, TotalXmsMemoryBytes - FreeXmsMemoryBytes);
         UsedXmsMemory = FormatMemorySize(UsedXmsMemoryBytes);
 
         LargestFreeBlockBytes = _xms.LargestFreeBlockLength;
