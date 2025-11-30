@@ -87,6 +87,15 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
     /// </summary>
     public const ushort DosDeviceSegment = 0xF100;
 
+    /// <summary>
+    /// The EMS version number in BCD format. Returns 3.2 (0x32) for compatibility.
+    /// </summary>
+    /// <remarks>
+    /// This implementation returns version 3.2 for compatibility, even though it 
+    /// supports selected EMS 4.0 functions (0x50, 0x51, 0x53, 0x58, 0x59).
+    /// </remarks>
+    public const byte EmsVersion = 0x32;
+
     /// <inheritdoc />
     public override byte VectorNumber => 0x67;
 
@@ -502,9 +511,9 @@ public sealed class ExpandedMemoryManager : InterruptHandler, IVirtualDevice {
     /// function support rather than relying solely on the version number.
     /// </summary>
     public void GetEmmVersion() {
-        // Return EMS version 3.2 in BCD format.
+        // Return EMS version in BCD format.
         // Note: We implement some EMS 4.0 functions but report 3.2 for broader compatibility.
-        State.AL = 0x32;
+        State.AL = EmsVersion;
         // Return good status.
         State.AH = EmmStatus.EmmNoError;
         if (LoggerService.IsEnabled(LogEventLevel.Debug)) {

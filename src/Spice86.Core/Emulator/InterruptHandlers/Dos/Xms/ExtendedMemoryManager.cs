@@ -141,6 +141,11 @@ public sealed class ExtendedMemoryManager : IVirtualDevice {
     private readonly SortedList<int, byte> _xmsHandles = new();
 
     /// <summary>
+    /// Gets the current XMS handles and their lock counts.
+    /// </summary>
+    public IReadOnlyDictionary<int, byte> XmsHandles => _xmsHandles;
+
+    /// <summary>
     /// The segment of the XMS DOS Device Driver in memory.
     /// </summary>
     /// <remarks>
@@ -156,7 +161,7 @@ public sealed class ExtendedMemoryManager : IVirtualDevice {
     /// adjusted via the /NUMHANDLES= parameter in CONFIG.SYS. Each handle consumes a small
     /// amount of conventional memory, but not for us.
     /// </remarks>
-    private const int MaxHandles = 128;
+    public const int MaxHandles = 128;
 
     /// <summary>
     /// The size of available XMS Memory, in kilobytes.

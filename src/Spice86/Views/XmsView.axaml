@@ -1,0 +1,132 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.XmsView"
+    x:DataType="vm:XmsViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="700">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- XMS Driver Information -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="XMS Driver Information (HIMEM.SYS)" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Driver Name:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DriverName}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="XMS Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}.{1:D2}">
+                                    <Binding Path="XmsMajorVersion" />
+                                    <Binding Path="XmsMinorVersion" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Internal Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding XmsInternalVersion, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Device Segment:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DosDeviceSegment, StringFormat='0x{0:X4}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Callback Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CallbackAddress}" FontFamily="Consolas" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Memory Configuration -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Memory Configuration" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="XMS Base Address:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding XmsBaseAddress, StringFormat='0x{0:X8}'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="HMA Start:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HmaStartAddress, StringFormat='0x{0:X8} (1MB + 64KB)'}" FontFamily="Consolas" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="HMA End:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding HmaEndAddress, StringFormat='0x{0:X8}'}" FontFamily="Consolas" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Memory Statistics -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Memory Statistics" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Total XMS Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TotalXmsMemory}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Used XMS Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UsedXmsMemory}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Free XMS Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FreeXmsMemory}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Largest Free Block:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LargestFreeBlock}" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+                        <TextBlock Text="Usage:" VerticalAlignment="Center" />
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding MemoryUsagePercent}" Height="10" Width="200" />
+                        <TextBlock Text="{Binding MemoryUsagePercent, StringFormat='{}{0:F1}%'}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- A20 Line Status -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="A20 Gate Status" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="A20 State:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding IsA20Enabled}" FontWeight="Bold" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Description:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding A20Status}" TextWrapping="Wrap" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Handle Information -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Handle Information" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Allocated Handles:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HandleCount}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Free Handles:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FreeHandles}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Max Handles:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MaxHandles}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Memory Blocks -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Memory Usage Breakdown" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding MemoryBlocks}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="150"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="100" />
+                            <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="120" />
+                            <DataGridTextColumn Header="Size (KB)" Binding="{Binding SizeKb}" Width="100" />
+                            <DataGridTextColumn Header="Percentage" Binding="{Binding Percentage, StringFormat='{}{0:F1}%'}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Not Enabled Warning -->
+            <Border Classes="GroupBox" Padding="10" IsVisible="{Binding !IsEnabled}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="⚠️ XMS is not enabled" FontWeight="Bold" FontSize="14" Foreground="Orange" />
+                    <TextBlock Text="XMS (Extended Memory) is disabled in this session. Enable it with --Xms true" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

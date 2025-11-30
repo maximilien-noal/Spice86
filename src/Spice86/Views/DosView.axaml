@@ -1,0 +1,184 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Spice86.ViewModels"
+    x:Class="Spice86.Views.DosView"
+    x:DataType="vm:DosViewModel"
+    mc:Ignorable="d"
+    d:DesignWidth="800" d:DesignHeight="800">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="15">
+            <!-- DOS Version -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="DOS Information" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Version:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}.{1}">
+                                    <Binding Path="DosMajorVersion" />
+                                    <Binding Path="DosMinorVersion" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Drive:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentDrive}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Process Manager / PSP -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Process Manager (PSP)" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Current PSP Segment:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentPspSegment, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Parent PSP Segment:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ParentPspSegment, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Environment Segment:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding EnvironmentSegment, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Last Child Return Code:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastChildReturnCode, StringFormat='0x{0:X4}'}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Command Line:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CommandLine}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Memory Manager Statistics -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Memory Manager" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="MCB Blocks:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding McbCount}" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Allocation Strategy:" Margin="10,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AllocationStrategy}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Used Blocks:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UsedBlockCount}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Free Blocks:" Margin="10,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding FreeBlockCount}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Used Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding TotalUsedMemory}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Free Memory:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding TotalFreeMemory}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- MCB Chain -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding McbCount, StringFormat='MCB Chain ({0} blocks)'}" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding McbChain}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="200"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="MCB Seg" Binding="{Binding Segment}" Width="70" />
+                            <DataGridTextColumn Header="Data Seg" Binding="{Binding DataSegment}" Width="70" />
+                            <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="100" />
+                            <DataGridTextColumn Header="PSP" Binding="{Binding PspSegment}" Width="60" />
+                            <DataGridTextColumn Header="Owner" Binding="{Binding Owner}" Width="80" />
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="60" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- SysVars (List of Lists) -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="SysVars (List of Lists)" FontWeight="Bold" FontSize="14" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="First MCB:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FirstMcbSegment}" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Boot Drive:" Margin="10,0,10,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding BootDrive}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Buffers:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding NumberOfBuffers}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Extended Memory:" Margin="10,0,10,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding ExtendedMemorySize, StringFormat='{}{0} KB'}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="DPB Count:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DiskParameterBlockCount}" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="CDS Count:" Margin="10,0,10,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding CurrentDirectoryStructureCount}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Max Sector:" Margin="0,0,10,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MaxSectorLength, StringFormat='{}{0} bytes'}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Open Files -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock FontWeight="Bold" FontSize="14">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="Open Files ({0}) - DTA: {1}">
+                                <Binding Path="OpenFileCount" />
+                                <Binding Path="DtaAddress" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <DataGrid ItemsSource="{Binding OpenFiles}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="150"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Handle" Binding="{Binding Handle, StringFormat='0x{0:X2}'}" Width="60" />
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="60" />
+                            <DataGridTextColumn Header="Position" Binding="{Binding Position}" Width="80" />
+                            <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="80" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Virtual Devices -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Virtual Devices" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding Devices}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="200"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100" />
+                            <DataGridTextColumn Header="Device #" Binding="{Binding DeviceNumber}" Width="70" />
+                            <DataGridTextColumn Header="Base Address" Binding="{Binding BaseAddress}" Width="100" />
+                            <DataGridTextColumn Header="Attributes" Binding="{Binding Attributes}" Width="80" />
+                            <DataGridCheckBoxColumn Header="Char" Binding="{Binding IsCharacter}" Width="50" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Drives -->
+            <Border Classes="GroupBox" Padding="10">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Drives" FontWeight="Bold" FontSize="14" />
+                    <DataGrid ItemsSource="{Binding Drives}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              MaxHeight="150"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Drive" Binding="{Binding Letter}" Width="60" />
+                            <DataGridCheckBoxColumn Header="Current" Binding="{Binding IsCurrent}" Width="70" />
+                            <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="100" />
+                            <DataGridTextColumn Header="Host Path" Binding="{Binding HostPath}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

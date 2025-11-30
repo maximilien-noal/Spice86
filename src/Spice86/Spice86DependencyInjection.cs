@@ -632,12 +632,46 @@ public class Spice86DependencyInjection : IDisposable {
                 textClipboard, hostStorageProvider, structureViewModelFactory,
                 canCloseTab: false);
 
+            // Create new subsystem ViewModels for observing DOS, BIOS, EMS, XMS, and MCP Server state
+            DosViewModel dosViewModel = new(dos, memory, pauseHandler, uiDispatcher);
+
+            BiosViewModel biosViewModel = new(biosDataArea, pauseHandler, uiDispatcher);
+
+            EmsViewModel emsViewModel = new(dos.Ems, pauseHandler, uiDispatcher);
+
+            XmsViewModel xmsViewModel = new(dos.Xms, a20Gate, pauseHandler, uiDispatcher);
+
+            McpServerViewModel mcpServerViewModel = new(
+                mcpServer, configuration.McpServer, configuration.CfgCpu,
+                pauseHandler, uiDispatcher);
+
+            // Create additional hardware ViewModels
+            TimerViewModel timerViewModel = new(pitTimer, pauseHandler, uiDispatcher);
+
+            PicViewModel picViewModel = new(dualPic, pauseHandler, uiDispatcher);
+
+            SoundBlasterViewModel soundBlasterViewModel = new(soundBlaster, pauseHandler, uiDispatcher);
+
+            Opl3ViewModel opl3ViewModel = new(soundBlaster.Opl3Fm, pauseHandler, uiDispatcher);
+
+            DmaViewModel dmaViewModel = new(dmaSystem, pauseHandler, uiDispatcher);
+
+            GdbServerViewModel gdbServerViewModel = new(configuration.GdbPort, pauseHandler, uiDispatcher);
+
+            // Create graph ViewModels for MCB and PSP visualization
+            McbGraphViewModel mcbGraphViewModel = new(dos, memory, pauseHandler, uiDispatcher);
+            PspGraphViewModel pspGraphViewModel = new(dos, memory, pauseHandler, uiDispatcher);
+
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
                 paletteViewModel, softwareMixerViewModel, videoCardViewModel,
                 cpuViewModel, midiViewModel, cfgCpuViewModel,
-                [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel]);
+                [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
+                dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel,
+                timerViewModel, picViewModel, soundBlasterViewModel, opl3ViewModel,
+                dmaViewModel, gdbServerViewModel,
+                mcbGraphViewModel, pspGraphViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;

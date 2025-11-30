@@ -10,6 +10,10 @@ using Spice86.Core.Emulator.VM;
 using Spice86.ViewModels.Messages;
 using Spice86.ViewModels.Services;
 
+/// <summary>
+/// ViewModel for the main debug window. Manages all debugger tab ViewModels
+/// and provides a plugin-based architecture for adding new debugging tabs.
+/// </summary>
 public partial class DebugWindowViewModel : ViewModelBase,
     IRecipient<AddViewModelMessage<DisassemblyViewModel>>, IRecipient<AddViewModelMessage<MemoryViewModel>>,
     IRecipient<RemoveViewModelMessage<DisassemblyViewModel>>, IRecipient<RemoveViewModelMessage<MemoryViewModel>> {
@@ -51,14 +55,91 @@ public partial class DebugWindowViewModel : ViewModelBase,
     [ObservableProperty]
     private BreakpointsViewModel _breakpointsViewModel;
 
+    // New subsystem ViewModels for observing DOS, BIOS, EMS, XMS, and MCP Server state
+    [ObservableProperty]
+    private DosViewModel _dosViewModel;
+
+    [ObservableProperty]
+    private BiosViewModel _biosViewModel;
+
+    [ObservableProperty]
+    private EmsViewModel _emsViewModel;
+
+    [ObservableProperty]
+    private XmsViewModel _xmsViewModel;
+
+    [ObservableProperty]
+    private McpServerViewModel _mcpServerViewModel;
+
+    // Additional hardware ViewModels
+    [ObservableProperty]
+    private TimerViewModel _timerViewModel;
+
+    [ObservableProperty]
+    private PicViewModel _picViewModel;
+
+    [ObservableProperty]
+    private SoundBlasterViewModel _soundBlasterViewModel;
+
+    [ObservableProperty]
+    private Opl3ViewModel _opl3ViewModel;
+
+    [ObservableProperty]
+    private DmaViewModel _dmaViewModel;
+
+    [ObservableProperty]
+    private GdbServerViewModel _gdbServerViewModel;
+
+    // Graph ViewModels for MCB and PSP visualization
+    [ObservableProperty]
+    private McbGraphViewModel _mcbGraphViewModel;
+
+    [ObservableProperty]
+    private PspGraphViewModel _pspGraphViewModel;
+
     private readonly IPauseHandler _pauseHandler;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DebugWindowViewModel"/> class.
+    /// </summary>
+    /// <param name="messenger">The messenger for inter-ViewModel communication.</param>
+    /// <param name="uiDispatcher">The UI dispatcher for thread-safe UI updates.</param>
+    /// <param name="pauseHandler">The pause handler for controlling emulator execution.</param>
+    /// <param name="breakpointsViewModel">The breakpoints view model.</param>
+    /// <param name="disassemblyViewModel">The disassembly view model.</param>
+    /// <param name="paletteViewModel">The palette view model.</param>
+    /// <param name="softwareMixerViewModel">The software mixer view model.</param>
+    /// <param name="videoCardViewModel">The video card view model.</param>
+    /// <param name="cpuViewModel">The CPU view model.</param>
+    /// <param name="midiViewModel">The MIDI view model.</param>
+    /// <param name="cfgCpuViewModel">The CFG CPU view model.</param>
+    /// <param name="memoryViewModels">The collection of memory view models.</param>
+    /// <param name="dosViewModel">The DOS kernel view model.</param>
+    /// <param name="biosViewModel">The BIOS data area view model.</param>
+    /// <param name="emsViewModel">The EMS view model.</param>
+    /// <param name="xmsViewModel">The XMS view model.</param>
+    /// <param name="mcpServerViewModel">The MCP Server view model.</param>
+    /// <param name="timerViewModel">The PIT timer view model.</param>
+    /// <param name="picViewModel">The PIC view model.</param>
+    /// <param name="soundBlasterViewModel">The Sound Blaster view model.</param>
+    /// <param name="opl3ViewModel">The OPL3/FM view model.</param>
+    /// <param name="dmaViewModel">The DMA view model.</param>
+    /// <param name="gdbServerViewModel">The GDB Server view model.</param>
+    /// <param name="mcbGraphViewModel">The MCB chain graph view model.</param>
+    /// <param name="pspGraphViewModel">The PSP chain graph view model.</param>
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
         IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
         DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,
         SoftwareMixerViewModel softwareMixerViewModel, VideoCardViewModel videoCardViewModel,
         CpuViewModel cpuViewModel, MidiViewModel midiViewModel, CfgCpuViewModel cfgCpuViewModel,
-        IList<MemoryViewModel> memoryViewModels) {
+        IList<MemoryViewModel> memoryViewModels,
+        DosViewModel dosViewModel, BiosViewModel biosViewModel,
+        EmsViewModel emsViewModel, XmsViewModel xmsViewModel,
+        McpServerViewModel mcpServerViewModel,
+        TimerViewModel timerViewModel, PicViewModel picViewModel,
+        SoundBlasterViewModel soundBlasterViewModel, Opl3ViewModel opl3ViewModel,
+        DmaViewModel dmaViewModel, GdbServerViewModel gdbServerViewModel,
+        McbGraphViewModel mcbGraphViewModel, PspGraphViewModel pspGraphViewModel) {
         messenger.Register<AddViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<AddViewModelMessage<MemoryViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<DisassemblyViewModel>>(this);
@@ -80,6 +161,25 @@ public partial class DebugWindowViewModel : ViewModelBase,
         MidiViewModel = midiViewModel;
         MemoryViewModels.AddRange(memoryViewModels);
         CfgCpuViewModel = cfgCpuViewModel;
+
+        // Initialize new subsystem ViewModels
+        DosViewModel = dosViewModel;
+        BiosViewModel = biosViewModel;
+        EmsViewModel = emsViewModel;
+        XmsViewModel = xmsViewModel;
+        McpServerViewModel = mcpServerViewModel;
+
+        // Initialize additional hardware ViewModels
+        TimerViewModel = timerViewModel;
+        PicViewModel = picViewModel;
+        SoundBlasterViewModel = soundBlasterViewModel;
+        Opl3ViewModel = opl3ViewModel;
+        DmaViewModel = dmaViewModel;
+        GdbServerViewModel = gdbServerViewModel;
+
+        // Initialize graph ViewModels
+        McbGraphViewModel = mcbGraphViewModel;
+        PspGraphViewModel = pspGraphViewModel;
     }
 
     [RelayCommand]

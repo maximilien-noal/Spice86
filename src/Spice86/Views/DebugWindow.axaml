@@ -108,19 +108,56 @@
 							</TabControl.ItemTemplate>
 						</TabControl>
 					</dockModel:Document>
-					<dockModel:Document Id="Devices" Title="Devices (Alt-F5)" HotKeyManager.HotKey="Alt+F5">
-						<TabControl DataContext="{Binding $parent[Window].DataContext}">
-							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F7" Header="Video Card" ToolTip.Tip="Alt-F7" Content="{Binding VideoCardViewModel}" />
-							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F8" Header="Color Palette" ToolTip.Tip="Alt-F8" Content="{Binding PaletteViewModel}" />
-							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F9" Header="General MIDI / MT-32" ToolTip.Tip="Alt-F9" Content="{Binding MidiViewModel}" />
-							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F10" Header="Software Mixer" ToolTip.Tip="Alt-F10" Content="{Binding SoftwareMixerViewModel}" />
-						</TabControl>
-					</dockModel:Document>
 					<dockModel:Document 
 						Id="Breakpoints" 
 						Title="Breakpoints (Alt-F6)" 
 						HotKeyManager.HotKey="Alt+F6">
 						<ContentPresenter Content="{Binding $parent[Window].DataContext.BreakpointsViewModel}" />
+					</dockModel:Document>
+					<dockModel:Document Id="OperatingSystem" Title="Operating System">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="DOS" ToolTip.Tip="DOS Kernel State" Content="{Binding DosViewModel}" />
+							<TabItem Header="BIOS" ToolTip.Tip="BIOS Data Area" Content="{Binding BiosViewModel}" />
+						</TabControl>
+					</dockModel:Document>
+					<dockModel:Document Id="Sound" Title="Sound">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="Sound Blaster" ToolTip.Tip="Sound Blaster Card" Content="{Binding SoundBlasterViewModel}" />
+							<TabItem Header="OPL3/FM" ToolTip.Tip="OPL3 FM Synthesizer" Content="{Binding Opl3ViewModel}" />
+							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F9" Header="General MIDI / MT-32" ToolTip.Tip="Alt-F9" Content="{Binding MidiViewModel}" />
+							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F10" Header="Software Mixer" ToolTip.Tip="Alt-F10" Content="{Binding SoftwareMixerViewModel}" />
+						</TabControl>
+					</dockModel:Document>
+					<dockModel:Document Id="MemoryManagement" Title="Memory Management">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="EMS" ToolTip.Tip="Expanded Memory Manager" Content="{Binding EmsViewModel}" />
+							<TabItem Header="XMS" ToolTip.Tip="Extended Memory Manager" Content="{Binding XmsViewModel}" />
+							<TabItem Header="DMA" ToolTip.Tip="Direct Memory Access" Content="{Binding DmaViewModel}" />
+						</TabControl>
+					</dockModel:Document>
+					<dockModel:Document Id="Hardware" Title="Hardware">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F7" Header="Video Card" ToolTip.Tip="Alt-F7" Content="{Binding VideoCardViewModel}" />
+							<controls:HotKeyTabItem HotKeyManager.HotKey="Alt+F8" Header="Color Palette" ToolTip.Tip="Alt-F8" Content="{Binding PaletteViewModel}" />
+							<TabItem Header="Timer (PIT)" ToolTip.Tip="Programmable Interval Timer" Content="{Binding TimerViewModel}" />
+							<TabItem Header="PIC" ToolTip.Tip="Programmable Interrupt Controller" Content="{Binding PicViewModel}" />
+						</TabControl>
+					</dockModel:Document>
+					<dockModel:Document Id="Debuggers" Title="Debuggers">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="MCP Server" ToolTip.Tip="Model Context Protocol Server" Content="{Binding McpServerViewModel}" />
+							<TabItem Header="GDB Server" ToolTip.Tip="GDB Remote Debug Server" Content="{Binding GdbServerViewModel}" />
+						</TabControl>
+					</dockModel:Document>
+					<dockModel:Document Id="MemoryGraphs" Title="Memory Graphs">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="MCB Chain" ToolTip.Tip="Memory Control Block Chain Graph">
+								<views:McbGraphView DataContext="{Binding McbGraphViewModel}" />
+							</TabItem>
+							<TabItem Header="PSP Chain" ToolTip.Tip="Program Segment Prefix Chain Graph">
+								<views:PspGraphView DataContext="{Binding PspGraphViewModel}" />
+							</TabItem>
+						</TabControl>
 					</dockModel:Document>
 				</dockModel:DocumentDock>
 			</dockModel:RootDock>
