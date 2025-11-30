@@ -283,52 +283,23 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
-    /// Executes a program using DOS EXEC semantics with interrupt vector handling.
-    /// This overload is used for LoadAndExecute mode where the parent's return address
-    /// needs to be saved for proper child termination handling.
+    /// Executes a program using DOS EXEC semantics (INT 21h, AH=4Bh) with interrupt vector saving.
     /// </summary>
-    /// <param name="programPath">The DOS path to the program (must include extension).</param>
-    /// <param name="arguments">Command line arguments for the program.</param>
-    /// <param name="loadType">The type of load operation to perform.</param>
-    /// <param name="environmentSegment">Environment segment to use (0 = inherit from parent).</param>
-    /// <param name="interruptVectorTable">The interrupt vector table to save/restore vectors.</param>
-    /// <param name="parentReturnCS">The CS segment of the parent's return address (for INT 22h).</param>
-    /// <param name="parentReturnIP">The IP offset of the parent's return address (for INT 22h).</param>
-    /// <returns>The result of the EXEC operation.</returns>
     /// <remarks>
-    /// This method saves the current interrupt vectors (22h, 23h, 24h) to the child's PSP
-    /// and sets INT 22h to point to the parent's return address. When the child terminates,
-    /// it will return to this address.
+    /// This overload accepts an InterruptVectorTable so that INT 22h/23h/24h can be saved to the
+    /// child PSP. This is important for proper process termination - when the child terminates,
+    /// TerminateProcess restores INT 22h from the child's PSP and uses it to return to the parent.
     /// </remarks>
     public DosExecResult Exec(string programPath, string? arguments, 
         DosExecLoadType loadType, ushort environmentSegment,
-        InterruptVectorTable interruptVectorTable,
-        ushort parentReturnCS, ushort parentReturnIP) {
+        InterruptVectorTable interruptVectorTable) {
         
         if (_loggerService.IsEnabled(LogEventLevel.Information)) {
             _loggerService.Information(
-                "EXEC: Loading program '{Program}' with args '{Args}', type={LoadType}, parent return={CS:X4}:{IP:X4}",
-                programPath, arguments ?? "", loadType, parentReturnCS, parentReturnIP);
+                "EXEC: Loading program '{Program}' with args '{Args}', type={LoadType}",
+                programPath, arguments ?? "", loadType);
         }
-        
-        // First, set INT 22h to the parent's return address BEFORE loading the child
-        // This way, when we save the interrupt vectors to the child's PSP,
-        // INT 22h will contain the parent's return address
-        SegmentedAddress parentReturnAddress = new(parentReturnCS, parentReturnIP);
-        interruptVectorTable[0x22] = parentReturnAddress;
-        
-        // Now call the regular Exec which will save the current INT 22h (now pointing
-        // to parent's return address) to the child's PSP
-        return ExecWithVectorSaving(programPath, arguments, loadType, environmentSegment, interruptVectorTable);
-    }
-    
-    /// <summary>
-    /// Internal Exec implementation that saves interrupt vectors to the child's PSP.
-    /// </summary>
-    private DosExecResult ExecWithVectorSaving(string programPath, string? arguments, 
-        DosExecLoadType loadType, ushort environmentSegment,
-        InterruptVectorTable interruptVectorTable) {
-        
+
         // Resolve the program path to a host file path
         string? hostPath = ResolveToHostPath(programPath);
         if (hostPath is null || !File.Exists(hostPath)) {
@@ -360,119 +331,36 @@ public class DosProcessManager : DosFileLoader {
             parentPspSegment = _commandCom.PspSegment;
         }
 
+        bool isFirstProgram = _pspTracker.PspCount == 0;
+
         // Create environment block
         byte[] envBlockData = CreateEnvironmentBlock(programPath);
         ushort envSegment = environmentSegment;
         if (envSegment == 0) {
-            // Use MCB allocation for child processes
-            envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
-            if (envSegment == 0) {
-                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+            if (isFirstProgram) {
+                envSegment = (ushort)(_commandCom.NextSegment);
+                uint envAddress = MemoryUtils.ToPhysicalAddress(envSegment, 0);
+                _memory.LoadData(envAddress, envBlockData);
+            } else {
+                envSegment = _memoryManager.AllocateEnvironmentBlock(envBlockData, parentPspSegment);
+                if (envSegment == 0) {
+                    return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+                }
             }
         }
 
-        // Load the program with vector saving
-        DosExecResult result = LoadProgramWithVectorSaving(fileBytes, hostPath, arguments, 
-            parentPspSegment, envSegment, loadType, interruptVectorTable);
+        // Load the program - use the version that saves interrupt vectors
+        DosExecResult result = isFirstProgram 
+            ? LoadFirstProgram(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType)
+            : LoadProgramWithVectorSaving(fileBytes, hostPath, arguments, parentPspSegment, envSegment, loadType, interruptVectorTable);
 
         if (!result.Success) {
-            // Free the environment block if we allocated it
-            if (environmentSegment == 0 && envSegment != 0) {
+            if (environmentSegment == 0 && envSegment != 0 && !isFirstProgram) {
                 _memoryManager.FreeMemoryBlock((ushort)(envSegment - 1));
             }
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Loads a program and saves interrupt vectors to its PSP.
-    /// </summary>
-    private DosExecResult LoadProgramWithVectorSaving(byte[] fileBytes, string hostPath, string? arguments,
-        ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType,
-        InterruptVectorTable interruptVectorTable) {
-        
-        // Determine if this is an EXE or COM file
-        bool isExe = false;
-        DosExeFile? exeFile = null;
-        
-        if (fileBytes.Length >= DosExeFile.MinExeSize) {
-            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
-            isExe = exeFile.IsValid;
-        }
-
-        // Allocate memory for the program using MCB-based allocation
-        ushort pspSegment;
-        DosMemoryControlBlock? memBlock;
-        
-        if (isExe && exeFile is not null) {
-            memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
-        } else {
-            memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
-        }
-        
-        if (memBlock is null) {
-            return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
-        }
-        pspSegment = memBlock.DataBlockSegment;
-
-        // Create and register the PSP
-        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
-
-        // Initialize PSP with interrupt vector saving
-        InitializePspWithVectorSaving(psp, parentPspSegment, envSegment, arguments, interruptVectorTable);
-
-        // Set the disk transfer area address
-        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
-
-        // Load the program
-        ushort cs, ip, ss, sp;
-        
-        if (isExe && exeFile is not null) {
-            LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
-        } else {
-            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
-        }
-
-        if (loadType == DosExecLoadType.LoadAndExecute) {
-            // Set up CPU state for execution
-            _state.DS = pspSegment;
-            _state.ES = pspSegment;
-            _state.SS = ss;
-            _state.SP = sp;
-            SetEntryPoint(cs, ip);
-            _state.InterruptFlag = true;
-            
-            return DosExecResult.Succeeded();
-        } else if (loadType == DosExecLoadType.LoadOnly) {
-            return DosExecResult.Succeeded(pspSegment, cs, ip, ss, sp);
-        }
-
-        return DosExecResult.Succeeded();
-    }
-
-    /// <summary>
-    /// Initializes a PSP with interrupt vector saving.
-    /// </summary>
-    private void InitializePspWithVectorSaving(DosProgramSegmentPrefix psp, ushort parentPspSegment, 
-        ushort envSegment, string? arguments, InterruptVectorTable interruptVectorTable) {
-        
-        // Initialize common PSP fields
-        InitializeCommonPspFields(psp, parentPspSegment);
-
-        psp.NextSegment = DosMemoryManager.LastFreeSegment;
-        psp.EnvironmentTableSegment = envSegment;
-
-        // Save current interrupt vectors to the PSP
-        // This is crucial for proper child termination handling
-        SaveInterruptVectors(psp, interruptVectorTable);
-
-        // Load command-line arguments
-        byte[] commandLineBytes = ArgumentsToDosBytes(arguments);
-        byte length = commandLineBytes[0];
-        string asciiCommandLine = Encoding.ASCII.GetString(commandLineBytes, 1, length);
-        psp.DosCommandTail.Length = (byte)(asciiCommandLine.Length + 1);
-        psp.DosCommandTail.Command = asciiCommandLine;
     }
 
     /// <summary>
@@ -677,6 +565,74 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
+    /// Loads a program into memory with interrupt vector saving to the PSP.
+    /// This is used by EXEC (INT 21h AH=4Bh) to ensure proper process termination.
+    /// </summary>
+    private DosExecResult LoadProgramWithVectorSaving(byte[] fileBytes, string hostPath, string? arguments,
+        ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType,
+        InterruptVectorTable interruptVectorTable) {
+        
+        // Determine if this is an EXE or COM file
+        bool isExe = false;
+        DosExeFile? exeFile = null;
+        
+        if (fileBytes.Length >= DosExeFile.MinExeSize) {
+            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
+            isExe = exeFile.IsValid;
+        }
+
+        // Child process - use MCB allocation to find free memory
+        DosMemoryControlBlock? memBlock;
+        if (isExe && exeFile is not null) {
+            memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
+        } else {
+            memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
+        }
+        
+        if (memBlock is null) {
+            return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+        }
+        ushort pspSegment = memBlock.DataBlockSegment;
+
+        // Create and register the PSP
+        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
+
+        // Initialize PSP
+        InitializePsp(psp, parentPspSegment, envSegment, arguments);
+        
+        // Save interrupt vectors to the PSP - this is critical for process termination
+        // INT 22h contains the parent's return address (set by LoadAndOrExecute before calling Exec)
+        SaveInterruptVectors(psp, interruptVectorTable);
+
+        // Set the disk transfer area address
+        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
+
+        // Load the program
+        ushort cs, ip, ss, sp;
+        
+        if (isExe && exeFile is not null) {
+            LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
+        } else {
+            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
+        }
+
+        if (loadType == DosExecLoadType.LoadAndExecute) {
+            _state.DS = pspSegment;
+            _state.ES = pspSegment;
+            _state.SS = ss;
+            _state.SP = sp;
+            SetEntryPoint(cs, ip);
+            _state.InterruptFlag = true;
+            
+            return DosExecResult.Succeeded();
+        } else if (loadType == DosExecLoadType.LoadOnly) {
+            return DosExecResult.Succeeded(pspSegment, cs, ip, ss, sp);
+        }
+
+        return DosExecResult.Succeeded();
+    }
+
+    /// <summary>
     /// Loads the first program using the original approach that gives it ALL remaining memory.
     /// </summary>
     /// <remarks>
@@ -863,37 +819,23 @@ public class DosProcessManager : DosFileLoader {
     /// Loads a COM file and returns entry point information.
     /// </summary>
     /// <remarks>
-    /// In real DOS, COM files are loaded at PSP:0x100 (256 bytes after the PSP).
-    /// CS = DS = ES = SS = PSP segment, and IP = 0x100.
-    /// This is different from EXE files which can have different segment values.
-    /// 
-    /// The physical address is PSP*16 + 0x100, which is the same as (PSP+0x10)*16 + 0,
-    /// but using PSP:0x100 avoids overflow when PSP is near 0xFFF0.
+    /// COM files are loaded at PSP:0x100 (offset 0x100 within the PSP segment).
+    /// This is different from EXE files which can specify their own entry point.
+    /// The CS register is set to the PSP segment (not PSP+0x10) to avoid overflow
+    /// issues when the PSP segment is near 0xFFFF.
     /// </remarks>
     private void LoadComFileInternal(byte[] com, out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
-        // Use the PSP segment directly (as real DOS does for COM files)
+        // Get the current PSP segment directly (not +0x10 which can overflow)
         ushort pspSegment = _pspTracker.GetCurrentPspSegment();
         
-        // Load data at PSP:0x100 (256 bytes after PSP start)
+        // Load at PSP:0x100 (256 bytes after PSP start)
         uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(pspSegment, ComOffset);
         _memory.LoadData(physicalStartAddress, com);
-        
-        // DEBUG: Log first few bytes loaded
-        if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-            byte b0 = _memory.UInt8[physicalStartAddress];
-            byte b1 = _memory.UInt8[physicalStartAddress + 1];
-            byte b2 = _memory.UInt8[physicalStartAddress + 2];
-            byte b3 = _memory.UInt8[physicalStartAddress + 3];
-            byte b4 = _memory.UInt8[physicalStartAddress + 4];
-            byte b5 = _memory.UInt8[physicalStartAddress + 5];
-            _loggerService.Warning(
-                "LoadCOM DEBUG: Loaded {Size} bytes at PSP=0x{PSP:X4} physAddr=0x{Addr:X8}, first 6 bytes: {B0:X2} {B1:X2} {B2:X2} {B3:X2} {B4:X2} {B5:X2}",
-                com.Length, pspSegment, physicalStartAddress, b0, b1, b2, b3, b4, b5);
-        }
 
         // For COM files, all segment registers point to the PSP segment
+        // and IP starts at 0x100 (after the PSP header)
         cs = pspSegment;
-        ip = ComOffset;
+        ip = ComOffset;  // 0x100
         ss = pspSegment;
         sp = 0xFFFE; // Standard COM file stack
     }

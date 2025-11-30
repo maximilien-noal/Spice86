@@ -1525,14 +1525,6 @@ public class DosInt21Handler : InterruptHandler {
     /// CF clear on success (BX,DX destroyed)<br/>
     /// CF set on error, AX = error code
     /// </para>
-    /// <para>
-    /// <strong>Stack Handling for LoadAndExecute:</strong>
-    /// When LoadAndExecute succeeds, the child program should run first. This is achieved
-    /// by modifying the interrupt return stack so that IRET jumps to the child's entry point
-    /// instead of returning to the parent. The parent's return address is saved in the child's
-    /// PSP (offset 0x0A = TerminateAddress/INT 22h vector) so that when the child terminates,
-    /// control returns to the parent.
-    /// </para>
     /// </remarks>
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
     public void LoadAndOrExecute(bool calledFromVm) {
@@ -1581,73 +1573,30 @@ public class DosInt21Handler : InterruptHandler {
                     paramBlock.EnvironmentSegment, commandTail);
             }
 
-            // For LoadAndExecute, we need to handle the stack specially
-            if (loadType == DosExecLoadType.LoadAndExecute) {
-                // Get the parent's return address from the interrupt stack
-                // This is where the parent should resume after the child terminates
-                ushort parentReturnIP = Stack.Peek16(0);  // IP at SP+0
-                ushort parentReturnCS = Stack.Peek16(2);  // CS at SP+2
-                
-                // DEBUG: Log stack values
-                LoggerService.Warning(
-                    "EXEC DEBUG: Before call - SS={SS:X4} SP={SP:X4} parentReturnCS={PCS:X4} parentReturnIP={PIP:X4}",
-                    State.SS, State.SP, parentReturnCS, parentReturnIP);
-                
-                // Save parent's stack pointer before EXEC changes it
-                ushort parentSS = State.SS;
-                ushort parentSP = State.SP;
-                
-                // Call EXEC with the interrupt vector table so it can save vectors to child PSP
-                // and set up INT 22h correctly
-                result = _dosProcessManager.Exec(
-                    programName, 
-                    commandTail,
-                    loadType, 
-                    paramBlock.EnvironmentSegment,
-                    _interruptVectorTable,
-                    parentReturnCS,
-                    parentReturnIP);
-                
-                // If EXEC succeeded, the child should run now
-                // Modify the PARENT's interrupt stack so IRET jumps to the child's entry point
-                // Note: EXEC changed State.SS/SP to the child's stack, so we need to
-                // write to the parent's stack using the saved SS:SP values
-                if (result.Success) {
-                    // Log child entry point set by EXEC
-                    ushort childCS = State.CS;
-                    ushort childIP = State.IP;
-                    LoggerService.Warning(
-                        "EXEC DEBUG: After EXEC - ChildCS=0x{0:X4} ChildIP=0x{1:X4} ChildSS=0x{2:X4} ChildSP=0x{3:X4}",
-                        childCS, childIP, State.SS, State.SP);
-                    
-                    // State.CS and State.IP were set to the child's entry point by EXEC
-                    // Poke into the PARENT's stack (not the child's current stack)
-                    uint parentStackAddress = MemoryUtils.ToPhysicalAddress(parentSS, parentSP);
-                    
-                    LoggerService.Warning(
-                        "EXEC DEBUG: Writing childIP=0x{0:X4} and childCS=0x{1:X4} to stack at 0x{2:X8}",
-                        childIP, childCS, parentStackAddress);
-                    
-                    Memory.UInt16[parentStackAddress] = childIP;      // Child's IP at parent's SP+0
-                    Memory.UInt16[parentStackAddress + 2] = childCS;  // Child's CS at parent's SP+2
-                    
-                    // Restore parent's SS:SP so IRET uses the correct stack
-                    // (The child's SS:SP will be set up when we actually start executing the child)
-                    State.SS = parentSS;
-                    State.SP = parentSP;
-                    
-                    LoggerService.Warning(
-                        "EXEC DEBUG: After stack mod - SS=0x{0:X4} SP=0x{1:X4}",
-                        State.SS, State.SP);
-                }
-            } else {
-                // For LoadOnly, call the simpler version
-                result = _dosProcessManager.Exec(
-                    programName, 
-                    commandTail,
-                    loadType, 
-                    paramBlock.EnvironmentSegment);
-            }
+            // Save the parent's stack pointer and return address before calling Exec,
+            // since Exec will change State.SS and State.SP to the child's stack
+            ushort parentSS = State.SS;
+            ushort parentSP = State.SP;
+            
+            // Get the parent's return address from the interrupt stack
+            // This is where INT 21h was called, and where execution should resume
+            // after the child terminates
+            ushort parentReturnIP = Stack.Peek16(0);  // IP at SP+0
+            ushort parentReturnCS = Stack.Peek16(2);  // CS at SP+2
+            
+            // Set INT 22h to the parent's return address BEFORE loading the child.
+            // This is critical because InitializePsp will save INT 22h to the child's PSP.
+            // When the child terminates, TerminateProcess restores INT 22h from the child's PSP
+            // and uses it to find where to return to the parent.
+            _interruptVectorTable[0x22] = new SegmentedAddress(parentReturnCS, parentReturnIP);
+            
+            // Call the Exec overload that saves interrupt vectors to the child PSP
+            result = _dosProcessManager.Exec(
+                programName,
+                commandTail,
+                loadType, 
+                paramBlock.EnvironmentSegment,
+                _interruptVectorTable);
 
             // For LoadOnly mode, fill in the entry point info in the parameter block
             if (result.Success && loadType == DosExecLoadType.LoadOnly) {
@@ -1655,6 +1604,74 @@ public class DosInt21Handler : InterruptHandler {
                 paramBlock.InitialSP = result.InitialSP;
                 paramBlock.InitialCS = result.InitialCS;
                 paramBlock.InitialIP = result.InitialIP;
+            }
+            
+            // For LoadAndExecute mode, we need to modify the PARENT's interrupt stack so that
+            // when IRET executes, it jumps to the child's entry point instead of
+            // returning to the parent. The parent's stack currently has:
+            //   [parentSP+0] = parent's return IP
+            //   [parentSP+2] = parent's return CS
+            //   [parentSP+4] = FLAGS
+            // We need to replace IP and CS with the child's entry point.
+            if (result.Success && loadType == DosExecLoadType.LoadAndExecute) {
+                // The child's entry point was set in State.CS and State.IP by Exec().
+                // Write directly to the parent's stack memory (not using Stack.Poke16
+                // which would use the child's SS:SP)
+                uint parentStackAddress = MemoryUtils.ToPhysicalAddress(parentSS, parentSP);
+                
+                // Store the child's entry point and stack info before we modify anything
+                ushort childCS = State.CS;
+                ushort childIP = State.IP;
+                ushort childSS = State.SS;
+                ushort childSP = State.SP;
+                
+                // Debug: Log current values
+                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                    ushort oldIP = Memory.UInt16[parentStackAddress];
+                    ushort oldCS = Memory.UInt16[parentStackAddress + 2];
+                    ushort oldFlags = Memory.UInt16[parentStackAddress + 4];
+                    LoggerService.Warning(
+                        "EXEC DEBUG: Before stack mod - parentSS={ParentSS:X4} parentSP={ParentSP:X4} stackAddr={StackAddr:X8}",
+                        parentSS, parentSP, parentStackAddress);
+                    LoggerService.Warning(
+                        "EXEC DEBUG: Old stack values - IP={OldIP:X4} CS={OldCS:X4} FLAGS={OldFlags:X4}",
+                        oldIP, oldCS, oldFlags);
+                    LoggerService.Warning(
+                        "EXEC DEBUG: Child entry point - CS={ChildCS:X4} IP={ChildIP:X4} SS={ChildSS:X4} SP={ChildSP:X4}",
+                        childCS, childIP, childSS, childSP);
+                }
+                
+                // Modify the parent's stack so IRET jumps to child's entry
+                Memory.UInt16[parentStackAddress] = childIP;      // Child's IP at parent's SP+0
+                Memory.UInt16[parentStackAddress + 2] = childCS;  // Child's CS at parent's SP+2
+                
+                // Keep the parent's SS:SP so IRET reads from the correct place
+                // After IRET, SS:SP will be parentSS:(parentSP+6)
+                // The child will initially use parent's stack but that should be fine
+                // for simple operations. The child's stack (childSS:childSP) is saved
+                // in State but we can't easily switch to it via IRET.
+                State.SS = parentSS;
+                State.SP = parentSP;
+                
+                // Also set the child's CS:IP in State so it's consistent
+                State.CS = childCS;
+                State.IP = childIP;
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
+                    ushort newIP = Memory.UInt16[parentStackAddress];
+                    ushort newCS = Memory.UInt16[parentStackAddress + 2];
+                    LoggerService.Warning(
+                        "EXEC DEBUG: After stack mod - stack has IP={NewIP:X4} CS={NewCS:X4}, State.SS={SS:X4} State.SP={SP:X4}",
+                        newIP, newCS, State.SS, State.SP);
+                    // Dump the first 12 bytes at the child's entry point
+                    uint childAddr = MemoryUtils.ToPhysicalAddress(childCS, childIP);
+                    LoggerService.Warning(
+                        "EXEC DEBUG: Child code at {Addr:X8}: {B0:X2} {B1:X2} {B2:X2} {B3:X2} {B4:X2} {B5:X2}",
+                        childAddr,
+                        Memory.UInt8[childAddr], Memory.UInt8[childAddr+1],
+                        Memory.UInt8[childAddr+2], Memory.UInt8[childAddr+3],
+                        Memory.UInt8[childAddr+4], Memory.UInt8[childAddr+5]);
+                }
             }
         }
 
@@ -1757,11 +1774,6 @@ public class DosInt21Handler : InterruptHandler {
     /// the environment block is freed automatically because it's a separate MCB
     /// owned by the terminating process.
     /// </para>
-    /// <para>
-    /// <strong>Stack Handling:</strong> When a child process terminates and returns to
-    /// its parent, we need to modify the interrupt stack so that IRET jumps to the
-    /// parent's return address (which was saved in INT 22h / child's PSP TerminateAddress).
-    /// </para>
     /// </remarks>
     public void QuitWithExitCode() {
         byte exitCode = State.AL;
@@ -1778,15 +1790,20 @@ public class DosInt21Handler : InterruptHandler {
             // No parent to return to - stop emulation
             State.IsRunning = false;
         } else {
-            // Child is terminating and returning to parent
-            // TerminateProcess set State.CS and State.IP to the parent's return address
-            // We need to modify the stack so IRET goes there
-            Stack.Poke16(0, State.IP);  // Parent return IP at SP+0
-            Stack.Poke16(2, State.CS);  // Parent return CS at SP+2
+            // TerminateProcess set State.CS and State.IP to the parent's return address.
+            // We need to modify the interrupt stack so that when IRET executes,
+            // it jumps to the parent instead of returning to the child.
+            // The stack currently has:
+            //   [SP+0] = child's return IP (where INT 21h was called)
+            //   [SP+2] = child's return CS
+            //   [SP+4] = FLAGS
+            // We need to replace IP and CS with the parent's return address.
+            Stack.Poke16(0, State.IP);  // Replace return IP with parent's IP
+            Stack.Poke16(2, State.CS);  // Replace return CS with parent's CS
             
             if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                 LoggerService.Debug(
-                    "TERMINATE: Modified stack to return to parent at {CS:X4}:{IP:X4}",
+                    "TERMINATE: Modified stack for parent return at {CS:X4}:{IP:X4}",
                     State.CS, State.IP);
             }
         }
