@@ -872,19 +872,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         
         // Perform Zero-Order Hold (ZOH) upsampling to output buffer
         // ZOH simply repeats each source sample for the appropriate duration
-        int outputIndex = 0;
-        double outputRatio = (double)GusConstants.OutputSampleRate / gusSampleRate;
-        
-        for (int i = 0; i < _renderBuffer.Length && outputIndex < _outputBuffer.Length - 1; i++) {
+        for (int i = 0; i < _renderBuffer.Length; i++) {
             // Calculate which GUS-rate sample corresponds to this output sample
             double gusPos = (i + _upsampleAccumulator) * ratio;
-            int gusSampleIndex = (int)gusPos;
-            
-            // Clamp to valid range
-            gusSampleIndex = Math.Min(gusSampleIndex, gusSamplesToRender - 1);
-            if (gusSampleIndex < 0) {
-                gusSampleIndex = 0;
-            }
+            int gusSampleIndex = Math.Clamp((int)gusPos, 0, gusSamplesToRender - 1);
             
             // Use the GUS-rate sample (ZOH - no interpolation, just sample repetition)
             _renderBuffer[i] = _gusRateBuffer[gusSampleIndex];
@@ -895,6 +886,7 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _upsampleAccumulator = (consumed + _upsampleAccumulator) - (int)(consumed + _upsampleAccumulator);
         
         // Convert stereo frame pairs to interleaved float array
+        int outputIndex = 0;
         for (int i = 0; i < _renderBuffer.Length && outputIndex < _outputBuffer.Length - 1; i++) {
             _outputBuffer[outputIndex++] = _renderBuffer[i].Left / 32768f;
             _outputBuffer[outputIndex++] = _renderBuffer[i].Right / 32768f;
