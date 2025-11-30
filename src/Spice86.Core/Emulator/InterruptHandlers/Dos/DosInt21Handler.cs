@@ -1525,6 +1525,14 @@ public class DosInt21Handler : InterruptHandler {
     /// CF clear on success (BX,DX destroyed)<br/>
     /// CF set on error, AX = error code
     /// </para>
+    /// <para>
+    /// <strong>Stack Handling for LoadAndExecute:</strong>
+    /// When LoadAndExecute succeeds, the child program should run first. This is achieved
+    /// by modifying the interrupt return stack so that IRET jumps to the child's entry point
+    /// instead of returning to the parent. The parent's return address is saved in the child's
+    /// PSP (offset 0x0A = TerminateAddress/INT 22h vector) so that when the child terminates,
+    /// control returns to the parent.
+    /// </para>
     /// </remarks>
     /// <param name="calledFromVm">Whether the code was called by the emulator.</param>
     public void LoadAndOrExecute(bool calledFromVm) {
@@ -1573,11 +1581,46 @@ public class DosInt21Handler : InterruptHandler {
                     paramBlock.EnvironmentSegment, commandTail);
             }
 
-            result = _dosProcessManager.Exec(
-                programName, 
-                commandTail,
-                loadType, 
-                paramBlock.EnvironmentSegment);
+            // For LoadAndExecute, we need to handle the stack specially
+            if (loadType == DosExecLoadType.LoadAndExecute) {
+                // Get the parent's return address from the interrupt stack
+                // This is where the parent should resume after the child terminates
+                ushort parentReturnIP = Stack.Peek16(0);  // IP at SP+0
+                ushort parentReturnCS = Stack.Peek16(2);  // CS at SP+2
+                
+                // Call EXEC with the interrupt vector table so it can save vectors to child PSP
+                // and set up INT 22h correctly
+                result = _dosProcessManager.Exec(
+                    programName, 
+                    commandTail,
+                    loadType, 
+                    paramBlock.EnvironmentSegment,
+                    _interruptVectorTable,
+                    parentReturnCS,
+                    parentReturnIP);
+                
+                // If EXEC succeeded, the child should run now
+                // Modify the stack so IRET jumps to the child's entry point
+                if (result.Success) {
+                    // State.CS and State.IP were set to the child's entry point by EXEC
+                    // Modify the interrupt stack so IRET goes there
+                    Stack.Poke16(0, State.IP);  // Child's IP at SP+0
+                    Stack.Poke16(2, State.CS);  // Child's CS at SP+2
+                    
+                    if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                        LoggerService.Debug(
+                            "EXEC: Modified stack for child entry at {CS:X4}:{IP:X4}, parent return at {ParentCS:X4}:{ParentIP:X4}",
+                            State.CS, State.IP, parentReturnCS, parentReturnIP);
+                    }
+                }
+            } else {
+                // For LoadOnly, call the simpler version
+                result = _dosProcessManager.Exec(
+                    programName, 
+                    commandTail,
+                    loadType, 
+                    paramBlock.EnvironmentSegment);
+            }
 
             // For LoadOnly mode, fill in the entry point info in the parameter block
             if (result.Success && loadType == DosExecLoadType.LoadOnly) {
@@ -1687,6 +1730,11 @@ public class DosInt21Handler : InterruptHandler {
     /// the environment block is freed automatically because it's a separate MCB
     /// owned by the terminating process.
     /// </para>
+    /// <para>
+    /// <strong>Stack Handling:</strong> When a child process terminates and returns to
+    /// its parent, we need to modify the interrupt stack so that IRET jumps to the
+    /// parent's return address (which was saved in INT 22h / child's PSP TerminateAddress).
+    /// </para>
     /// </remarks>
     public void QuitWithExitCode() {
         byte exitCode = State.AL;
@@ -1702,9 +1750,19 @@ public class DosInt21Handler : InterruptHandler {
         if (!shouldContinue) {
             // No parent to return to - stop emulation
             State.IsRunning = false;
+        } else {
+            // Child is terminating and returning to parent
+            // TerminateProcess set State.CS and State.IP to the parent's return address
+            // We need to modify the stack so IRET goes there
+            Stack.Poke16(0, State.IP);  // Parent return IP at SP+0
+            Stack.Poke16(2, State.CS);  // Parent return CS at SP+2
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                LoggerService.Debug(
+                    "TERMINATE: Modified stack to return to parent at {CS:X4}:{IP:X4}",
+                    State.CS, State.IP);
+            }
         }
-        // If shouldContinue is true, the CPU state (CS:IP) was set to the parent's
-        // return address by TerminateProcess, so execution will continue there.
     }
 
     /// <summary>

@@ -78,6 +78,52 @@ public class DosExecIntegrationTests {
     }
 
     /// <summary>
+    /// Simple test to verify basic program execution works before testing EXEC.
+    /// </summary>
+    [Fact]
+    public void SimpleProgram_WritesToPort_AndTerminates() {
+        // Simple program: write to port and exit
+        byte[] program = new byte[] {
+            0xB0, 0x42,             // mov al, 0x42
+            0xBA, 0x98, 0x09,       // mov dx, 0x998
+            0xEE,                   // out dx, al
+            0xB8, 0x00, 0x4C,       // mov ax, 4C00h
+            0xCD, 0x21,             // int 21h
+            0xF4                    // hlt
+        };
+
+        // Write program to a .com file
+        string filePath = Path.GetFullPath("simpletest.com");
+        File.WriteAllBytes(filePath, program);
+        
+        try {
+            Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+                binName: filePath,
+                enableCfgCpu: true,
+                enablePit: false,
+                recordData: false,
+                maxCycles: 100000L,
+                installInterruptVectors: true,
+                enableA20Gate: true
+            ).Create();
+
+            ExecTestHandler testHandler = new(
+                spice86DependencyInjection.Machine.CpuState,
+                NSubstitute.Substitute.For<ILoggerService>(),
+                spice86DependencyInjection.Machine.IoPortDispatcher
+            );
+            
+            spice86DependencyInjection.ProgramExecutor.Run();
+
+            // Should have received the marker
+            testHandler.ChildResults.Should().Contain((byte)0x42);
+        }
+        finally {
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+    }
+
+    /// <summary>
     /// Creates a simple child COM program that writes a marker and terminates.
     /// </summary>
     private static byte[] CreateChildProgram() {
@@ -250,19 +296,14 @@ public class DosExecIntegrationTests {
         string parentFilename, string childFilename,
         [CallerMemberName] string unitTestName = "test") {
         
-        // Create temp directory for test files
-        string tempDir = Path.Combine(Path.GetTempPath(), $"Spice86ExecTest_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        // Write both files to current directory (where the emulator's C: is mounted)
+        string parentPath = Path.GetFullPath($"{unitTestName}_{parentFilename}");
+        string childPath = Path.GetFullPath(childFilename);  // Child must be accessible at its DOS name
+        
+        File.WriteAllBytes(parentPath, parentProgram);
+        File.WriteAllBytes(childPath, childProgram);
         
         try {
-            // Write child program
-            string childPath = Path.Combine(tempDir, childFilename);
-            File.WriteAllBytes(childPath, childProgram);
-            
-            // Write parent program
-            string parentPath = Path.Combine(tempDir, parentFilename);
-            File.WriteAllBytes(parentPath, parentProgram);
-            
             // Setup emulator with DOS initialized
             Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
                 binName: parentPath,
@@ -285,15 +326,12 @@ public class DosExecIntegrationTests {
             return testHandler;
         }
         finally {
-            // Cleanup temp directory
+            // Cleanup files
             try {
-                if (Directory.Exists(tempDir)) {
-                    Directory.Delete(tempDir, recursive: true);
-                }
-            } catch (IOException) {
+                if (File.Exists(parentPath)) File.Delete(parentPath);
+                if (File.Exists(childPath)) File.Delete(childPath);
+            } catch {
                 // Ignore cleanup errors
-            } catch (UnauthorizedAccessException) {
-                // Ignore permission issues
             }
         }
     }
