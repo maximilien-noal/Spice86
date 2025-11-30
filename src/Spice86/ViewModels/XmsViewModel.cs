@@ -5,6 +5,7 @@ using Avalonia.Collections;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Spice86.Core.Emulator.InterruptHandlers.Dos.Xms;
+using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
 using Spice86.ViewModels.Services;
 
@@ -14,6 +15,7 @@ using Spice86.ViewModels.Services;
 /// </summary>
 public partial class XmsViewModel : DebuggerTabViewModel {
     private readonly ExtendedMemoryManager? _xms;
+    private readonly A20Gate? _a20Gate;
 
     /// <inheritdoc />
     public override string Header => "XMS";
@@ -34,20 +36,47 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     private byte _xmsMinorVersion;
 
     [ObservableProperty]
+    private ushort _xmsInternalVersion;
+
+    [ObservableProperty]
     private string _driverName = string.Empty;
+
+    [ObservableProperty]
+    private ushort _dosDeviceSegment;
+
+    [ObservableProperty]
+    private string _callbackAddress = string.Empty;
 
     // Memory Statistics
     [ObservableProperty]
     private string _totalXmsMemory = string.Empty;
 
     [ObservableProperty]
+    private long _totalXmsMemoryBytes;
+
+    [ObservableProperty]
     private string _freeXmsMemory = string.Empty;
+
+    [ObservableProperty]
+    private long _freeXmsMemoryBytes;
+
+    [ObservableProperty]
+    private string _usedXmsMemory = string.Empty;
+
+    [ObservableProperty]
+    private long _usedXmsMemoryBytes;
 
     [ObservableProperty]
     private string _largestFreeBlock = string.Empty;
 
     [ObservableProperty]
+    private uint _largestFreeBlockBytes;
+
+    [ObservableProperty]
     private uint _xmsBaseAddress;
+
+    [ObservableProperty]
+    private double _memoryUsagePercent;
 
     // A20 Line State
     [ObservableProperty]
@@ -56,16 +85,18 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     [ObservableProperty]
     private string _a20Status = string.Empty;
 
-    // HMA State
     [ObservableProperty]
-    private bool _isHmaClaimed;
+    private uint _hmaStartAddress;
 
     [ObservableProperty]
-    private string _hmaStatus = string.Empty;
+    private uint _hmaEndAddress;
 
     // Handle Information
     [ObservableProperty]
     private int _handleCount;
+
+    [ObservableProperty]
+    private int _freeHandles;
 
     [ObservableProperty]
     private int _maxHandles = DefaultMaxHandles;
@@ -81,11 +112,13 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     /// Initializes a new instance of the <see cref="XmsViewModel"/> class.
     /// </summary>
     /// <param name="xms">The Extended Memory Manager instance to observe. Can be null if XMS is disabled.</param>
+    /// <param name="a20Gate">The A20 gate for observing A20 line state.</param>
     /// <param name="pauseHandler">The pause handler for tracking emulator pause state.</param>
     /// <param name="uiDispatcher">The UI dispatcher for thread-safe UI updates.</param>
-    public XmsViewModel(ExtendedMemoryManager? xms, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
+    public XmsViewModel(ExtendedMemoryManager? xms, A20Gate? a20Gate, IPauseHandler pauseHandler, IUIDispatcher uiDispatcher)
         : base(pauseHandler, uiDispatcher) {
         _xms = xms;
+        _a20Gate = a20Gate;
         IsEnabled = xms != null;
     }
 
@@ -95,16 +128,26 @@ public partial class XmsViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // Update XMS configuration from the Core
+        // Update XMS driver information from the Core
         XmsMajorVersion = (byte)((ExtendedMemoryManager.XmsVersion >> 8) & 0xFF);
         XmsMinorVersion = (byte)(ExtendedMemoryManager.XmsVersion & 0xFF);
+        XmsInternalVersion = ExtendedMemoryManager.XmsInternalVersion;
         DriverName = ExtendedMemoryManager.XmsIdentifier;
-        TotalXmsMemory = FormatMemorySize(ExtendedMemoryManager.XmsMemorySize * 1024L);
+        DosDeviceSegment = ExtendedMemoryManager.DosDeviceSegment;
+        CallbackAddress = $"{_xms.CallbackAddress.Segment:X4}:{_xms.CallbackAddress.Offset:X4}";
+
+        // Memory configuration
         XmsBaseAddress = ExtendedMemoryManager.XmsBaseAddress;
+        TotalXmsMemoryBytes = ExtendedMemoryManager.XmsMemorySize * 1024L;
+        TotalXmsMemory = FormatMemorySize(TotalXmsMemoryBytes);
+
+        // HMA addresses
+        HmaStartAddress = A20Gate.StartOfHighMemoryArea;
+        HmaEndAddress = A20Gate.EndOfHighMemoryArea;
 
         UpdateMemoryStatistics();
         UpdateA20State();
-        UpdateHandles();
+        UpdateMemoryBlocks();
     }
 
     private void UpdateMemoryStatistics() {
@@ -112,42 +155,65 @@ public partial class XmsViewModel : DebuggerTabViewModel {
             return;
         }
 
-        FreeXmsMemory = FormatMemorySize(_xms.TotalFreeMemory);
-        LargestFreeBlock = FormatMemorySize(_xms.LargestFreeBlockLength);
+        FreeXmsMemoryBytes = _xms.TotalFreeMemory;
+        FreeXmsMemory = FormatMemorySize(FreeXmsMemoryBytes);
+
+        UsedXmsMemoryBytes = TotalXmsMemoryBytes - FreeXmsMemoryBytes;
+        UsedXmsMemory = FormatMemorySize(UsedXmsMemoryBytes);
+
+        LargestFreeBlockBytes = _xms.LargestFreeBlockLength;
+        LargestFreeBlock = FormatMemorySize(LargestFreeBlockBytes);
+
+        if (TotalXmsMemoryBytes > 0) {
+            MemoryUsagePercent = (double)UsedXmsMemoryBytes / TotalXmsMemoryBytes * 100;
+        }
     }
 
     private void UpdateA20State() {
-        // A20 state is managed by the XMS driver - read from configuration
-        A20Status = _xms != null ? "Active (XMS driver managing A20)" : "Not available";
+        if (_a20Gate != null) {
+            IsA20Enabled = _a20Gate.IsEnabled;
+            A20Status = _a20Gate.IsEnabled ? "Enabled (access to memory above 1MB)" : "Disabled (memory wraps at 1MB)";
+        } else {
+            A20Status = "Not available";
+        }
     }
 
-    private void UpdateHandles() {
+    private void UpdateMemoryBlocks() {
         if (_xms == null) {
             return;
         }
 
-        // XMS internal handles are in a SortedList
-        // We need to display information about allocated blocks
-        // Since XmsBlock info is internal, we'll show memory block info
-
+        // Build memory block list showing used vs free
         MemoryBlocks.Clear();
-        // Note: The XMS manager uses a linked list internally
-        // We expose what we can observe
-
-        long usedMemory = ExtendedMemoryManager.XmsMemorySize * 1024L - _xms.TotalFreeMemory;
-        long freeMemory = _xms.TotalFreeMemory;
 
         MemoryBlocks.Add(new XmsBlockInfo {
             Type = "Used",
-            Size = FormatMemorySize(usedMemory),
-            SizeBytes = usedMemory
+            Size = UsedXmsMemory,
+            SizeBytes = UsedXmsMemoryBytes,
+            SizeKb = (uint)(UsedXmsMemoryBytes / 1024),
+            Percentage = MemoryUsagePercent
         });
 
         MemoryBlocks.Add(new XmsBlockInfo {
             Type = "Free",
-            Size = FormatMemorySize(freeMemory),
-            SizeBytes = freeMemory
+            Size = FreeXmsMemory,
+            SizeBytes = FreeXmsMemoryBytes,
+            SizeKb = (uint)(FreeXmsMemoryBytes / 1024),
+            Percentage = 100 - MemoryUsagePercent
         });
+
+        // Calculate handle count based on memory usage
+        // Since we can't access internal handles directly, estimate based on fragmentation
+        if (UsedXmsMemoryBytes > 0 && LargestFreeBlockBytes < FreeXmsMemoryBytes) {
+            // Memory is fragmented, likely multiple allocations
+            HandleCount = (int)((FreeXmsMemoryBytes - LargestFreeBlockBytes) / (16 * 1024)) + 1;
+        } else if (UsedXmsMemoryBytes > 0) {
+            HandleCount = 1; // At least one allocation
+        } else {
+            HandleCount = 0;
+        }
+
+        FreeHandles = MaxHandles - HandleCount;
     }
 
     private static string FormatMemorySize(long bytes) {
@@ -203,5 +269,15 @@ public partial class XmsViewModel : DebuggerTabViewModel {
         /// Gets or sets the size in bytes.
         /// </summary>
         public long SizeBytes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size in KB.
+        /// </summary>
+        public uint SizeKb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the percentage of total memory.
+        /// </summary>
+        public double Percentage { get; set; }
     }
 }

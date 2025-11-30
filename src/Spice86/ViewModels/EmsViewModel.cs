@@ -21,6 +21,13 @@ public partial class EmsViewModel : DebuggerTabViewModel {
     /// <inheritdoc />
     public override string? IconKey => "Memory";
 
+    // EMS Driver Information
+    [ObservableProperty]
+    private string _driverIdentifier = string.Empty;
+
+    [ObservableProperty]
+    private ushort _dosDeviceSegment;
+
     // EMS Version and Status - EMS 4.0 is the standard version (from EmsStatusCodes and LIM EMS 4.0 spec)
     [ObservableProperty]
     private byte _emsMajorVersion;
@@ -30,6 +37,18 @@ public partial class EmsViewModel : DebuggerTabViewModel {
 
     [ObservableProperty]
     private ushort _pageFrameSegment;
+
+    [ObservableProperty]
+    private string _pageFrameAddress = string.Empty;
+
+    [ObservableProperty]
+    private uint _pageFrameSize;
+
+    [ObservableProperty]
+    private ushort _pageSize;
+
+    [ObservableProperty]
+    private byte _maxPhysicalPages;
 
     // Memory Statistics
     [ObservableProperty]
@@ -47,9 +66,18 @@ public partial class EmsViewModel : DebuggerTabViewModel {
     [ObservableProperty]
     private string _freeMemory = string.Empty;
 
+    [ObservableProperty]
+    private string _usedMemory = string.Empty;
+
+    [ObservableProperty]
+    private double _memoryUsagePercent;
+
     // Handle Information
     [ObservableProperty]
     private int _handleCount;
+
+    [ObservableProperty]
+    private int _totalAllocatedPages;
 
     [ObservableProperty]
     private AvaloniaList<EmsHandleInfo> _handles = new();
@@ -76,12 +104,24 @@ public partial class EmsViewModel : DebuggerTabViewModel {
             return;
         }
 
-        // Update EMS configuration from the Core - EMS 4.0 as per LIM EMS spec
-        EmsMajorVersion = 4;
-        EmsMinorVersion = 0;
+        // Update driver information from Core constants
+        DriverIdentifier = ExpandedMemoryManager.EmsIdentifier;
+        DosDeviceSegment = ExpandedMemoryManager.DosDeviceSegment;
+
+        // Update EMS configuration from the Core - EMS reports 3.2 for compatibility but supports 4.0 functions
+        EmsMajorVersion = 3;
+        EmsMinorVersion = 2;
+
+        // Page frame configuration
         PageFrameSegment = ExpandedMemoryManager.EmmPageFrameSegment;
+        PageFrameAddress = $"0x{(uint)(ExpandedMemoryManager.EmmPageFrameSegment * 16):X5}";
+        PageFrameSize = ExpandedMemoryManager.EmmPageFrameSize;
+        PageSize = ExpandedMemoryManager.EmmPageSize;
+        MaxPhysicalPages = ExpandedMemoryManager.EmmMaxPhysicalPages;
+
+        // Memory statistics
         TotalPages = EmmMemory.TotalPages;
-        TotalMemory = FormatMemorySize(EmmMemory.TotalPages * ExpandedMemoryManager.EmmPageSize);
+        TotalMemory = FormatMemorySize(EmmMemory.EmmMemorySize);
 
         UpdateMemoryStatistics();
         UpdateHandles();
@@ -96,6 +136,11 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         FreePages = _ems.GetFreePageCount();
         UsedPages = (ushort)(TotalPages - FreePages);
         FreeMemory = FormatMemorySize(FreePages * ExpandedMemoryManager.EmmPageSize);
+        UsedMemory = FormatMemorySize(UsedPages * ExpandedMemoryManager.EmmPageSize);
+
+        if (TotalPages > 0) {
+            MemoryUsagePercent = (double)UsedPages / TotalPages * 100;
+        }
     }
 
     private void UpdateHandles() {
@@ -104,19 +149,22 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         }
 
         HandleCount = _ems.EmmHandles.Count;
+        TotalAllocatedPages = 0;
 
-        // Only update if count changed
-        if (Handles.Count != HandleCount) {
-            Handles.Clear();
-            foreach (KeyValuePair<int, EmmHandle> handle in _ems.EmmHandles) {
-                Handles.Add(new EmsHandleInfo {
-                    HandleNumber = handle.Value.HandleNumber,
-                    Name = string.IsNullOrEmpty(handle.Value.Name) ? "(unnamed)" : handle.Value.Name,
-                    LogicalPagesCount = handle.Value.LogicalPages.Count,
-                    TotalSize = FormatMemorySize(handle.Value.LogicalPages.Count * ExpandedMemoryManager.EmmPageSize),
-                    HasSavedPageMap = handle.Value.SavedPageMap
-                });
-            }
+        // Rebuild handles list
+        Handles.Clear();
+        foreach (KeyValuePair<int, EmmHandle> handle in _ems.EmmHandles) {
+            int pageCount = handle.Value.LogicalPages.Count;
+            TotalAllocatedPages += pageCount;
+
+            Handles.Add(new EmsHandleInfo {
+                HandleNumber = handle.Value.HandleNumber,
+                Name = string.IsNullOrEmpty(handle.Value.Name) ? "(unnamed)" : handle.Value.Name,
+                LogicalPagesCount = pageCount,
+                TotalSize = FormatMemorySize(pageCount * ExpandedMemoryManager.EmmPageSize),
+                TotalSizeBytes = pageCount * ExpandedMemoryManager.EmmPageSize,
+                HasSavedPageMap = handle.Value.SavedPageMap
+            });
         }
     }
 
@@ -129,12 +177,17 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         PageFrameMappings.Clear();
         foreach (KeyValuePair<ushort, EmmRegister> mapping in _ems.EmmPageFrame) {
             ushort segment = (ushort)(ExpandedMemoryManager.EmmPageFrameSegment + (mapping.Key * ExpandedMemoryManager.EmmPageSize / 16));
+            uint linearAddress = (uint)(segment * 16);
+            bool isMapped = mapping.Value.PhysicalPage.PageNumber != ExpandedMemoryManager.EmmNullPage;
+
             PageFrameMappings.Add(new EmsPageFrameInfo {
                 PhysicalPage = mapping.Key,
                 Segment = $"0x{segment:X4}",
-                MappedLogicalPage = mapping.Value.PhysicalPage.PageNumber == ExpandedMemoryManager.EmmNullPage
-                    ? "Unmapped"
-                    : $"Page {mapping.Value.PhysicalPage.PageNumber}"
+                LinearAddress = $"0x{linearAddress:X5}",
+                MappedLogicalPage = isMapped
+                    ? $"Page {mapping.Value.PhysicalPage.PageNumber}"
+                    : "Unmapped",
+                IsMapped = isMapped
             });
         }
     }
@@ -174,6 +227,11 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         public string TotalSize { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets the total size in bytes.
+        /// </summary>
+        public long TotalSizeBytes { get; set; }
+
+        /// <summary>
         /// Gets or sets whether this handle has a saved page map.
         /// </summary>
         public bool HasSavedPageMap { get; set; }
@@ -194,8 +252,18 @@ public partial class EmsViewModel : DebuggerTabViewModel {
         public string Segment { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets the linear address.
+        /// </summary>
+        public string LinearAddress { get; set; } = string.Empty;
+
+        /// <summary>
         /// Gets or sets the mapped logical page description.
         /// </summary>
         public string MappedLogicalPage { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets whether this page is currently mapped.
+        /// </summary>
+        public bool IsMapped { get; set; }
     }
 }

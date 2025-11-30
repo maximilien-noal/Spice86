@@ -639,7 +639,7 @@ public class Spice86DependencyInjection : IDisposable {
 
             EmsViewModel emsViewModel = new(dos.Ems, pauseHandler, uiDispatcher);
 
-            XmsViewModel xmsViewModel = new(dos.Xms, pauseHandler, uiDispatcher);
+            XmsViewModel xmsViewModel = new(dos.Xms, a20Gate, pauseHandler, uiDispatcher);
 
             McpServerViewModel mcpServerViewModel = new(
                 mcpServer, configuration.McpServer, configuration.CfgCpu,
