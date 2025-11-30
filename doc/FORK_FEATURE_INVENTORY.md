@@ -885,14 +885,14 @@ Adds comprehensive XML documentation to public APIs.
 
 | Category | Features | Est. PRs | Est. Lines |
 |----------|----------|----------|------------|
-| RTC/CMOS & Time | 6 | 5 | ~1200 |
+| RTC/CMOS & Time | 6 | 6 | ~1200 |
 | Sound | 3 | 3 | ~580 |
-| DOS Subsystem | 14 | 12 | ~2350 |
+| DOS Subsystem | 14 | 14 | ~2350 |
 | BIOS/Hardware | 4 | 4 | ~320 |
 | Batch Processing | 3 | 3 | ~1150 |
 | Developer Tools | 3 | 3 | ~600 |
-| UI Views/ViewModels | 17 | 15 | ~2800 |
+| UI Views/ViewModels | 17 | 8 | ~2800 |
 | Infrastructure | 3 | 3 | ~325 |
-| **Total** | **53** | **48** | **~9325** |
+| **Total** | **53** | **44** | **~9325** |
 
-*Note: Some features may be combined into fewer PRs. Actual line counts will vary.*
+*Note: UI Views/ViewModels will be combined into 8 PRs (grouped by theme: BIOS/DOS, EMS/XMS, Timer/PIC/DMA, Sound, Graphs, GDB/MCP, Docking framework, MIDI/Mixer). Actual line counts will vary.*
