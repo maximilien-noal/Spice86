@@ -658,6 +658,10 @@ public class Spice86DependencyInjection : IDisposable {
 
             GdbServerViewModel gdbServerViewModel = new(configuration.GdbPort, pauseHandler, uiDispatcher);
 
+            // Create graph ViewModels for MCB and PSP visualization
+            McbGraphViewModel mcbGraphViewModel = new(dos, memory, pauseHandler, uiDispatcher);
+            PspGraphViewModel pspGraphViewModel = new(dos, memory, pauseHandler, uiDispatcher);
+
             DebugWindowViewModel debugWindowViewModel = new(
                 WeakReferenceMessenger.Default, uiDispatcher, pauseHandler,
                 breakpointsViewModel, disassemblyViewModel,
@@ -666,7 +670,8 @@ public class Spice86DependencyInjection : IDisposable {
                 [memoryViewModel, stackMemoryViewModel, dataSegmentViewModel],
                 dosViewModel, biosViewModel, emsViewModel, xmsViewModel, mcpServerViewModel,
                 timerViewModel, picViewModel, soundBlasterViewModel, opl3ViewModel,
-                dmaViewModel, gdbServerViewModel);
+                dmaViewModel, gdbServerViewModel,
+                mcbGraphViewModel, pspGraphViewModel);
 
             Application.Current!.Resources[nameof(DebugWindowViewModel)] =
                 debugWindowViewModel;

@@ -149,6 +149,16 @@
 							<TabItem Header="GDB Server" ToolTip.Tip="GDB Remote Debug Server" Content="{Binding GdbServerViewModel}" />
 						</TabControl>
 					</dockModel:Document>
+					<dockModel:Document Id="MemoryGraphs" Title="Memory Graphs">
+						<TabControl DataContext="{Binding $parent[Window].DataContext}">
+							<TabItem Header="MCB Chain" ToolTip.Tip="Memory Control Block Chain Graph">
+								<views:McbGraphView DataContext="{Binding McbGraphViewModel}" />
+							</TabItem>
+							<TabItem Header="PSP Chain" ToolTip.Tip="Program Segment Prefix Chain Graph">
+								<views:PspGraphView DataContext="{Binding PspGraphViewModel}" />
+							</TabItem>
+						</TabControl>
+					</dockModel:Document>
 				</dockModel:DocumentDock>
 			</dockModel:RootDock>
 		</dock:DockControl>

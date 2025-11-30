@@ -90,6 +90,13 @@ public partial class DebugWindowViewModel : ViewModelBase,
     [ObservableProperty]
     private GdbServerViewModel _gdbServerViewModel;
 
+    // Graph ViewModels for MCB and PSP visualization
+    [ObservableProperty]
+    private McbGraphViewModel _mcbGraphViewModel;
+
+    [ObservableProperty]
+    private PspGraphViewModel _pspGraphViewModel;
+
     private readonly IPauseHandler _pauseHandler;
 
     /// <summary>
@@ -118,6 +125,8 @@ public partial class DebugWindowViewModel : ViewModelBase,
     /// <param name="opl3ViewModel">The OPL3/FM view model.</param>
     /// <param name="dmaViewModel">The DMA view model.</param>
     /// <param name="gdbServerViewModel">The GDB Server view model.</param>
+    /// <param name="mcbGraphViewModel">The MCB chain graph view model.</param>
+    /// <param name="pspGraphViewModel">The PSP chain graph view model.</param>
     public DebugWindowViewModel(IMessenger messenger, IUIDispatcher uiDispatcher,
         IPauseHandler pauseHandler, BreakpointsViewModel breakpointsViewModel,
         DisassemblyViewModel disassemblyViewModel, PaletteViewModel paletteViewModel,
@@ -129,7 +138,8 @@ public partial class DebugWindowViewModel : ViewModelBase,
         McpServerViewModel mcpServerViewModel,
         TimerViewModel timerViewModel, PicViewModel picViewModel,
         SoundBlasterViewModel soundBlasterViewModel, Opl3ViewModel opl3ViewModel,
-        DmaViewModel dmaViewModel, GdbServerViewModel gdbServerViewModel) {
+        DmaViewModel dmaViewModel, GdbServerViewModel gdbServerViewModel,
+        McbGraphViewModel mcbGraphViewModel, PspGraphViewModel pspGraphViewModel) {
         messenger.Register<AddViewModelMessage<DisassemblyViewModel>>(this);
         messenger.Register<AddViewModelMessage<MemoryViewModel>>(this);
         messenger.Register<RemoveViewModelMessage<DisassemblyViewModel>>(this);
@@ -166,6 +176,10 @@ public partial class DebugWindowViewModel : ViewModelBase,
         Opl3ViewModel = opl3ViewModel;
         DmaViewModel = dmaViewModel;
         GdbServerViewModel = gdbServerViewModel;
+
+        // Initialize graph ViewModels
+        McbGraphViewModel = mcbGraphViewModel;
+        PspGraphViewModel = pspGraphViewModel;
     }
 
     [RelayCommand]
