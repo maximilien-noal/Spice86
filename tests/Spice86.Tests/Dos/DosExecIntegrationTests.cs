@@ -363,7 +363,6 @@ public class DosExecIntegrationTests {
         }
 
         public override void WriteByte(ushort port, byte value) {
-            Console.WriteLine($"ExecTestHandler.WriteByte called: port=0x{port:X4}, value=0x{value:X2}");
             AllWrites.Add((port, value));
             if (port == ResultPort) {
                 Results.Add(value);

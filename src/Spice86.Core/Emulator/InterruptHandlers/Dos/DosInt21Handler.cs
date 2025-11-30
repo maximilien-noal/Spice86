@@ -1590,6 +1590,11 @@ public class DosInt21Handler : InterruptHandler {
             // and uses it to find where to return to the parent.
             _interruptVectorTable[0x22] = new SegmentedAddress(parentReturnCS, parentReturnIP);
             
+            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                LoggerService.Debug("EXEC: Set INT 22h to parent return address {CS:X4}:{IP:X4}",
+                    parentReturnCS, parentReturnIP);
+            }
+            
             // Call the Exec overload that saves interrupt vectors to the child PSP
             result = _dosProcessManager.Exec(
                 programName,
@@ -1614,63 +1619,31 @@ public class DosInt21Handler : InterruptHandler {
             //   [parentSP+4] = FLAGS
             // We need to replace IP and CS with the child's entry point.
             if (result.Success && loadType == DosExecLoadType.LoadAndExecute) {
-                // The child's entry point was set in State.CS and State.IP by Exec().
-                // Write directly to the parent's stack memory (not using Stack.Poke16
-                // which would use the child's SS:SP)
-                uint parentStackAddress = MemoryUtils.ToPhysicalAddress(parentSS, parentSP);
-                
-                // Store the child's entry point and stack info before we modify anything
+                // Store the child's entry point and stack info
                 ushort childCS = State.CS;
                 ushort childIP = State.IP;
                 ushort childSS = State.SS;
                 ushort childSP = State.SP;
                 
-                // Debug: Log current values
-                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-                    ushort oldIP = Memory.UInt16[parentStackAddress];
-                    ushort oldCS = Memory.UInt16[parentStackAddress + 2];
-                    ushort oldFlags = Memory.UInt16[parentStackAddress + 4];
-                    LoggerService.Warning(
-                        "EXEC DEBUG: Before stack mod - parentSS={ParentSS:X4} parentSP={ParentSP:X4} stackAddr={StackAddr:X8}",
-                        parentSS, parentSP, parentStackAddress);
-                    LoggerService.Warning(
-                        "EXEC DEBUG: Old stack values - IP={OldIP:X4} CS={OldCS:X4} FLAGS={OldFlags:X4}",
-                        oldIP, oldCS, oldFlags);
-                    LoggerService.Warning(
-                        "EXEC DEBUG: Child entry point - CS={ChildCS:X4} IP={ChildIP:X4} SS={ChildSS:X4} SP={ChildSP:X4}",
-                        childCS, childIP, childSS, childSP);
-                }
+                // IMPORTANT: The callback instruction's Execute method calls MoveIpAndSetNextNode
+                // which adds the callback instruction length (4 bytes) to State.IP.
+                // We need to compensate for this by subtracting 4 from childIP so that
+                // after the callback adds 4, we end up at the correct entry point.
+                // The callback instruction is: FE 38 xx xx (4 bytes)
+                const int callbackInstructionLength = 4;
+                ushort adjustedChildIP = (ushort)(childIP - callbackInstructionLength);
                 
-                // Modify the parent's stack so IRET jumps to child's entry
-                Memory.UInt16[parentStackAddress] = childIP;      // Child's IP at parent's SP+0
-                Memory.UInt16[parentStackAddress + 2] = childCS;  // Child's CS at parent's SP+2
-                
-                // Keep the parent's SS:SP so IRET reads from the correct place
-                // After IRET, SS:SP will be parentSS:(parentSP+6)
-                // The child will initially use parent's stack but that should be fine
-                // for simple operations. The child's stack (childSS:childSP) is saved
-                // in State but we can't easily switch to it via IRET.
-                State.SS = parentSS;
-                State.SP = parentSP;
-                
-                // Also set the child's CS:IP in State so it's consistent
+                // Set State to the adjusted child entry point
+                // After MoveIpAndSetNextNode adds 4, we'll be at childIP
                 State.CS = childCS;
-                State.IP = childIP;
+                State.IP = adjustedChildIP;
+                State.SS = childSS;
+                State.SP = childSP;
                 
-                if (LoggerService.IsEnabled(LogEventLevel.Warning)) {
-                    ushort newIP = Memory.UInt16[parentStackAddress];
-                    ushort newCS = Memory.UInt16[parentStackAddress + 2];
-                    LoggerService.Warning(
-                        "EXEC DEBUG: After stack mod - stack has IP={NewIP:X4} CS={NewCS:X4}, State.SS={SS:X4} State.SP={SP:X4}",
-                        newIP, newCS, State.SS, State.SP);
-                    // Dump the first 12 bytes at the child's entry point
-                    uint childAddr = MemoryUtils.ToPhysicalAddress(childCS, childIP);
-                    LoggerService.Warning(
-                        "EXEC DEBUG: Child code at {Addr:X8}: {B0:X2} {B1:X2} {B2:X2} {B3:X2} {B4:X2} {B5:X2}",
-                        childAddr,
-                        Memory.UInt8[childAddr], Memory.UInt8[childAddr+1],
-                        Memory.UInt8[childAddr+2], Memory.UInt8[childAddr+3],
-                        Memory.UInt8[childAddr+4], Memory.UInt8[childAddr+5]);
+                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                    LoggerService.Debug(
+                        "EXEC: Child entry at {ChildCS:X4}:{ChildIP:X4}, adjusted IP={AdjIP:X4}",
+                        childCS, childIP, adjustedChildIP);
                 }
             }
         }

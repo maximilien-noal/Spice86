@@ -572,6 +572,9 @@ public class DosProcessManager : DosFileLoader {
         ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType,
         InterruptVectorTable interruptVectorTable) {
         
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: parentPSP={ParentPSP:X4}, envSeg={EnvSeg:X4}, loadType={LoadType}",
+            parentPspSegment, envSegment, loadType);
+        
         // Determine if this is an EXE or COM file
         bool isExe = false;
         DosExeFile? exeFile = null;
@@ -580,6 +583,8 @@ public class DosProcessManager : DosFileLoader {
             exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
             isExe = exeFile.IsValid;
         }
+        
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: isExe={IsExe}, fileSize={Size}", isExe, fileBytes.Length);
 
         // Child process - use MCB allocation to find free memory
         DosMemoryControlBlock? memBlock;
@@ -590,9 +595,12 @@ public class DosProcessManager : DosFileLoader {
         }
         
         if (memBlock is null) {
+            _loggerService.Debug("EXEC LoadProgramWithVectorSaving: FAILED - insufficient memory");
             return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
         }
         ushort pspSegment = memBlock.DataBlockSegment;
+        
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: allocated PSP at segment {PSPSeg:X4}", pspSegment);
 
         // Create and register the PSP
         DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
@@ -602,7 +610,11 @@ public class DosProcessManager : DosFileLoader {
         
         // Save interrupt vectors to the PSP - this is critical for process termination
         // INT 22h contains the parent's return address (set by LoadAndOrExecute before calling Exec)
+        SegmentedAddress int22Before = interruptVectorTable[0x22];
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: INT 22h before save = {Seg:X4}:{Off:X4}", 
+            int22Before.Segment, int22Before.Offset);
         SaveInterruptVectors(psp, interruptVectorTable);
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: saved INT 22h/23h/24h to PSP");
 
         // Set the disk transfer area address
         _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
@@ -615,14 +627,24 @@ public class DosProcessManager : DosFileLoader {
         } else {
             LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
         }
+        
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: program loaded, entry CS:IP={CS:X4}:{IP:X4}, SS:SP={SS:X4}:{SP:X4}",
+            cs, ip, ss, sp);
 
         if (loadType == DosExecLoadType.LoadAndExecute) {
+            _loggerService.Debug("EXEC LoadProgramWithVectorSaving: setting CPU state for execution");
+            _loggerService.Debug("EXEC LoadProgramWithVectorSaving: BEFORE - State.CS={CS:X4} State.IP={IP:X4} State.SS={SS:X4} State.SP={SP:X4}",
+                _state.CS, _state.IP, _state.SS, _state.SP);
+            
             _state.DS = pspSegment;
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
             SetEntryPoint(cs, ip);
             _state.InterruptFlag = true;
+            
+            _loggerService.Debug("EXEC LoadProgramWithVectorSaving: AFTER - State.CS={CS:X4} State.IP={IP:X4} State.SS={SS:X4} State.SP={SP:X4}",
+                _state.CS, _state.IP, _state.SS, _state.SP);
             
             return DosExecResult.Succeeded();
         } else if (loadType == DosExecLoadType.LoadOnly) {
@@ -994,7 +1016,7 @@ public class DosProcessManager : DosFileLoader {
         if (currentPsp is null) {
             // No PSP means we're terminating before any program was loaded
             if (_loggerService.IsEnabled(LogEventLevel.Warning)) {
-                _loggerService.Warning("TerminateProcess called with no current PSP");
+                _loggerService.Debug("TerminateProcess called with no current PSP");
             }
             return false;
         }
