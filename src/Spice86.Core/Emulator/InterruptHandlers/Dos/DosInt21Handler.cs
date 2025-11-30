@@ -1573,11 +1573,6 @@ public class DosInt21Handler : InterruptHandler {
                     paramBlock.EnvironmentSegment, commandTail);
             }
 
-            // Save the parent's stack pointer and return address before calling Exec,
-            // since Exec will change State.SS and State.SP to the child's stack
-            ushort parentSS = State.SS;
-            ushort parentSP = State.SP;
-            
             // Get the parent's return address from the interrupt stack
             // This is where INT 21h was called, and where execution should resume
             // after the child terminates

@@ -338,12 +338,12 @@ public class DosExecIntegrationTests {
             return testHandler;
         }
         finally {
-            // Cleanup files
+            // Cleanup files - ignore IO errors during cleanup
             try {
                 if (File.Exists(parentPath)) File.Delete(parentPath);
                 if (File.Exists(childPath)) File.Delete(childPath);
-            } catch {
-                // Ignore cleanup errors
+            } catch (IOException) {
+                // Ignore IO cleanup errors - files may be locked or already deleted
             }
         }
     }
