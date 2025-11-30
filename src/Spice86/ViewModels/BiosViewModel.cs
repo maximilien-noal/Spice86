@@ -227,10 +227,12 @@ public partial class BiosViewModel : DebuggerTabViewModel {
         ushort bufferStart = _biosDataArea.KbdBufStartOffset;
         ushort bufferEnd = _biosDataArea.KbdBufEndOffset;
         int bufferSize = bufferEnd - bufferStart;
-        if (bufferSize > 0) {
+        if (bufferSize > 0 && bufferEnd > bufferStart) {
             int head = _biosDataArea.KbdBufHead - bufferStart;
             int tail = _biosDataArea.KbdBufTail - bufferStart;
             KeyboardBufferCount = tail >= head ? (tail - head) / 2 : (bufferSize - head + tail) / 2;
+        } else {
+            KeyboardBufferCount = 0;
         }
 
         // Timer
