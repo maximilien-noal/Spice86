@@ -23,11 +23,6 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     /// <inheritdoc />
     public override string? IconKey => "Memory";
 
-    /// <summary>
-    /// Default maximum number of XMS handles.
-    /// </summary>
-    private const int DefaultMaxHandles = 128;
-
     // XMS Version and Status
     [ObservableProperty]
     private byte _xmsMajorVersion;
@@ -99,7 +94,7 @@ public partial class XmsViewModel : DebuggerTabViewModel {
     private int _freeHandles;
 
     [ObservableProperty]
-    private int _maxHandles = DefaultMaxHandles;
+    private int _maxHandles = ExtendedMemoryManager.MaxHandles;
 
     [ObservableProperty]
     private AvaloniaList<XmsHandleInfo> _handles = new();
@@ -202,18 +197,9 @@ public partial class XmsViewModel : DebuggerTabViewModel {
             Percentage = 100 - MemoryUsagePercent
         });
 
-        // Calculate handle count based on memory usage
-        // Since we can't access internal handles directly, estimate based on fragmentation
-        if (UsedXmsMemoryBytes > 0 && LargestFreeBlockBytes < FreeXmsMemoryBytes) {
-            // Memory is fragmented, likely multiple allocations
-            HandleCount = (int)((FreeXmsMemoryBytes - LargestFreeBlockBytes) / (16 * 1024)) + 1;
-        } else if (UsedXmsMemoryBytes > 0) {
-            HandleCount = 1; // At least one allocation
-        } else {
-            HandleCount = 0;
-        }
-
-        // We cannot read MaxHandles from Core as it's private, so compute free handles relative to used
+        // Read actual handle count from Core
+        HandleCount = _xms.XmsHandles.Count;
+        MaxHandles = ExtendedMemoryManager.MaxHandles;
         FreeHandles = MaxHandles - HandleCount;
     }
 
