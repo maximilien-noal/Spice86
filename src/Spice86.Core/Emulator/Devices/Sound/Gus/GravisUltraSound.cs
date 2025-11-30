@@ -48,6 +48,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private readonly (float Left, float Right)[] _panScalars = new (float, float)[GusConstants.PanPositions];
     private readonly (float Left, float Right)[] _renderBuffer = new (float, float)[1024];
     private readonly float[] _outputBuffer = new float[2048];
+    // Buffer for rendering at GUS native sample rate (before upsampling)
+    private readonly (float Left, float Right)[] _gusRateBuffer = new (float, float)[2048];
+    // Current position in ZOH upsampling (fractional sample accumulator)
+    private double _upsampleAccumulator;
 
     private readonly ushort _basePort;
     private readonly byte _irq;
@@ -64,15 +68,19 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     private readonly GusTimer _timer2;
     private byte _timerCtrl;
 
+    // PIC event handlers for timer scheduling (DOSBox-style precise timing)
+    private readonly EmulatedTimeEventHandler _timer1EventHandler;
+    private readonly EmulatedTimeEventHandler _timer2EventHandler;
+
     // Voice state
     private GusVoice? _targetVoice;
     private ushort _voiceIndex;
     private byte _activeVoices;
     private uint _activeVoiceMask;
 
-    // Calculated sample rate based on active voice count (per Gravis SDK formula).
+    // Current playback sample rate based on active voice count (per Gravis SDK formula).
     // The real GUS hardware reduces sample rate as more voices are active.
-    // Currently used for logging/debugging; sound channel uses fixed 44.1kHz output.
+    // This is applied when rendering audio to properly simulate the GUS's timing behavior.
     private int _sampleRateHz = GusConstants.OutputSampleRate;
 
     // Register access state
@@ -132,6 +140,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _irq = irq;
         _dma1 = dma;
         _dma2 = dma;
+
+        // Initialize PIC timer event handlers (DOSBox-style precise timing)
+        _timer1EventHandler = Timer1EventHandler;
+        _timer2EventHandler = Timer2EventHandler;
 
         // Initialize timers
         _timer1 = new GusTimer(GusConstants.Timer1DefaultDelay);
@@ -326,22 +338,38 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _timer1.IsMasked = (value & 0x40) != 0;
         _timer2.IsMasked = (value & 0x20) != 0;
 
-        if ((value & 0x01) != 0) {
+        // Handle Timer 1
+        bool timer1Requested = (value & 0x01) != 0;
+        if (timer1Requested) {
             if (!_timer1.IsCountingDown) {
                 _timer1.IsCountingDown = true;
                 _timer1.AccumulatedMs = 0;
+                // Schedule the first timer event via PIC (DOSBox-style precise timing)
+                _dualPic.RemoveEvents(_timer1EventHandler);
+                _dualPic.AddEvent(_timer1EventHandler, _timer1.Delay);
             }
         } else {
-            _timer1.IsCountingDown = false;
+            if (_timer1.IsCountingDown) {
+                _timer1.IsCountingDown = false;
+                _dualPic.RemoveEvents(_timer1EventHandler);
+            }
         }
 
-        if ((value & 0x02) != 0) {
+        // Handle Timer 2
+        bool timer2Requested = (value & 0x02) != 0;
+        if (timer2Requested) {
             if (!_timer2.IsCountingDown) {
                 _timer2.IsCountingDown = true;
                 _timer2.AccumulatedMs = 0;
+                // Schedule the first timer event via PIC (DOSBox-style precise timing)
+                _dualPic.RemoveEvents(_timer2EventHandler);
+                _dualPic.AddEvent(_timer2EventHandler, _timer2.Delay);
             }
         } else {
-            _timer2.IsCountingDown = false;
+            if (_timer2.IsCountingDown) {
+                _timer2.IsCountingDown = false;
+                _dualPic.RemoveEvents(_timer2EventHandler);
+            }
         }
     }
 
@@ -654,6 +682,11 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
         _dmaControlRegister = new DmaControlRegister();
         _sampleCtrl = 0;
         _timerCtrl = 0;
+        
+        // Stop PIC timer events before resetting timer state
+        _dualPic.RemoveEvents(_timer1EventHandler);
+        _dualPic.RemoveEvents(_timer2EventHandler);
+        
         _timer1.Reset(GusConstants.Timer1DefaultDelay);
         _timer2.Reset(GusConstants.Timer2DefaultDelay);
 
@@ -825,16 +858,43 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     /// serialized with respect to the audio rendering performed here.
     /// </summary>
     private void PlaybackLoopBody() {
-        // Calculate elapsed time based on render buffer size and sample rate
-        double elapsedMs = (_renderBuffer.Length * 1000.0) / GusConstants.OutputSampleRate;
+        // Calculate how many GUS-rate samples we need to render for this output buffer
+        // Using Zero-Order Hold (ZOH) upsampling like DOSBox Staging
+        int gusSampleRate = Math.Max(_sampleRateHz, 1);
+        double ratio = (double)gusSampleRate / GusConstants.OutputSampleRate;
         
-        // Process timers
-        ProcessTimers(elapsedMs);
+        // Calculate the number of GUS-rate samples needed for this output buffer
+        int gusSamplesToRender = (int)Math.Ceiling((_renderBuffer.Length + _upsampleAccumulator) * ratio);
+        gusSamplesToRender = Math.Min(gusSamplesToRender, _gusRateBuffer.Length);
         
-        RenderFrames(_renderBuffer);
-
-        // Convert stereo frame pairs to interleaved float array
+        // Render at the GUS native sample rate
+        RenderFrames(_gusRateBuffer.AsSpan(0, gusSamplesToRender));
+        
+        // Perform Zero-Order Hold (ZOH) upsampling to output buffer
+        // ZOH simply repeats each source sample for the appropriate duration
         int outputIndex = 0;
+        double outputRatio = (double)GusConstants.OutputSampleRate / gusSampleRate;
+        
+        for (int i = 0; i < _renderBuffer.Length && outputIndex < _outputBuffer.Length - 1; i++) {
+            // Calculate which GUS-rate sample corresponds to this output sample
+            double gusPos = (i + _upsampleAccumulator) * ratio;
+            int gusSampleIndex = (int)gusPos;
+            
+            // Clamp to valid range
+            gusSampleIndex = Math.Min(gusSampleIndex, gusSamplesToRender - 1);
+            if (gusSampleIndex < 0) {
+                gusSampleIndex = 0;
+            }
+            
+            // Use the GUS-rate sample (ZOH - no interpolation, just sample repetition)
+            _renderBuffer[i] = _gusRateBuffer[gusSampleIndex];
+        }
+        
+        // Update the accumulator for the next buffer (fractional sample carry-over)
+        double consumed = _renderBuffer.Length * ratio;
+        _upsampleAccumulator = (consumed + _upsampleAccumulator) - (int)(consumed + _upsampleAccumulator);
+        
+        // Convert stereo frame pairs to interleaved float array
         for (int i = 0; i < _renderBuffer.Length && outputIndex < _outputBuffer.Length - 1; i++) {
             _outputBuffer[outputIndex++] = _renderBuffer[i].Left / 32768f;
             _outputBuffer[outputIndex++] = _renderBuffer[i].Right / 32768f;
@@ -844,41 +904,49 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
     }
 
     /// <summary>
-    /// Processes GUS timers, firing IRQs when they expire.
+    /// PIC event handler for Timer 1 (DOSBox-style precise timing).
     /// </summary>
-    private void ProcessTimers(double elapsedMs) {
-        if (CheckTimer(_timer1, 0, elapsedMs)) {
-            // Timer 1 keeps running if counting down
+    private void Timer1EventHandler(uint _) {
+        if (!_timer1.IsCountingDown) {
+            return;
         }
-        if (CheckTimer(_timer2, 1, elapsedMs)) {
-            // Timer 2 keeps running if counting down
+
+        if (!_timer1.IsMasked) {
+            _timer1.HasExpired = true;
+        }
+
+        if (_timer1.ShouldRaiseIrq) {
+            _irqStatus |= 0x04; // Timer 1 IRQ bit
+            CheckIrq();
+        }
+
+        // Re-schedule the timer event if still counting
+        if (_timer1.IsCountingDown) {
+            _dualPic.AddEvent(_timer1EventHandler, _timer1.Delay);
         }
     }
 
     /// <summary>
-    /// Checks and updates a single timer, returning true if it should continue counting.
+    /// PIC event handler for Timer 2 (DOSBox-style precise timing).
     /// </summary>
-    private bool CheckTimer(GusTimer timer, int timerIndex, double elapsedMs) {
-        if (!timer.IsCountingDown) {
-            return false;
+    private void Timer2EventHandler(uint _) {
+        if (!_timer2.IsCountingDown) {
+            return;
         }
 
-        timer.AccumulatedMs += elapsedMs;
-        
-        while (timer.AccumulatedMs >= timer.Delay) {
-            timer.AccumulatedMs -= timer.Delay;
-            
-            if (!timer.IsMasked) {
-                timer.HasExpired = true;
-            }
-            
-            if (timer.ShouldRaiseIrq) {
-                _irqStatus |= (byte)(0x4 << timerIndex);
-                CheckIrq();
-            }
+        if (!_timer2.IsMasked) {
+            _timer2.HasExpired = true;
         }
-        
-        return timer.IsCountingDown;
+
+        if (_timer2.ShouldRaiseIrq) {
+            _irqStatus |= 0x08; // Timer 2 IRQ bit
+            CheckIrq();
+        }
+
+        // Re-schedule the timer event if still counting
+        if (_timer2.IsCountingDown) {
+            _dualPic.AddEvent(_timer2EventHandler, _timer2.Delay);
+        }
     }
 
     private void RenderFrames(Span<(float Left, float Right)> frames) {
@@ -966,6 +1034,10 @@ public sealed class GravisUltraSound : DefaultIOPortHandler, IRequestInterrupt, 
             return;
         }
         if (disposing) {
+            // Remove PIC timer events
+            _dualPic.RemoveEvents(_timer1EventHandler);
+            _dualPic.RemoveEvents(_timer2EventHandler);
+            
             _deviceThread.Dispose();
         }
         _disposed = true;
