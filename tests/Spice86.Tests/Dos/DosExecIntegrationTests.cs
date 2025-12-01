@@ -628,15 +628,16 @@ public class DosExecIntegrationTests {
     /// 3. Terminate
     /// </summary>
     private static byte[] CreateBatchLauncherProgram() {
-        // Data offsets (relative to load address 0x100)
-        ushort tsrFilenameOff = 0x0160;
-        ushort gameFilenameOff = 0x0170;
-        ushort paramBlockOff = 0x0180;
-        ushort cmdTailOff = 0x0190;
-        ushort fcb1Off = 0x0192;
-        ushort fcb2Off = 0x01A2;
-        
+        // First, build the code, then calculate data offsets based on code length
         List<byte> code = new List<byte>();
+        
+        // Placeholder offsets - will be fixed up after we know code length
+        int tsrFilenameFixup1 = 0, tsrFilenameFixup2 = 0;
+        int gameFilenameFixup = 0;
+        int paramBlockFixup1 = 0, paramBlockFixup2 = 0;
+        int cmdTailFixup1 = 0, cmdTailFixup2 = 0;
+        int fcb1Fixup1 = 0, fcb1Fixup2 = 0;
+        int fcb2Fixup1 = 0, fcb2Fixup2 = 0;
         
         // Set DS and ES to CS
         code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
@@ -647,13 +648,13 @@ public class DosExecIntegrationTests {
         
         // Set up DS:DX = TSR filename pointer
         code.Add(0xBA);  // mov dx, imm16
-        code.Add((byte)(tsrFilenameOff & 0xFF));
-        code.Add((byte)(tsrFilenameOff >> 8));
+        tsrFilenameFixup1 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // Set up ES:BX = parameter block pointer
         code.Add(0xBB);  // mov bx, imm16
-        code.Add((byte)(paramBlockOff & 0xFF));
-        code.Add((byte)(paramBlockOff >> 8));
+        paramBlockFixup1 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // Fill in parameter block at runtime
         code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs (for segment values)
@@ -663,24 +664,24 @@ public class DosExecIntegrationTests {
         
         // [BX+2] = cmdTailOff (command tail offset)
         code.AddRange(new byte[] { 0xC7, 0x47, 0x02 });  // mov word ptr [bx+2], imm16
-        code.Add((byte)(cmdTailOff & 0xFF));
-        code.Add((byte)(cmdTailOff >> 8));
+        cmdTailFixup1 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // [BX+4] = CS (command tail segment)
         code.AddRange(new byte[] { 0x89, 0x47, 0x04 });  // mov [bx+4], ax
         
         // [BX+6] = fcb1Off
         code.AddRange(new byte[] { 0xC7, 0x47, 0x06 });  // mov word ptr [bx+6], imm16
-        code.Add((byte)(fcb1Off & 0xFF));
-        code.Add((byte)(fcb1Off >> 8));
+        fcb1Fixup1 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // [BX+8] = CS
         code.AddRange(new byte[] { 0x89, 0x47, 0x08 });  // mov [bx+8], ax
         
         // [BX+0A] = fcb2Off
         code.AddRange(new byte[] { 0xC7, 0x47, 0x0A });  // mov word ptr [bx+0Ah], imm16
-        code.Add((byte)(fcb2Off & 0xFF));
-        code.Add((byte)(fcb2Off >> 8));
+        fcb2Fixup1 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // [BX+0C] = CS
         code.AddRange(new byte[] { 0x89, 0x47, 0x0C });  // mov [bx+0Ch], ax
@@ -703,28 +704,28 @@ public class DosExecIntegrationTests {
         
         // Set up DS:DX = GAME filename pointer
         code.Add(0xBA);  // mov dx, imm16
-        code.Add((byte)(gameFilenameOff & 0xFF));
-        code.Add((byte)(gameFilenameOff >> 8));
+        gameFilenameFixup = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // ES:BX still points to parameter block
         code.Add(0xBB);  // mov bx, imm16
-        code.Add((byte)(paramBlockOff & 0xFF));
-        code.Add((byte)(paramBlockOff >> 8));
+        paramBlockFixup2 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         
         // Rebuild parameter block (it may have been corrupted by EXEC)
         code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
         code.AddRange(new byte[] { 0xC7, 0x07, 0x00, 0x00 });  // mov word ptr [bx], 0
         code.AddRange(new byte[] { 0xC7, 0x47, 0x02 });  // mov word ptr [bx+2], imm16
-        code.Add((byte)(cmdTailOff & 0xFF));
-        code.Add((byte)(cmdTailOff >> 8));
+        cmdTailFixup2 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         code.AddRange(new byte[] { 0x89, 0x47, 0x04 });  // mov [bx+4], ax
         code.AddRange(new byte[] { 0xC7, 0x47, 0x06 });  // mov word ptr [bx+6], imm16
-        code.Add((byte)(fcb1Off & 0xFF));
-        code.Add((byte)(fcb1Off >> 8));
+        fcb1Fixup2 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         code.AddRange(new byte[] { 0x89, 0x47, 0x08 });  // mov [bx+8], ax
         code.AddRange(new byte[] { 0xC7, 0x47, 0x0A });  // mov word ptr [bx+0Ah], imm16
-        code.Add((byte)(fcb2Off & 0xFF));
-        code.Add((byte)(fcb2Off >> 8));
+        fcb2Fixup2 = code.Count;
+        code.Add(0x00); code.Add(0x00);  // placeholder
         code.AddRange(new byte[] { 0x89, 0x47, 0x0C });  // mov [bx+0Ch], ax
         
         // Call EXEC: AX = 4B00h
@@ -760,27 +761,77 @@ public class DosExecIntegrationTests {
         code.AddRange(new byte[] { 0xCD, 0x21 });        // int 21h
         code.Add(0xF4);  // hlt
         
+        // Now calculate data offsets based on actual code length
+        // Align data to next 16-byte boundary after code
+        int codeLen = code.Count;
+        int dataStart = (codeLen + 15) & ~15;  // Align to 16 bytes
+        
+        // Data layout (file offsets, not load offsets):
+        // dataStart + 0x00: TSR.COM\0 (8 bytes)
+        // dataStart + 0x10: GAME.COM\0 (9 bytes)
+        // dataStart + 0x20: parameter block (14 bytes)
+        // dataStart + 0x30: command tail (2 bytes)
+        // dataStart + 0x40: FCB1 (16 bytes, mostly zeros)
+        // dataStart + 0x50: FCB2 (16 bytes, mostly zeros)
+        int tsrFilenameFileOff = dataStart;
+        int gameFilenameFileOff = dataStart + 0x10;
+        int paramBlockFileOff = dataStart + 0x20;
+        int cmdTailFileOff = dataStart + 0x30;
+        int fcb1FileOff = dataStart + 0x40;
+        int fcb2FileOff = dataStart + 0x50;
+        
+        // Convert file offsets to load offsets (add 0x100)
+        ushort tsrFilenameOff = (ushort)(0x100 + tsrFilenameFileOff);
+        ushort gameFilenameOff = (ushort)(0x100 + gameFilenameFileOff);
+        ushort paramBlockOff = (ushort)(0x100 + paramBlockFileOff);
+        ushort cmdTailOff = (ushort)(0x100 + cmdTailFileOff);
+        ushort fcb1Off = (ushort)(0x100 + fcb1FileOff);
+        ushort fcb2Off = (ushort)(0x100 + fcb2FileOff);
+        
         // Fix up jumps
         byte[] codeArray = code.ToArray();
         codeArray[jcPos1] = (byte)(failedPos - jcPos1 - 1);
         codeArray[jcPos2] = (byte)(failedPos - jcPos2 - 1);
         codeArray[jmpPos] = (byte)(exitPos - jmpPos - 1);
         
+        // Fix up data offset references
+        codeArray[tsrFilenameFixup1] = (byte)(tsrFilenameOff & 0xFF);
+        codeArray[tsrFilenameFixup1 + 1] = (byte)(tsrFilenameOff >> 8);
+        codeArray[gameFilenameFixup] = (byte)(gameFilenameOff & 0xFF);
+        codeArray[gameFilenameFixup + 1] = (byte)(gameFilenameOff >> 8);
+        codeArray[paramBlockFixup1] = (byte)(paramBlockOff & 0xFF);
+        codeArray[paramBlockFixup1 + 1] = (byte)(paramBlockOff >> 8);
+        codeArray[paramBlockFixup2] = (byte)(paramBlockOff & 0xFF);
+        codeArray[paramBlockFixup2 + 1] = (byte)(paramBlockOff >> 8);
+        codeArray[cmdTailFixup1] = (byte)(cmdTailOff & 0xFF);
+        codeArray[cmdTailFixup1 + 1] = (byte)(cmdTailOff >> 8);
+        codeArray[cmdTailFixup2] = (byte)(cmdTailOff & 0xFF);
+        codeArray[cmdTailFixup2 + 1] = (byte)(cmdTailOff >> 8);
+        codeArray[fcb1Fixup1] = (byte)(fcb1Off & 0xFF);
+        codeArray[fcb1Fixup1 + 1] = (byte)(fcb1Off >> 8);
+        codeArray[fcb1Fixup2] = (byte)(fcb1Off & 0xFF);
+        codeArray[fcb1Fixup2 + 1] = (byte)(fcb1Off >> 8);
+        codeArray[fcb2Fixup1] = (byte)(fcb2Off & 0xFF);
+        codeArray[fcb2Fixup1 + 1] = (byte)(fcb2Off >> 8);
+        codeArray[fcb2Fixup2] = (byte)(fcb2Off & 0xFF);
+        codeArray[fcb2Fixup2 + 1] = (byte)(fcb2Off >> 8);
+        
         // Create full program with data section
-        byte[] program = new byte[0x1B2];  // Enough for code + data
+        int totalSize = fcb2FileOff + 0x10;  // FCB2 + 16 bytes for FCB2 data
+        byte[] program = new byte[totalSize];
         Array.Copy(codeArray, program, codeArray.Length);
         
-        // TSR filename at offset 0x60: "TSR.COM\0"
+        // TSR filename
         byte[] tsrFilename = Encoding.ASCII.GetBytes("TSR.COM\0");
-        Array.Copy(tsrFilename, 0, program, 0x60, tsrFilename.Length);
+        Array.Copy(tsrFilename, 0, program, tsrFilenameFileOff, tsrFilename.Length);
         
-        // Game filename at offset 0x70: "GAME.COM\0"
+        // Game filename
         byte[] gameFilename = Encoding.ASCII.GetBytes("GAME.COM\0");
-        Array.Copy(gameFilename, 0, program, 0x70, gameFilename.Length);
+        Array.Copy(gameFilename, 0, program, gameFilenameFileOff, gameFilename.Length);
         
-        // Command tail at offset 0x90: length=0, followed by CR
-        program[0x90] = 0x00;
-        program[0x91] = 0x0D;
+        // Command tail: length=0, followed by CR
+        program[cmdTailFileOff] = 0x00;
+        program[cmdTailFileOff + 1] = 0x0D;
         
         return program;
     }
