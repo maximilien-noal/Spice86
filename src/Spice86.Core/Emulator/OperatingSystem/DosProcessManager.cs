@@ -532,6 +532,13 @@ public class DosProcessManager : DosFileLoader {
         // Initialize PSP
         InitializePsp(psp, parentPspSegment, envSegment, arguments);
 
+        // Save the caller's SS:SP to the child's PSP at offset 0x2E.
+        // This is required so that when the child terminates (via INT 21h/4Ch, INT 21h/31h, etc.),
+        // DOS can restore the parent's stack and return control to the parent.
+        // DOSBox does this in DOS_Execute (dos_execute.cpp): block.SaveSP(RealMakeSeg(ss,StackSeg()));
+        // FreeDOS does this in DosExecLoader (task.c): child_psp.stack = (ULONG)lpUserStack;
+        psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
+
         // Set the disk transfer area address
         _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
 
@@ -607,6 +614,15 @@ public class DosProcessManager : DosFileLoader {
 
         // Initialize PSP
         InitializePsp(psp, parentPspSegment, envSegment, arguments);
+        
+        // Save the caller's SS:SP to the child's PSP at offset 0x2E.
+        // This is required so that when the child terminates (via INT 21h/4Ch, INT 21h/31h, etc.),
+        // DOS can restore the parent's stack and return control to the parent.
+        // DOSBox does this in DOS_Execute (dos_execute.cpp): block.SaveSP(RealMakeSeg(ss,StackSeg()));
+        // FreeDOS does this in DosExecLoader (task.c): child_psp.stack = (ULONG)lpUserStack;
+        psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
+        _loggerService.Debug("EXEC LoadProgramWithVectorSaving: saved parent SS:SP {SS:X4}:{SP:X4} to PSP",
+            _state.SS, _state.SP);
         
         // Save interrupt vectors to the PSP - this is critical for process termination
         // INT 22h contains the parent's return address (set by LoadAndOrExecute before calling Exec)

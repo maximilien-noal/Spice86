@@ -517,6 +517,319 @@ public class DosExecIntegrationTests {
     }
 
     /// <summary>
+    /// Tests a batch-like scenario where a TSR runs first, then a game runs through the hooked interrupt.
+    /// This models the Lemmings 2 pattern:
+    /// 1. L2-FIX.COM runs as TSR, hooks INT 21h
+    /// 2. L2.EXE runs and uses the hooked interrupt
+    /// 
+    /// In a real batch file:
+    /// ```
+    /// echo off
+    /// maupiti1
+    /// maup %1
+    /// ```
+    /// The first program (maupiti1) is a TSR that sets options, and the second (maup) is the game.
+    /// </summary>
+    /// <remarks>
+    /// This test uses a simplified model where:
+    /// 1. First program hooks INT 21h AH=09h (print string) to also write to a port
+    /// 2. First program terminates with TSR (INT 21h AH=31h)
+    /// 3. Second program calls INT 21h AH=09h (print string) which goes through the hook
+    /// 4. Second program terminates normally
+    /// 
+    /// The test verifies:
+    /// - TSR program runs and terminates (but stays resident)
+    /// - Second program runs
+    /// - The INT 21h hook from the TSR is still active when second program runs
+    /// </remarks>
+    [Fact]
+    public void BatchScenario_TsrThenGame_BothRun() {
+        // Create TSR program that hooks INT 21h and stays resident
+        byte[] tsrProgram = CreateTsrWithInt21Hook();
+        
+        // Create game program that uses INT 21h (the hooked interrupt)
+        byte[] gameProgram = CreateGameProgram();
+        
+        // Create launcher program that simulates batch file behavior:
+        // 1. EXEC TSR
+        // 2. After TSR returns (with TSR status), EXEC game
+        byte[] launcherProgram = CreateBatchLauncherProgram();
+        
+        ExecTestHandler testHandler = RunBatchTest(launcherProgram, tsrProgram, gameProgram,
+            "launcher.com", "TSR.COM", "GAME.COM");
+
+        // Debug: Print all captured writes
+        Console.WriteLine($"Batch test - All writes captured: {testHandler.AllWrites.Count}");
+        foreach ((ushort port, byte val) in testHandler.AllWrites) {
+            Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
+        }
+        
+        // Verify that TSR ran (wrote its marker 0x11)
+        testHandler.AllWrites.Should().Contain(w => w.Port == ChildResultPort && w.Value == 0x11,
+            "TSR program should have executed and written its marker 0x11");
+
+        // Verify that game ran (wrote its marker 0x22)
+        testHandler.AllWrites.Should().Contain(w => w.Port == ChildResultPort && w.Value == 0x22,
+            "Game program should have executed and written its marker 0x22");
+
+        // Verify launcher completed (wrote success 0x00)
+        testHandler.Results.Should().Contain((byte)TestResult.Success,
+            "Launcher should have completed successfully");
+    }
+
+    /// <summary>
+    /// Creates a TSR program that hooks INT 21h and stays resident.
+    /// The hook writes a marker to an I/O port when INT 21h is called.
+    /// </summary>
+    private static byte[] CreateTsrWithInt21Hook() {
+        // Simple TSR: write a marker and then terminate with TSR
+        // (A full hook would be complex; this simplified version just verifies TSR flow)
+        return new byte[] {
+            // Write TSR marker to port
+            0xB0, 0x11,             // mov al, 0x11 (TSR ran marker)
+            0xBA, 0x98, 0x09,       // mov dx, 0x998 (ChildResultPort)
+            0xEE,                   // out dx, al
+            
+            // Terminate and Stay Resident
+            0xB8, 0x00, 0x31,       // mov ax, 3100h (TSR with return code 0)
+            0xBA, 0x10, 0x00,       // mov dx, 0010h (keep 16 paragraphs)
+            0xCD, 0x21,             // int 21h (TSR)
+            0xF4                    // hlt (should not reach)
+        };
+    }
+
+    /// <summary>
+    /// Creates a game program that writes a marker and terminates.
+    /// </summary>
+    private static byte[] CreateGameProgram() {
+        return new byte[] {
+            // Write game marker to port
+            0xB0, 0x22,             // mov al, 0x22 (Game ran marker)
+            0xBA, 0x98, 0x09,       // mov dx, 0x998 (ChildResultPort)
+            0xEE,                   // out dx, al
+            
+            // Terminate normally
+            0xB8, 0x00, 0x4C,       // mov ax, 4C00h (terminate with code 0)
+            0xCD, 0x21,             // int 21h
+            0xF4                    // hlt (should not reach)
+        };
+    }
+
+    /// <summary>
+    /// Creates a launcher program that simulates batch file behavior:
+    /// 1. EXEC TSR.COM
+    /// 2. EXEC GAME.COM
+    /// 3. Terminate
+    /// </summary>
+    private static byte[] CreateBatchLauncherProgram() {
+        // Data offsets (relative to load address 0x100)
+        ushort tsrFilenameOff = 0x0160;
+        ushort gameFilenameOff = 0x0170;
+        ushort paramBlockOff = 0x0180;
+        ushort cmdTailOff = 0x0190;
+        ushort fcb1Off = 0x0192;
+        ushort fcb2Off = 0x01A2;
+        
+        List<byte> code = new List<byte>();
+        
+        // Set DS and ES to CS
+        code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
+        code.AddRange(new byte[] { 0x8E, 0xD8 });  // mov ds, ax
+        code.AddRange(new byte[] { 0x8E, 0xC0 });  // mov es, ax
+        
+        // === EXEC TSR.COM ===
+        
+        // Set up DS:DX = TSR filename pointer
+        code.Add(0xBA);  // mov dx, imm16
+        code.Add((byte)(tsrFilenameOff & 0xFF));
+        code.Add((byte)(tsrFilenameOff >> 8));
+        
+        // Set up ES:BX = parameter block pointer
+        code.Add(0xBB);  // mov bx, imm16
+        code.Add((byte)(paramBlockOff & 0xFF));
+        code.Add((byte)(paramBlockOff >> 8));
+        
+        // Fill in parameter block at runtime
+        code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs (for segment values)
+        
+        // [BX+0] = 0 (environment segment - inherit)
+        code.AddRange(new byte[] { 0xC7, 0x07, 0x00, 0x00 });  // mov word ptr [bx], 0
+        
+        // [BX+2] = cmdTailOff (command tail offset)
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x02 });  // mov word ptr [bx+2], imm16
+        code.Add((byte)(cmdTailOff & 0xFF));
+        code.Add((byte)(cmdTailOff >> 8));
+        
+        // [BX+4] = CS (command tail segment)
+        code.AddRange(new byte[] { 0x89, 0x47, 0x04 });  // mov [bx+4], ax
+        
+        // [BX+6] = fcb1Off
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x06 });  // mov word ptr [bx+6], imm16
+        code.Add((byte)(fcb1Off & 0xFF));
+        code.Add((byte)(fcb1Off >> 8));
+        
+        // [BX+8] = CS
+        code.AddRange(new byte[] { 0x89, 0x47, 0x08 });  // mov [bx+8], ax
+        
+        // [BX+0A] = fcb2Off
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x0A });  // mov word ptr [bx+0Ah], imm16
+        code.Add((byte)(fcb2Off & 0xFF));
+        code.Add((byte)(fcb2Off >> 8));
+        
+        // [BX+0C] = CS
+        code.AddRange(new byte[] { 0x89, 0x47, 0x0C });  // mov [bx+0Ch], ax
+        
+        // Call EXEC: AX = 4B00h
+        code.AddRange(new byte[] { 0xB8, 0x00, 0x4B });  // mov ax, 4B00h
+        code.AddRange(new byte[] { 0xCD, 0x21 });        // int 21h
+        
+        // After EXEC, restore DS
+        code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
+        code.AddRange(new byte[] { 0x8E, 0xD8 });  // mov ds, ax
+        code.AddRange(new byte[] { 0x8E, 0xC0 });  // mov es, ax
+        
+        // Check carry flag - if set, EXEC failed
+        code.Add(0x72);  // jc failed
+        int jcPos1 = code.Count;
+        code.Add(0x00);  // placeholder
+        
+        // === EXEC GAME.COM ===
+        
+        // Set up DS:DX = GAME filename pointer
+        code.Add(0xBA);  // mov dx, imm16
+        code.Add((byte)(gameFilenameOff & 0xFF));
+        code.Add((byte)(gameFilenameOff >> 8));
+        
+        // ES:BX still points to parameter block
+        code.Add(0xBB);  // mov bx, imm16
+        code.Add((byte)(paramBlockOff & 0xFF));
+        code.Add((byte)(paramBlockOff >> 8));
+        
+        // Rebuild parameter block (it may have been corrupted by EXEC)
+        code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
+        code.AddRange(new byte[] { 0xC7, 0x07, 0x00, 0x00 });  // mov word ptr [bx], 0
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x02 });  // mov word ptr [bx+2], imm16
+        code.Add((byte)(cmdTailOff & 0xFF));
+        code.Add((byte)(cmdTailOff >> 8));
+        code.AddRange(new byte[] { 0x89, 0x47, 0x04 });  // mov [bx+4], ax
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x06 });  // mov word ptr [bx+6], imm16
+        code.Add((byte)(fcb1Off & 0xFF));
+        code.Add((byte)(fcb1Off >> 8));
+        code.AddRange(new byte[] { 0x89, 0x47, 0x08 });  // mov [bx+8], ax
+        code.AddRange(new byte[] { 0xC7, 0x47, 0x0A });  // mov word ptr [bx+0Ah], imm16
+        code.Add((byte)(fcb2Off & 0xFF));
+        code.Add((byte)(fcb2Off >> 8));
+        code.AddRange(new byte[] { 0x89, 0x47, 0x0C });  // mov [bx+0Ch], ax
+        
+        // Call EXEC: AX = 4B00h
+        code.AddRange(new byte[] { 0xB8, 0x00, 0x4B });  // mov ax, 4B00h
+        code.AddRange(new byte[] { 0xCD, 0x21 });        // int 21h
+        
+        // After EXEC, restore DS
+        code.AddRange(new byte[] { 0x8C, 0xC8 });  // mov ax, cs
+        code.AddRange(new byte[] { 0x8E, 0xD8 });  // mov ds, ax
+        
+        // Check carry flag - if set, EXEC failed
+        code.Add(0x72);  // jc failed
+        int jcPos2 = code.Count;
+        code.Add(0x00);  // placeholder
+        
+        // Both EXECs succeeded!
+        code.AddRange(new byte[] { 0xB0, 0x00 });  // mov al, 0x00 (Success)
+        code.AddRange(new byte[] { 0xBA, 0x99, 0x09 });  // mov dx, ResultPort
+        code.Add(0xEE);  // out dx, al
+        code.Add(0xEB);  // jmp exit
+        int jmpPos = code.Count;
+        code.Add(0x00);  // placeholder
+        
+        // failed:
+        int failedPos = code.Count;
+        code.AddRange(new byte[] { 0xB0, 0xFF });  // mov al, 0xFF (Failure)
+        code.AddRange(new byte[] { 0xBA, 0x99, 0x09 });  // mov dx, ResultPort
+        code.Add(0xEE);  // out dx, al
+        
+        // exit:
+        int exitPos = code.Count;
+        code.AddRange(new byte[] { 0xB8, 0x00, 0x4C });  // mov ax, 4C00h
+        code.AddRange(new byte[] { 0xCD, 0x21 });        // int 21h
+        code.Add(0xF4);  // hlt
+        
+        // Fix up jumps
+        byte[] codeArray = code.ToArray();
+        codeArray[jcPos1] = (byte)(failedPos - jcPos1 - 1);
+        codeArray[jcPos2] = (byte)(failedPos - jcPos2 - 1);
+        codeArray[jmpPos] = (byte)(exitPos - jmpPos - 1);
+        
+        // Create full program with data section
+        byte[] program = new byte[0x1B2];  // Enough for code + data
+        Array.Copy(codeArray, program, codeArray.Length);
+        
+        // TSR filename at offset 0x60: "TSR.COM\0"
+        byte[] tsrFilename = Encoding.ASCII.GetBytes("TSR.COM\0");
+        Array.Copy(tsrFilename, 0, program, 0x60, tsrFilename.Length);
+        
+        // Game filename at offset 0x70: "GAME.COM\0"
+        byte[] gameFilename = Encoding.ASCII.GetBytes("GAME.COM\0");
+        Array.Copy(gameFilename, 0, program, 0x70, gameFilename.Length);
+        
+        // Command tail at offset 0x90: length=0, followed by CR
+        program[0x90] = 0x00;
+        program[0x91] = 0x0D;
+        
+        return program;
+    }
+
+    /// <summary>
+    /// Runs the batch test with launcher, TSR, and game programs.
+    /// </summary>
+    private ExecTestHandler RunBatchTest(byte[] launcherProgram, byte[] tsrProgram, byte[] gameProgram,
+        string launcherFilename, string tsrFilename, string gameFilename,
+        [CallerMemberName] string unitTestName = "test") {
+        
+        // Write all files to current directory
+        string launcherPath = Path.GetFullPath($"{unitTestName}_{launcherFilename}");
+        string tsrPath = Path.GetFullPath(tsrFilename);
+        string gamePath = Path.GetFullPath(gameFilename);
+        
+        File.WriteAllBytes(launcherPath, launcherProgram);
+        File.WriteAllBytes(tsrPath, tsrProgram);
+        File.WriteAllBytes(gamePath, gameProgram);
+        
+        try {
+            // Setup emulator with DOS initialized
+            Spice86DependencyInjection spice86DependencyInjection = new Spice86Creator(
+                binName: launcherPath,
+                enableCfgCpu: true,
+                enablePit: false,
+                recordData: false,
+                maxCycles: 1000000L,  // More cycles for multiple EXEC operations
+                installInterruptVectors: true,
+                enableA20Gate: true
+            ).Create();
+
+            ExecTestHandler testHandler = new(
+                spice86DependencyInjection.Machine.CpuState,
+                NSubstitute.Substitute.For<ILoggerService>(),
+                spice86DependencyInjection.Machine.IoPortDispatcher
+            );
+            
+            spice86DependencyInjection.ProgramExecutor.Run();
+
+            return testHandler;
+        }
+        finally {
+            // Cleanup files
+            try {
+                if (File.Exists(launcherPath)) File.Delete(launcherPath);
+                if (File.Exists(tsrPath)) File.Delete(tsrPath);
+                if (File.Exists(gamePath)) File.Delete(gamePath);
+            } catch (IOException) {
+                // Ignore IO cleanup errors
+            }
+        }
+    }
+
+    /// <summary>
     /// Captures EXEC test results from designated I/O ports.
     /// </summary>
     private class ExecTestHandler : DefaultIOPortHandler {

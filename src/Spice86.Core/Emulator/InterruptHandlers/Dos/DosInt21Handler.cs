@@ -1057,6 +1057,9 @@ public class DosInt21Handler : InterruptHandler {
                 paragraphsToKeep, errorCode);
         }
         
+        // Set the return code in SDA (AL | 0x0300 for TSR termination type)
+        _dosProcessManager.LastChildReturnCode = (ushort)(returnCode | 0x0300);
+        
         // TSR does NOT remove the PSP from the tracker (the program stays resident)
         // TSR does NOT free the process memory (the program stays in memory)
         // TSR DOES return to parent process
@@ -1087,14 +1090,23 @@ public class DosInt21Handler : InterruptHandler {
                 State.SS = (ushort)(savedStackPointer >> 16);
                 State.SP = (ushort)(savedStackPointer & 0xFFFF);
                 
-                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
+                // Set CS:IP to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
                 // This was set when the program was loaded and points back to the parent's
                 // continuation point. This is how DOS returns control to the parent process.
                 State.CS = terminateSegment;
                 State.IP = terminateOffset;
                 
-                if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
-                    LoggerService.Verbose(
+                // Modify the stack so that when IRET executes, it jumps to the parent's
+                // return address instead of the child's. The stack currently has:
+                //   [SP+0] = child's return IP (where INT 21h was called in the TSR)
+                //   [SP+2] = child's return CS
+                //   [SP+4] = FLAGS
+                // We replace IP and CS with the parent's return address.
+                Stack.Poke16(0, State.IP);  // Replace return IP with parent's IP
+                Stack.Poke16(2, State.CS);  // Replace return CS with parent's CS
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                    LoggerService.Debug(
                         "TSR: Returning to parent at {Segment:X4}:{Offset:X4}, stack {SS:X4}:{SP:X4}",
                         terminateSegment, terminateOffset, State.SS, State.SP);
                 }
