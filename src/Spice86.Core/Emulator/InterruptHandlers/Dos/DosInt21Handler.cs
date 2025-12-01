@@ -1511,7 +1511,13 @@ public class DosInt21Handler : InterruptHandler {
     /// INT 21h, AH=4Bh - EXEC: Load and/or Execute Program.
     /// </summary>
     /// <remarks>
-    /// <para>Based on MS-DOS 4.0 EXEC.ASM and RBIL documentation.</para>
+    /// <para>
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 180-400) and FreeDOS kernel task.c exec() (lines 620-750).
+    /// <code>
+    /// // FreeDOS task.c line 625: int exec(psp FAR *p, exec_blk FAR *ep, int loadtype)
+    /// // MS-DOS 4.0 EXEC.ASM line 185: EXEC_PROC PROC
+    /// </code>
+    /// </para>
     /// <para>
     /// AL = type of load:
     ///   00h = Load and execute
@@ -1715,6 +1721,13 @@ public class DosInt21Handler : InterruptHandler {
     /// </summary>
     /// <remarks>
     /// <para>
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 350-400) and FreeDOS kernel task.c return_code() (lines 380-420).
+    /// <code>
+    /// // FreeDOS task.c line 385: STATIC void return_code(int rc, int type)
+    /// // MS-DOS 4.0 EXEC.ASM line 355: TERMINATE_PROC PROC
+    /// </code>
+    /// </para>
+    /// <para>
     /// This function terminates the current process and returns control to the parent process.
     /// The exit code in AL is stored and can be retrieved by the parent using INT 21h AH=4Dh.
     /// </para>
@@ -1729,7 +1742,7 @@ public class DosInt21Handler : InterruptHandler {
     /// </para>
     /// <para>
     /// <strong>MCB Note:</strong> FreeDOS kernel calls return_code() and FreeProcessMem() 
-    /// in task.c. This implementation follows a similar pattern. Note that in real DOS,
+    /// in task.c (lines 380-420). This implementation follows a similar pattern. Note that in real DOS,
     /// the environment block is freed automatically because it's a separate MCB
     /// owned by the terminating process.
     /// </para>

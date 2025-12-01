@@ -22,7 +22,9 @@ using System.Text;
 /// Implements DOS INT 21h AH=4Bh (EXEC - Load and/or Execute Program) functionality.
 /// </summary>
 /// <remarks>
-/// Based on MS-DOS 4.0 EXEC.ASM and RBIL documentation.
+/// Based on MS-DOS 4.0 EXEC.ASM (lines 180-400 for EXEC implementation) and 
+/// FreeDOS kernel task.c (lines 450-650 for exec() and child_psp() functions).
+/// See also RBIL documentation for INT 21h/4Bh.
 /// </remarks>
 public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
@@ -1022,7 +1024,11 @@ public class DosProcessManager : DosFileLoader {
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c (child_psp):
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 220-280) and FreeDOS kernel task.c child_psp() (lines 520-580):
+    /// <code>
+    /// // FreeDOS task.c line 525: void child_psp(seg para, seg cur_psp, int psize)
+    /// // MS-DOS 4.0 EXEC.ASM line 225: CHILD_PSP PROC
+    /// </code>
     /// <list type="bullet">
     /// <item>Creates a new PSP at the specified segment</item>
     /// <item>Sets the parent PSP to the current PSP</item>
@@ -1097,7 +1103,11 @@ public class DosProcessManager : DosFileLoader {
 
     /// <summary>
     /// Initializes a child PSP with basic DOS structures.
-    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c new_psp() implementation.
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 240-290) and FreeDOS kernel task.c new_psp() (lines 480-520).
+    /// <code>
+    /// // FreeDOS task.c line 485: STATIC void new_psp(psp far * p, int psize)
+    /// // MS-DOS 4.0 EXEC.ASM line 245: ; Initialize PSP fields
+    /// </code>
     /// </summary>
     private void InitializeChildPsp(DosProgramSegmentPrefix psp, ushort pspSegment, 
         ushort parentPspSegment, ushort sizeInParagraphs, InterruptVectorTable interruptVectorTable) {
@@ -1165,7 +1175,11 @@ public class DosProcessManager : DosFileLoader {
     /// Files opened with the no-inherit flag (bit 7 set) are not copied to the child.
     /// </summary>
     /// <remarks>
-    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c behavior:
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 300-320) and FreeDOS kernel task.c (lines 550-570):
+    /// <code>
+    /// // FreeDOS task.c line 555: for (i = 0; i &lt; p-&gt;ps_maxfiles; i++)
+    /// // MS-DOS 4.0 EXEC.ASM line 305: MOV CX,20 ; Copy 20 file handles
+    /// </code>
     /// Files marked with <see cref="FileAccessMode.Private"/> in their Flags property will not be
     /// inherited by the child process - they get 0xFF (unused) instead.
     /// </remarks>
