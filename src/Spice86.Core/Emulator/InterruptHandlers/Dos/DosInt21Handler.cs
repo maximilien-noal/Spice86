@@ -1095,7 +1095,7 @@ public class DosInt21Handler : InterruptHandler {
                 // continuation point. Subtract 4 from IP because the callback mechanism's
                 // MoveIpAndSetNextNode will add 4 after this handler returns.
                 State.CS = terminateSegment;
-                State.IP = (ushort)(terminateOffset - 4);
+                State.IP = terminateOffset >= 4 ? (ushort)(terminateOffset - 4) : terminateOffset;
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
                     LoggerService.Verbose(

@@ -62,12 +62,6 @@ public class DosExecIntegrationTests {
         byte[] parentProgram = CreateParentProgram();
         
         ExecTestHandler testHandler = RunExecTest(parentProgram, childProgram, "parent.com", "CHILD.COM");
-
-        // Debug: Print all captured writes
-        Console.WriteLine($"All writes captured: {testHandler.AllWrites.Count}");
-        foreach ((ushort port, byte val) in testHandler.AllWrites) {
-            Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
-        }
         
         // Verify that child ran (wrote its marker)
         testHandler.ChildResults.Should().Contain((byte)TestResult.ChildRan,
@@ -158,12 +152,6 @@ public class DosExecIntegrationTests {
         byte[] loaderProgram = CreateLoaderWithInt21HookProgram();
         
         ExecTestHandler testHandler = RunExecTest(loaderProgram, childProgram, "loader.com", "CHILD.COM");
-
-        // Debug: Print all captured writes
-        Console.WriteLine($"Loader test - All writes captured: {testHandler.AllWrites.Count}");
-        foreach ((ushort port, byte val) in testHandler.AllWrites) {
-            Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
-        }
         
         // Verify that child ran (wrote its marker)
         testHandler.ChildResults.Should().Contain((byte)TestResult.ChildRan,
@@ -564,12 +552,6 @@ public class DosExecIntegrationTests {
         
         ExecTestHandler testHandler = RunBatchTest(launcherProgram, tsrProgram, gameProgram,
             "launcher.com", "TSR.COM", "GAME.COM");
-
-        // Debug: Print all captured writes
-        Console.WriteLine($"Batch test - All writes captured: {testHandler.AllWrites.Count}");
-        foreach ((ushort port, byte val) in testHandler.AllWrites) {
-            Console.WriteLine($"  Port 0x{port:X4}, Value 0x{val:X2}");
-        }
         
         // Verify that TSR ran (wrote its marker 0x11)
         testHandler.AllWrites.Should().Contain(w => w.Port == ChildResultPort && w.Value == 0x11,

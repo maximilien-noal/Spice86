@@ -228,13 +228,9 @@ public class DosProcessManager : DosFileLoader {
 
         // Determine parent PSP
         // For the first program, use COMMAND.COM as parent. Otherwise, use the current PSP.
-        ushort parentPspSegment;
-        if (_pspTracker.PspCount == 0) {
-            // No programs loaded yet, use COMMAND.COM as parent
-            parentPspSegment = _commandCom.PspSegment;
-        } else {
-            parentPspSegment = _pspTracker.GetCurrentPspSegment();
-        }
+        ushort parentPspSegment = _pspTracker.PspCount == 0
+            ? _commandCom.PspSegment
+            : _pspTracker.GetCurrentPspSegment();
 
         // For the first program, we use the original loading approach that gives the program
         // ALL remaining conventional memory (NextSegment = LastFreeSegment). This is how real DOS 
@@ -492,7 +488,7 @@ public class DosProcessManager : DosFileLoader {
             // to State.IP. By pre-subtracting 4, the child starts at the correct entry point.
             // The first program is loaded directly by ProgramExecutor, not via callback,
             // so it doesn't need this adjustment.
-            ushort adjustedIP = isFirstProgram ? ip : (ushort)(ip - 4);
+            ushort adjustedIP = isFirstProgram ? ip : (ip >= 4 ? (ushort)(ip - 4) : ip);
             SetEntryPoint(cs, adjustedIP);
             _state.InterruptFlag = true;
             
@@ -978,7 +974,8 @@ public class DosProcessManager : DosFileLoader {
             // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
             // will add 4 after this handler returns.
             _state.CS = returnAddress.Segment;
-            _state.IP = (ushort)(returnAddress.Offset - 4);
+            ushort returnOffset = returnAddress.Offset;
+            _state.IP = returnOffset >= 4 ? (ushort)(returnOffset - 4) : returnOffset;
             
             return true; // Continue execution at parent
         }
