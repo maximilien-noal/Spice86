@@ -636,6 +636,15 @@ public class DosMemoryManager {
         return new DosMemoryControlBlock(_memory, MemoryUtils.ToPhysicalAddress(blockSegment, 0));
     }
 
+    /// <summary>
+    /// Gets the MCB at the specified segment address.
+    /// </summary>
+    /// <param name="mcbSegment">The segment where the MCB is located.</param>
+    /// <returns>The MCB at the specified segment.</returns>
+    public DosMemoryControlBlock GetMcbAtSegment(ushort mcbSegment) {
+        return GetDosMemoryControlBlockFromSegment(mcbSegment);
+    }
+
     private bool JoinBlocks(DosMemoryControlBlock? block, bool onlyIfFree) {
         if (onlyIfFree && block?.IsFree == false) {
             // Do not touch blocks in use

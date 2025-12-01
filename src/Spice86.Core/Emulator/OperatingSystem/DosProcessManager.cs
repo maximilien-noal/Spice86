@@ -225,10 +225,13 @@ public class DosProcessManager : DosFileLoader {
         }
 
         // Determine parent PSP
-        ushort parentPspSegment = _pspTracker.GetCurrentPspSegment();
-        if (parentPspSegment == 0) {
-            // If no current PSP, use COMMAND.COM as parent
+        // For the first program, use COMMAND.COM as parent. Otherwise, use the current PSP.
+        ushort parentPspSegment;
+        if (_pspTracker.PspCount == 0) {
+            // No programs loaded yet, use COMMAND.COM as parent
             parentPspSegment = _commandCom.PspSegment;
+        } else {
+            parentPspSegment = _pspTracker.GetCurrentPspSegment();
         }
 
         // For the first program, we use the original loading approach that gives the program
@@ -514,6 +517,59 @@ public class DosProcessManager : DosFileLoader {
         
         ushort pspSegment = _pspTracker.InitialPspSegment;
         
+        // Determine if this is an EXE or COM file
+        bool isExe = false;
+        DosExeFile? exeFile = null;
+        
+        if (fileBytes.Length >= DosExeFile.MinExeSize) {
+            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
+            isExe = exeFile.IsValid;
+        }
+        
+        // Allocate memory for the first program using the MCB system.
+        // This is necessary so child processes can be allocated from the remaining free memory.
+        // For COM files, we allocate enough for the program + standard stack.
+        // For EXE files, we use the memory requirements from the EXE header.
+        DosMemoryControlBlock? memBlock;
+        
+        if (isExe && exeFile is not null) {
+            // For EXE files, use the standard reservation which respects MaxAlloc
+            memBlock = _memoryManager.ReserveSpaceForExe(exeFile, pspSegment);
+        } else {
+            // For COM files, allocate enough for the program + PSP
+            // COM files need 64KB for their segment, but we'll use a reasonable default
+            // that leaves room for child processes
+            ushort comParagraphs = ComFileMemoryParagraphs;
+            
+            // Get the start MCB and resize it to the needed size
+            DosMemoryControlBlock startMcb = _memoryManager.GetMcbAtSegment((ushort)(pspSegment - 1));
+            if (comParagraphs < startMcb.Size) {
+                // Split the MCB: first part for this program, rest remains free
+                startMcb.PspSegment = pspSegment;  // Mark as allocated
+                
+                // Create a new MCB for the remaining free memory
+                ushort remainingStart = (ushort)(pspSegment - 1 + 1 + comParagraphs);
+                ushort remainingSize = (ushort)(startMcb.Size - comParagraphs - 1);
+                startMcb.Size = comParagraphs;
+                startMcb.SetNonLast();
+                
+                DosMemoryControlBlock freeMcb = _memoryManager.GetMcbAtSegment(remainingStart);
+                freeMcb.Size = remainingSize;
+                freeMcb.SetFree();
+                freeMcb.SetLast();
+                
+                memBlock = startMcb;
+            } else {
+                // Program needs all available memory
+                startMcb.PspSegment = pspSegment;
+                memBlock = startMcb;
+            }
+        }
+        
+        if (memBlock is null) {
+            return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+        }
+        
         // Create and register the PSP
         DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
 
@@ -522,15 +578,6 @@ public class DosProcessManager : DosFileLoader {
 
         // Set the disk transfer area address
         _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
-
-        // Determine if this is an EXE or COM file
-        bool isExe = false;
-        DosExeFile? exeFile = null;
-
-        if (fileBytes.Length >= DosExeFile.MinExeSize) {
-            exeFile = new DosExeFile(new ByteArrayReaderWriter(fileBytes));
-            isExe = exeFile.IsValid;
-        }
 
         // Load the program
         ushort cs, ip, ss, sp;
