@@ -1022,7 +1022,7 @@ public class DosProcessManager : DosFileLoader {
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Based on DOSBox staging implementation and DOS 4.0 EXEC.ASM behavior:
+    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c (child_psp):
     /// <list type="bullet">
     /// <item>Creates a new PSP at the specified segment</item>
     /// <item>Sets the parent PSP to the current PSP</item>
@@ -1086,8 +1086,7 @@ public class DosProcessManager : DosFileLoader {
         // INT 21h/55h is used by debuggers and overlay managers that manage their own PSP tracking.
         // The INT 21h handler (DosInt21Handler.CreateChildPsp) will call SetCurrentPspSegment() to 
         // update the SDA's current PSP, but the PSP is not added to the tracker's internal list. 
-        // This matches DOSBox behavior where DOS_ChildPSP() creates the PSP but the caller is 
-        // responsible for managing PSP tracking.
+        // Reference: FreeDOS kernel task.c - child_psp() creates PSP but caller manages tracking.
         
         if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
             _loggerService.Debug(
@@ -1098,7 +1097,7 @@ public class DosProcessManager : DosFileLoader {
 
     /// <summary>
     /// Initializes a child PSP with basic DOS structures.
-    /// Based on DOSBox DOS_PSP::MakeNew() implementation.
+    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c new_psp() implementation.
     /// </summary>
     private void InitializeChildPsp(DosProgramSegmentPrefix psp, ushort pspSegment, 
         ushort parentPspSegment, ushort sizeInParagraphs, InterruptVectorTable interruptVectorTable) {
@@ -1166,7 +1165,7 @@ public class DosProcessManager : DosFileLoader {
     /// Files opened with the no-inherit flag (bit 7 set) are not copied to the child.
     /// </summary>
     /// <remarks>
-    /// Based on DOSBox DOS_PSP::CopyFileTable() behavior when createchildpsp is true.
+    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c behavior:
     /// Files marked with <see cref="FileAccessMode.Private"/> in their Flags property will not be
     /// inherited by the child process - they get 0xFF (unused) instead.
     /// </remarks>

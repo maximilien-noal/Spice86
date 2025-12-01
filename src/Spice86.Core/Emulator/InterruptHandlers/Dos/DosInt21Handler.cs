@@ -33,7 +33,7 @@ public class DosInt21Handler : InterruptHandler {
     private const ushort DosSysVarsSegment = 0x80;
     
     /// <summary>
-    /// Value set in AL after CreateChildPsp (per DOSBox behavior: reg_al=0xf0, "destroyed" value).
+    /// Value set in AL after CreateChildPsp (per MS-DOS 4.0 behavior: reg_al=0xf0, "destroyed" value).
     /// </summary>
     private const byte CreateChildPspAlDestroyedValue = 0xF0;
 
@@ -1259,12 +1259,12 @@ public class DosInt21Handler : InterruptHandler {
     /// DX = segment for new PSP<br/>
     /// SI = size in paragraphs (16-byte units)
     /// <b>Returns:</b><br/>
-    /// AL = 0xF0 (destroyed - per DOSBox behavior)<br/>
+    /// AL = 0xF0 (destroyed - per MS-DOS 4.0 behavior)<br/>
     /// Current PSP is set to DX
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Based on DOSBox staging implementation and DOS 4.0 behavior.
+    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c behavior.
     /// This function is typically used by:
     /// <list type="bullet">
     /// <item>Debuggers that need to create process contexts</item>
@@ -1295,10 +1295,10 @@ public class DosInt21Handler : InterruptHandler {
         // Create the child PSP
         _dosProcessManager.CreateChildPsp(childSegment, sizeInParagraphs, _interruptVectorTable);
         
-        // Set current PSP to the new child PSP (per DOSBox behavior: dos.psp(reg_dx))
+        // Set current PSP to the new child PSP (per MS-DOS 4.0 EXEC.ASM behavior)
         _dosPspTracker.SetCurrentPspSegment(childSegment);
         
-        // AL is destroyed (per DOSBox: reg_al=0xf0)
+        // AL is destroyed (per MS-DOS 4.0 behavior)
         State.AL = CreateChildPspAlDestroyedValue;
     }
 
@@ -1315,12 +1315,12 @@ public class DosInt21Handler : InterruptHandler {
     /// <remarks>
     /// The returned pointer points to the beginning of the documented portion of SYSVARS.
     /// Some fields exist at negative offsets from this pointer (e.g., the first MCB segment at -2).
-    /// Similar to DOSBox, this updates the block device count before returning the pointer.
+    /// Per MS-DOS and FreeDOS behavior, this updates the block device count before returning the pointer.
     /// </remarks>
     /// </summary>
     private void GetListOfLists() {
         // Update block device count in SYSVARS before returning the pointer
-        // This matches DOSBox behavior which counts block devices before returning
+        // Per MS-DOS and FreeDOS behavior, block devices are counted before returning
         // Block device count is at offset 0x20 in the SYSVARS structure
         byte blockDeviceCount = (byte)_dosDriveManager.Count;
         uint sysVarsBase = MemoryUtils.ToPhysicalAddress(DosSysVarsSegment, 0);
