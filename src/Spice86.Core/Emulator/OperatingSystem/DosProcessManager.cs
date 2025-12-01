@@ -456,6 +456,11 @@ public class DosProcessManager : DosFileLoader {
         // For child processes (not the first program), save the parent's SS:SP to the child's PSP.
         // This allows the parent's stack to be restored when the child terminates.
         // The StackPointer field at PSP offset 0x2E stores SS:SP as a far pointer.
+        //
+        // Reference: FreeDOS kernel/task.c load_transfer() line 337:
+        //   q->ps_stack = (BYTE FAR *)user_r;
+        // FreeDOS saves the parent's stack pointer to ps_stack (PSP offset 0x2E) before
+        // transferring control to the child process.
         if (!isFirstProgram) {
             psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
         }
@@ -714,6 +719,20 @@ public class DosProcessManager : DosFileLoader {
     /// </summary>
     /// <param name="psp">The PSP to initialize.</param>
     /// <param name="parentPspSegment">The segment of the parent PSP.</param>
+    /// <summary>
+    /// Initializes common PSP fields that are set for all programs.
+    /// </summary>
+    /// <remarks>
+    /// Reference: FreeDOS kernel/task.c child_psp() lines 235-238:
+    ///   p->ps_parent = cu_psp;
+    ///   p->ps_prevpsp = q;
+    /// FreeDOS sets ps_parent to the current PSP (parent) and ps_prevpsp
+    /// to a pointer to the parent's PSP structure.
+    ///
+    /// Reference: MS-DOS 4.0 v4.0/src/DOS/EXEC.ASM lines 680-685:
+    ///   MOV DS:[PDB_Exit],0 ; INT 20h
+    /// MS-DOS initializes the first word to INT 20h opcode for CP/M compatibility.
+    /// </remarks>
     private static void InitializeCommonPspFields(DosProgramSegmentPrefix psp, ushort parentPspSegment) {
         // Set the PSP's first 2 bytes to INT 20h (CP/M-style exit)
         psp.Exit[0] = IntOpcode;
