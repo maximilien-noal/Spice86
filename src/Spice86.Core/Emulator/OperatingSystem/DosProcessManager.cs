@@ -471,7 +471,11 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            SetEntryPoint(cs, ip);
+            // IMPORTANT: Subtract 4 from IP because the callback instruction's Execute method
+            // calls MoveIpAndSetNextNode after our handler returns, which adds 4 to State.IP.
+            // By setting IP to (entry_IP - 4), after the +4 adjustment, we get the correct entry point.
+            // This matches how DOSBox-staging handles EXEC in dos_execute.cpp.
+            SetEntryPoint(cs, (ushort)(ip - 4));
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -539,7 +543,8 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            SetEntryPoint(cs, ip);
+            // IMPORTANT: Subtract 4 from IP for callback mechanism (see LoadProgram comments)
+            SetEntryPoint(cs, (ushort)(ip - 4));
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -589,7 +594,8 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            SetEntryPoint(cs, ip);
+            // IMPORTANT: Subtract 4 from IP for callback mechanism (see LoadProgram comments)
+            SetEntryPoint(cs, (ushort)(ip - 4));
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();

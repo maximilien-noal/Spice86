@@ -1621,15 +1621,14 @@ public class DosInt21Handler : InterruptHandler {
                     }
                 }
                 
-                // Modify the interrupt stack to return to child's entry point
-                // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
-                Stack.Poke16(0, State.IP);  // Child's IP
-                Stack.Poke16(2, State.CS);  // Child's CS
+                // The child will execute via MoveIpAndSetNextNode after this callback returns.
+                // DosProcessManager.SetEntryPoint was called with (ip - 4), so after MoveIpAndSetNextNode
+                // adds 4, State.IP will be the correct entry point and execution continues there.
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                     LoggerService.Debug(
-                        "EXEC: Modified stack to return to child at {ChildCS:X4}:{ChildIP:X4}",
-                        State.CS, State.IP);
+                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4} (adjusted for callback mechanism)",
+                        State.CS, (ushort)(State.IP + 4));  // +4 because IP is currently entry-4
                 }
             }
         } else {
