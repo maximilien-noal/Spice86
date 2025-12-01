@@ -879,12 +879,13 @@ public class DosProcessManager : DosFileLoader {
         // Standard handles 0-4 (stdin, stdout, stderr, stdaux, stdprn) are inherited and not closed
         _fileManager.CloseAllNonStandardFileHandles();
 
-        // Cache interrupt vectors from PSP before freeing memory
+        // Cache interrupt vectors and stack pointer from PSP before freeing memory
         // INT 22h = Terminate address, INT 23h = Ctrl-C, INT 24h = Critical error
         // Must read these BEFORE freeing the PSP memory to avoid accessing freed memory
         uint terminateAddr = currentPsp.TerminateAddress;
         uint breakAddr = currentPsp.BreakAddress;
         uint criticalErrorAddr = currentPsp.CriticalErrorAddress;
+        uint savedStackPointer = currentPsp.StackPointer;
 
         // Free all memory blocks owned by this process (including environment block)
         // This follows FreeDOS kernel FreeProcessMem() pattern
@@ -899,6 +900,14 @@ public class DosProcessManager : DosFileLoader {
         _pspTracker.PopCurrentPspSegment();
 
         if (hasParentToReturnTo) {
+            // Restore the parent's stack pointer from the child's PSP.
+            // The stack pointer was saved at PSP offset 0x2E when the child was loaded via EXEC.
+            // This ensures the parent continues with its original stack state.
+            if (savedStackPointer != 0) {
+                _state.SS = (ushort)(savedStackPointer >> 16);
+                _state.SP = (ushort)(savedStackPointer & 0xFFFF);
+            }
+            
             // Set up return to parent process
             // DS and ES should point to parent's PSP
             _state.DS = parentPspSegment;
