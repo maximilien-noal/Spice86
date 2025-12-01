@@ -1057,9 +1057,12 @@ public class DosInt21Handler : InterruptHandler {
                 paragraphsToKeep, errorCode);
         }
         
-        // TSR does NOT remove the PSP from the tracker (the program stays resident)
-        // TSR does NOT free the process memory (the program stays in memory)
-        // TSR DOES return to parent process
+        // TSR terminates execution but keeps memory resident.
+        // Unlike normal termination (AH=4Ch), TSR does NOT free the process memory.
+        // However, TSR DOES pop the PSP from the tracker because the parent process
+        // becomes the current process again. This allows the parent to make subsequent
+        // EXEC calls without the stale TSR PSP being treated as current.
+        _dosPspTracker.PopCurrentPspSegment();
         
         // Check if we have a valid PSP with a terminate address
         // If the current PSP has a valid terminate address, return to the parent
