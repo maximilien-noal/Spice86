@@ -414,8 +414,9 @@ public class DosProcessManager : DosFileLoader {
         // For the first program, we use InitialPspSegment; for child processes, we use MCB allocation
         ushort pspSegment;
         DosMemoryControlBlock? memBlock;
+        bool isFirstProgram = _pspTracker.PspCount == 0;
         
-        if (_pspTracker.PspCount == 0) {
+        if (isFirstProgram) {
             // First program - use the configured initial PSP segment
             if (isExe && exeFile is not null) {
                 memBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
@@ -471,11 +472,13 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            // IMPORTANT: Subtract 4 from IP because the callback instruction's Execute method
-            // calls MoveIpAndSetNextNode after our handler returns, which adds 4 to State.IP.
-            // By setting IP to (entry_IP - 4), after the +4 adjustment, we get the correct entry point.
-            // This matches how DOSBox-staging handles EXEC in dos_execute.cpp.
-            SetEntryPoint(cs, (ushort)(ip - 4));
+            
+            // For child processes (not the first program), subtract 4 from IP because the 
+            // callback instruction's Execute method calls MoveIpAndSetNextNode after our
+            // handler returns, which adds 4 to State.IP.
+            // The first program doesn't need this adjustment since it's not loaded via callback.
+            ushort adjustedIP = isFirstProgram ? ip : (ushort)(ip - 4);
+            SetEntryPoint(cs, adjustedIP);
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -543,8 +546,8 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            // IMPORTANT: Subtract 4 from IP for callback mechanism (see LoadProgram comments)
-            SetEntryPoint(cs, (ushort)(ip - 4));
+            // First program: no IP adjustment needed (not loaded via callback)
+            SetEntryPoint(cs, ip);
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -594,8 +597,8 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            // IMPORTANT: Subtract 4 from IP for callback mechanism (see LoadProgram comments)
-            SetEntryPoint(cs, (ushort)(ip - 4));
+            // First program (pre-allocated): no IP adjustment needed (not loaded via callback)
+            SetEntryPoint(cs, ip);
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
