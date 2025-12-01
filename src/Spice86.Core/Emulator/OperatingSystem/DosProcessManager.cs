@@ -548,7 +548,8 @@ public class DosProcessManager : DosFileLoader {
                 startMcb.PspSegment = pspSegment;  // Mark as allocated
                 
                 // Create a new MCB for the remaining free memory
-                ushort remainingStart = (ushort)(pspSegment - 1 + 1 + comParagraphs);
+                // The new MCB starts after the allocated block: pspSegment + comParagraphs
+                ushort remainingStart = (ushort)(pspSegment + comParagraphs);
                 ushort remainingSize = (ushort)(startMcb.Size - comParagraphs - 1);
                 startMcb.Size = comParagraphs;
                 startMcb.SetNonLast();
