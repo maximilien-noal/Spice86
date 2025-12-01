@@ -17,8 +17,7 @@ public class Spice86Creator {
 
     public Spice86Creator(string binName, bool enableCfgCpu, bool enablePit = false, bool recordData = false,
         long maxCycles = 100000, bool installInterruptVectors = false, bool failOnUnhandledPort = false, bool enableA20Gate = false,
-        bool enableXms = false, bool enableEms = false, string? overrideSupplierClassName = null,
-        ushort programEntryPointSegment = 0x1000) {
+        bool enableXms = false, bool enableEms = false, string? overrideSupplierClassName = null) {
         IOverrideSupplier? overrideSupplier = null;
         if (overrideSupplierClassName != null) {
             CommandLineParser parser = new();
@@ -49,9 +48,9 @@ public class Spice86Creator {
             Xms = enableXms,
             Ems = enableEms,
             CyclesBudgeter = new StaticCyclesBudgeter(staticCycleBudget),
-            // Must set this to a valid segment to avoid wraparound issues when
-            // InitialPspSegment is calculated as ProgramEntryPointSegment - 0x10
-            ProgramEntryPointSegment = programEntryPointSegment
+            // Set ProgramEntryPointSegment to match CLI default (0x170)
+            // This avoids wraparound issues when calculating InitialPspSegment (ProgramEntryPointSegment - 0x10)
+            ProgramEntryPointSegment = 0x170
         };
 
         _maxCycles = maxCycles;

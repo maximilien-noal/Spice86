@@ -1538,13 +1538,6 @@ public class DosInt21Handler : InterruptHandler {
                 ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
         }
 
-        // For LoadAndExecute mode, save the parent's return address from the stack.
-        // The INT instruction pushed FLAGS, CS, IP (return address) onto the stack.
-        // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
-        // We need this address to return to the parent when the child terminates.
-        ushort parentReturnIP = Stack.Peek16(0);
-        ushort parentReturnCS = Stack.Peek16(2);
-
         // Read the parameter block from ES:BX
         uint paramBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
 
@@ -1580,17 +1573,11 @@ public class DosInt21Handler : InterruptHandler {
                     paramBlock.EnvironmentSegment, commandTail);
             }
 
-            // Pass the parent's return address and IVT to Exec so it can:
-            // 1. Save INT 22h/23h/24h to child PSP
-            // 2. Set child PSP's TerminateAddress to parent's return address
             result = _dosProcessManager.Exec(
                 programName, 
                 commandTail,
                 loadType, 
-                paramBlock.EnvironmentSegment,
-                _interruptVectorTable,
-                parentReturnCS,
-                parentReturnIP);
+                paramBlock.EnvironmentSegment);
 
             // For LoadOnly mode, fill in the entry point info in the parameter block
             if (result.Success && loadType == DosExecLoadType.LoadOnly) {
@@ -1603,15 +1590,6 @@ public class DosInt21Handler : InterruptHandler {
 
         if (result.Success) {
             SetCarryFlag(false, calledFromVm);
-            
-            // For LoadAndExecute mode, Exec() has already set CS:IP to the child's entry point.
-            // The callback mechanism will handle the transition - no additional stack manipulation needed.
-            // The child will start executing at its entry point when the current interrupt returns.
-            //
-            // Note: We do NOT push anything onto the stack here. The child's PSP already has:
-            // - TerminateAddress (INT 22h) pointing to parent's return address
-            // - The parent's SS:SP saved for TSR use
-            // The child will use INT 21h AH=4Ch to terminate, which handles returning to parent.
         } else {
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
@@ -1724,19 +1702,9 @@ public class DosInt21Handler : InterruptHandler {
         if (!shouldContinue) {
             // No parent to return to - stop emulation
             State.IsRunning = false;
-        } else {
-            // TerminateProcess set State.CS and State.IP to the parent's return address.
-            // We need to poke these onto the stack so that when the INT 21h callback's
-            // IRET executes, it returns to the parent instead of the terminated child.
-            Stack.Poke16(0, State.IP);
-            Stack.Poke16(2, State.CS);
-            
-            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                LoggerService.Debug(
-                    "TERMINATE: Modified stack for IRET to parent {CS:X4}:{IP:X4}",
-                    State.CS, State.IP);
-            }
         }
+        // If shouldContinue is true, the CPU state (CS:IP) was set to the parent's
+        // return address by TerminateProcess, so execution will continue there.
     }
 
     /// <summary>
