@@ -488,6 +488,18 @@ public class DosProcessManager : DosFileLoader {
             // to State.IP. By pre-subtracting 4, the child starts at the correct entry point.
             // The first program is loaded directly by ProgramExecutor, not via callback,
             // so it doesn't need this adjustment.
+            //
+            // Reference: FreeDOS kernel/task.c load_transfer() lines 327-365:
+            //   irp->CS = FP_SEG(exp->exec.start_addr);
+            //   irp->IP = FP_OFF(exp->exec.start_addr);
+            // FreeDOS sets CS:IP directly from the exe header's entry point. Our callback
+            // mechanism requires the -4 adjustment because Spice86's callback instruction
+            // advances IP after the handler returns.
+            //
+            // Reference: MS-DOS 4.0 v4.0/src/DOS/EXEC.ASM exec_go: (lines 690-715):
+            //   PUSH DS    ; fake long call to entry
+            //   PUSH SI
+            // MS-DOS pushes CS:IP for a far return to the entry point.
             ushort adjustedIP = isFirstProgram ? ip : (ip >= 4 ? (ushort)(ip - 4) : ip);
             SetEntryPoint(cs, adjustedIP);
             _state.InterruptFlag = true;
@@ -970,7 +982,19 @@ public class DosProcessManager : DosFileLoader {
                     returnAddress.Segment, returnAddress.Offset);
             }
 
-            // Set up CPU to continue at the return address
+            // Set up CPU to continue at the return address stored in PSP offset 0x0A.
+            //
+            // Reference: FreeDOS kernel/task.c return_user() lines 415-445:
+            //   irp->CS = FP_SEG(p->ps_isv22);
+            //   irp->IP = FP_OFF(p->ps_isv22);
+            // FreeDOS reads the terminate address from ps_isv22 (PSP offset 0x0A) and
+            // sets CS:IP to return to the parent.
+            //
+            // Reference: MS-DOS 4.0 v4.0/src/DOS/EXEC.ASM exec_set_return: (lines 645-655):
+            //   POP DS:[addr_int_terminate]
+            //   POP DS:[addr_int_terminate+2]
+            // MS-DOS saves the return address at interrupt vector 22h location.
+            //
             // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
             // will add 4 after this handler returns.
             _state.CS = returnAddress.Segment;

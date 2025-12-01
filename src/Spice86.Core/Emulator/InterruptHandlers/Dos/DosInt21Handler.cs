@@ -1090,10 +1090,18 @@ public class DosInt21Handler : InterruptHandler {
                 State.SS = (ushort)(savedStackPointer >> 16);
                 State.SP = (ushort)(savedStackPointer & 0xFFFF);
                 
-                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
+                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A).
                 // This was set when the program was loaded and points back to the parent's
-                // continuation point. Subtract 4 from IP because the callback mechanism's
-                // MoveIpAndSetNextNode will add 4 after this handler returns.
+                // continuation point.
+                //
+                // Reference: FreeDOS kernel/task.c return_user() lines 415-445:
+                //   irp->CS = FP_SEG(p->ps_isv22);
+                //   irp->IP = FP_OFF(p->ps_isv22);
+                // FreeDOS reads ps_isv22 from the PSP (terminate address at offset 0x0A)
+                // and sets CS:IP to return control to the parent process.
+                //
+                // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
+                // will add 4 after this handler returns.
                 State.CS = terminateSegment;
                 State.IP = terminateOffset >= 4 ? (ushort)(terminateOffset - 4) : terminateOffset;
                 
