@@ -451,6 +451,13 @@ public class DosProcessManager : DosFileLoader {
 
         // Initialize PSP
         InitializePsp(psp, parentPspSegment, envSegment, arguments);
+        
+        // For child processes (not the first program), save the parent's SS:SP to the child's PSP.
+        // This allows the parent's stack to be restored when the child terminates.
+        // The StackPointer field at PSP offset 0x2E stores SS:SP as a far pointer.
+        if (!isFirstProgram) {
+            psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
+        }
 
         // Set the disk transfer area address
         _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
