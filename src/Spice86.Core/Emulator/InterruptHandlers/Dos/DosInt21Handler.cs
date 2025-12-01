@@ -1618,11 +1618,6 @@ public class DosInt21Handler : InterruptHandler {
             LogDosError(calledFromVm);
         }
     }
-            SetCarryFlag(true, calledFromVm);
-            State.AX = (ushort)result.ErrorCode;
-            LogDosError(calledFromVm);
-        }
-    }
 
     /// <summary>
     /// Moves a file using a DOS handle. AL specifies the origin of the move, BX the file handle, CX:DX the offset.
