@@ -537,6 +537,7 @@ public class DosProcessManager : DosFileLoader {
         // DOS can restore the parent's stack and return control to the parent.
         // DOSBox does this in DOS_Execute (dos_execute.cpp): block.SaveSP(RealMakeSeg(ss,StackSeg()));
         // FreeDOS does this in DosExecLoader (task.c): child_psp.stack = (ULONG)lpUserStack;
+        // Format: high 16 bits = SS (stack segment), low 16 bits = SP (stack pointer)
         psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
 
         // Set the disk transfer area address
@@ -620,6 +621,7 @@ public class DosProcessManager : DosFileLoader {
         // DOS can restore the parent's stack and return control to the parent.
         // DOSBox does this in DOS_Execute (dos_execute.cpp): block.SaveSP(RealMakeSeg(ss,StackSeg()));
         // FreeDOS does this in DosExecLoader (task.c): child_psp.stack = (ULONG)lpUserStack;
+        // Format: high 16 bits = SS (stack segment), low 16 bits = SP (stack pointer)
         psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
         _loggerService.Debug("EXEC LoadProgramWithVectorSaving: saved parent SS:SP {SS:X4}:{SP:X4} to PSP",
             _state.SS, _state.SP);
