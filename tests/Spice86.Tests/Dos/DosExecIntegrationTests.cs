@@ -178,15 +178,19 @@ public class DosExecIntegrationTests {
     /// Creates a simple child COM program that writes a marker and terminates.
     /// </summary>
     private static byte[] CreateChildProgram() {
-        // Child program:
-        //   mov al, 0x42       ; Child marker
-        //   mov dx, 0x998      ; ChildResultPort  
-        //   out dx, al         ; Write marker
+        // Child program with multiple markers to track execution:
+        //   mov al, 0x11       ; First marker (start of child)
+        //   mov dx, 0x999      ; ResultPort
+        //   out dx, al         ; Write first marker
+        //   mov al, 0x42       ; Child main marker
+        //   out dx, al         ; Write main marker
         //   mov ax, 0x4C42     ; Terminate with exit code 0x42
         //   int 21h
         return new byte[] {
-            0xB0, 0x42,             // mov al, ChildRan (0x42)
-            0xBA, 0x98, 0x09,       // mov dx, 0x998 (ChildResultPort)
+            0xB0, 0x11,             // mov al, 0x11 (first marker)
+            0xBA, 0x99, 0x09,       // mov dx, 0x999 (ResultPort)
+            0xEE,                   // out dx, al
+            0xB0, 0x42,             // mov al, 0x42 (main marker)
             0xEE,                   // out dx, al
             0xB8, 0x42, 0x4C,       // mov ax, 4C42h (terminate with code 0x42)
             0xCD, 0x21,             // int 21h

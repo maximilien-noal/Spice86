@@ -1617,8 +1617,8 @@ public class DosInt21Handler : InterruptHandler {
                 Stack.Push16(State.CS);  // Child's entry CS  
                 Stack.Push16(State.IP);  // Child's entry IP
                 
-                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                    LoggerService.Debug(
+                if (LoggerService.IsEnabled(LogEventLevel.Information)) {
+                    LoggerService.Information(
                         "EXEC: Pushed child entry {ChildCS:X4}:{ChildIP:X4} onto child stack SS:SP={SS:X4}:{SP:X4}",
                         State.CS, State.IP, State.SS, State.SP);
                 }
