@@ -1057,9 +1057,6 @@ public class DosInt21Handler : InterruptHandler {
                 paragraphsToKeep, errorCode);
         }
         
-        // Set the return code in SDA (AL | 0x0300 for TSR termination type)
-        _dosProcessManager.LastChildReturnCode = (ushort)(returnCode | 0x0300);
-        
         // TSR does NOT remove the PSP from the tracker (the program stays resident)
         // TSR does NOT free the process memory (the program stays in memory)
         // TSR DOES return to parent process
@@ -1090,23 +1087,14 @@ public class DosInt21Handler : InterruptHandler {
                 State.SS = (ushort)(savedStackPointer >> 16);
                 State.SP = (ushort)(savedStackPointer & 0xFFFF);
                 
-                // Set CS:IP to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
+                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
                 // This was set when the program was loaded and points back to the parent's
                 // continuation point. This is how DOS returns control to the parent process.
                 State.CS = terminateSegment;
                 State.IP = terminateOffset;
                 
-                // Modify the stack so that when IRET executes, it jumps to the parent's
-                // return address instead of the child's. The stack currently has:
-                //   [SP+0] = child's return IP (where INT 21h was called in the TSR)
-                //   [SP+2] = child's return CS
-                //   [SP+4] = FLAGS
-                // We replace IP and CS with the parent's return address.
-                Stack.Poke16(0, State.IP);  // Replace return IP with parent's IP
-                Stack.Poke16(2, State.CS);  // Replace return CS with parent's CS
-                
-                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                    LoggerService.Debug(
+                if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
+                    LoggerService.Verbose(
                         "TSR: Returning to parent at {Segment:X4}:{Offset:X4}, stack {SS:X4}:{SP:X4}",
                         terminateSegment, terminateOffset, State.SS, State.SP);
                 }
@@ -1550,6 +1538,13 @@ public class DosInt21Handler : InterruptHandler {
                 ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
         }
 
+        // For LoadAndExecute mode, save the parent's return address from the stack.
+        // The INT instruction pushed FLAGS, CS, IP (return address) onto the stack.
+        // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
+        // We need this address to return to the parent when the child terminates.
+        ushort parentReturnIP = Stack.Peek16(0);
+        ushort parentReturnCS = Stack.Peek16(2);
+
         // Read the parameter block from ES:BX
         uint paramBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
 
@@ -1585,30 +1580,17 @@ public class DosInt21Handler : InterruptHandler {
                     paramBlock.EnvironmentSegment, commandTail);
             }
 
-            // Get the parent's return address from the interrupt stack
-            // This is where INT 21h was called, and where execution should resume
-            // after the child terminates
-            ushort parentReturnIP = Stack.Peek16(0);  // IP at SP+0
-            ushort parentReturnCS = Stack.Peek16(2);  // CS at SP+2
-            
-            // Set INT 22h to the parent's return address BEFORE loading the child.
-            // This is critical because InitializePsp will save INT 22h to the child's PSP.
-            // When the child terminates, TerminateProcess restores INT 22h from the child's PSP
-            // and uses it to find where to return to the parent.
-            _interruptVectorTable[0x22] = new SegmentedAddress(parentReturnCS, parentReturnIP);
-            
-            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                LoggerService.Debug("EXEC: Set INT 22h to parent return address {CS:X4}:{IP:X4}",
-                    parentReturnCS, parentReturnIP);
-            }
-            
-            // Call the Exec overload that saves interrupt vectors to the child PSP
+            // Pass the parent's return address and IVT to Exec so it can:
+            // 1. Save INT 22h/23h/24h to child PSP
+            // 2. Set child PSP's TerminateAddress to parent's return address
             result = _dosProcessManager.Exec(
-                programName,
+                programName, 
                 commandTail,
                 loadType, 
                 paramBlock.EnvironmentSegment,
-                _interruptVectorTable);
+                _interruptVectorTable,
+                parentReturnCS,
+                parentReturnIP);
 
             // For LoadOnly mode, fill in the entry point info in the parameter block
             if (result.Success && loadType == DosExecLoadType.LoadOnly) {
@@ -1617,46 +1599,30 @@ public class DosInt21Handler : InterruptHandler {
                 paramBlock.InitialCS = result.InitialCS;
                 paramBlock.InitialIP = result.InitialIP;
             }
-            
-            // For LoadAndExecute mode, we need to modify the PARENT's interrupt stack so that
-            // when IRET executes, it jumps to the child's entry point instead of
-            // returning to the parent. The parent's stack currently has:
-            //   [parentSP+0] = parent's return IP
-            //   [parentSP+2] = parent's return CS
-            //   [parentSP+4] = FLAGS
-            // We need to replace IP and CS with the child's entry point.
-            if (result.Success && loadType == DosExecLoadType.LoadAndExecute) {
-                // Store the child's entry point and stack info
-                ushort childCS = State.CS;
-                ushort childIP = State.IP;
-                ushort childSS = State.SS;
-                ushort childSP = State.SP;
-                
-                // IMPORTANT: The callback instruction's Execute method calls MoveIpAndSetNextNode
-                // which adds the callback instruction length (4 bytes) to State.IP.
-                // We need to compensate for this by subtracting 4 from childIP so that
-                // after the callback adds 4, we end up at the correct entry point.
-                // The callback instruction is: FE 38 xx xx (4 bytes)
-                const int callbackInstructionLength = 4;
-                ushort adjustedChildIP = (ushort)(childIP - callbackInstructionLength);
-                
-                // Set State to the adjusted child entry point
-                // After MoveIpAndSetNextNode adds 4, we'll be at childIP
-                State.CS = childCS;
-                State.IP = adjustedChildIP;
-                State.SS = childSS;
-                State.SP = childSP;
-                
-                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                    LoggerService.Debug(
-                        "EXEC: Child entry at {ChildCS:X4}:{ChildIP:X4}, adjusted IP={AdjIP:X4}",
-                        childCS, childIP, adjustedChildIP);
-                }
-            }
         }
 
         if (result.Success) {
             SetCarryFlag(false, calledFromVm);
+            
+            // For LoadAndExecute mode, we need to set up the stack so that when
+            // the INT 21h callback's IRET executes, it jumps to the child's entry
+            // point. Since Exec() has already switched SS:SP to the child's stack,
+            // we need to push the child's entry point onto the child's stack.
+            // IRET will pop IP, CS, FLAGS from the current stack (now child's).
+            if (loadType == DosExecLoadType.LoadAndExecute) {
+                // Push the child's entry point onto the child's stack
+                // Stack order for IRET: SP+0=IP, SP+2=CS, SP+4=FLAGS
+                // The child should start with interrupts enabled
+                Stack.Push16((ushort)(State.Flags.FlagRegister | 0x0200)); // FLAGS with IF=1
+                Stack.Push16(State.CS);  // Child's entry CS  
+                Stack.Push16(State.IP);  // Child's entry IP
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                    LoggerService.Debug(
+                        "EXEC: Pushed child entry {ChildCS:X4}:{ChildIP:X4} onto child stack SS:SP={SS:X4}:{SP:X4}",
+                        State.CS, State.IP, State.SS, State.SP);
+                }
+            }
         } else {
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
@@ -1771,19 +1737,14 @@ public class DosInt21Handler : InterruptHandler {
             State.IsRunning = false;
         } else {
             // TerminateProcess set State.CS and State.IP to the parent's return address.
-            // We need to modify the interrupt stack so that when IRET executes,
-            // it jumps to the parent instead of returning to the child.
-            // The stack currently has:
-            //   [SP+0] = child's return IP (where INT 21h was called)
-            //   [SP+2] = child's return CS
-            //   [SP+4] = FLAGS
-            // We need to replace IP and CS with the parent's return address.
-            Stack.Poke16(0, State.IP);  // Replace return IP with parent's IP
-            Stack.Poke16(2, State.CS);  // Replace return CS with parent's CS
+            // We need to poke these onto the stack so that when the INT 21h callback's
+            // IRET executes, it returns to the parent instead of the terminated child.
+            Stack.Poke16(0, State.IP);
+            Stack.Poke16(2, State.CS);
             
             if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                 LoggerService.Debug(
-                    "TERMINATE: Modified stack for parent return at {CS:X4}:{IP:X4}",
+                    "TERMINATE: Modified stack for IRET to parent {CS:X4}:{IP:X4}",
                     State.CS, State.IP);
             }
         }

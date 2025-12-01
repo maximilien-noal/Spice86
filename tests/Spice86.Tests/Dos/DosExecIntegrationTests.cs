@@ -549,7 +549,7 @@ public class DosExecIntegrationTests {
     /// See: https://github.com/FDOS/kernel/blob/master/kernel/task.c
     /// See: https://github.com/dosbox-staging/dosbox-staging/blob/main/src/dos/dos_execute.cpp
     /// </remarks>
-    [Fact(Skip = "Sequential EXEC reveals MCB chain issue - second program allocated at same segment as first")]
+    [Fact]
     public void BatchScenario_TsrThenGame_BothRun() {
         // Create TSR program that hooks INT 21h and stays resident
         byte[] tsrProgram = CreateTsrWithInt21Hook();
@@ -848,9 +848,11 @@ public class DosExecIntegrationTests {
             IOPortDispatcher ioPortDispatcher) : base(state, true, loggerService) {
             ioPortDispatcher.AddIOPortHandler(ResultPort, this);
             ioPortDispatcher.AddIOPortHandler(ChildResultPort, this);
+            Console.WriteLine($"ExecTestHandler: Registered ports 0x{ResultPort:X3} and 0x{ChildResultPort:X3}");
         }
 
         public override void WriteByte(ushort port, byte value) {
+            Console.WriteLine($"ExecTestHandler.WriteByte: port=0x{port:X4}, value=0x{value:X2}");
             AllWrites.Add((port, value));
             if (port == ResultPort) {
                 Results.Add(value);
