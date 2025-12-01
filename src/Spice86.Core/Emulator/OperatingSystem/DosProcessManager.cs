@@ -909,8 +909,10 @@ public class DosProcessManager : DosFileLoader {
             }
 
             // Set up CPU to continue at the return address
+            // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
+            // will add 4 after this handler returns.
             _state.CS = returnAddress.Segment;
-            _state.IP = returnAddress.Offset;
+            _state.IP = (ushort)(returnAddress.Offset - 4);
             
             return true; // Continue execution at parent
         }

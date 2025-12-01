@@ -1089,13 +1089,14 @@ public class DosInt21Handler : InterruptHandler {
                 
                 // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
                 // This was set when the program was loaded and points back to the parent's
-                // continuation point. This is how DOS returns control to the parent process.
+                // continuation point. Subtract 4 from IP because the callback mechanism's
+                // MoveIpAndSetNextNode will add 4 after this handler returns.
                 State.CS = terminateSegment;
-                State.IP = terminateOffset;
+                State.IP = (ushort)(terminateOffset - 4);
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
                     LoggerService.Verbose(
-                        "TSR: Returning to parent at {Segment:X4}:{Offset:X4}, stack {SS:X4}:{SP:X4}",
+                        "TSR: Returning to parent at {Segment:X4}:{Offset:X4} (pre-adjusted), stack {SS:X4}:{SP:X4}",
                         terminateSegment, terminateOffset, State.SS, State.SP);
                 }
                 return;
@@ -1744,20 +1745,10 @@ public class DosInt21Handler : InterruptHandler {
         if (!shouldContinue) {
             // No parent to return to - stop emulation
             State.IsRunning = false;
-        } else {
-            // There's a parent to return to.
-            // TerminateProcess has set CS:IP to the parent's return address.
-            // We need to modify the interrupt stack so that IRET returns there.
-            // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
-            Stack.Poke16(0, State.IP);  // Parent's IP
-            Stack.Poke16(2, State.CS);  // Parent's CS
-            
-            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
-                LoggerService.Debug(
-                    "TERMINATE: Modified stack to return to parent at {CS:X4}:{IP:X4}",
-                    State.CS, State.IP);
-            }
         }
+        // If shouldContinue is true, TerminateProcess has set CS:IP (with -4 adjustment)
+        // to the parent's return address. MoveIpAndSetNextNode will add 4 after this
+        // handler returns, and execution will continue at the parent's correct address.
     }
 
     /// <summary>
