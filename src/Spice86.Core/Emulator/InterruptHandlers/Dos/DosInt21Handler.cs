@@ -33,7 +33,11 @@ public class DosInt21Handler : InterruptHandler {
     private const ushort DosSysVarsSegment = 0x80;
     
     /// <summary>
-    /// Value set in AL after CreateChildPsp (per MS-DOS 4.0 behavior: reg_al=0xf0, "destroyed" value).
+    /// Value set in AL after CreateChildPsp.
+    /// Reference: FreeDOS kernel/task.c child_psp() line 276:
+    ///   r->a.b.l = 0;
+    /// FreeDOS sets AL=0 after creating a child PSP. We use 0xF0 as MS-DOS convention 
+    /// indicates AL is "destroyed" (undefined) after this call.
     /// </summary>
     private const byte CreateChildPspAlDestroyedValue = 0xF0;
 
