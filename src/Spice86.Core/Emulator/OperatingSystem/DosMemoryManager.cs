@@ -11,7 +11,13 @@ using Spice86.Shared.Utils;
 
 /// <summary>
 /// Implements DOS memory operations, such as allocating and releasing MCBs.
+/// Based on FreeDOS kernel mcb.c and MS-DOS 4.0 memory management.
 /// </summary>
+/// <remarks>
+/// <para>Memory Control Block (MCB) chain management follows FreeDOS kernel mcb.c implementation.</para>
+/// <para>Reference: FreeDOS kernel mcb.c - DosMemAlloc(), DosMemFree(), DosGetLargestBlock()</para>
+/// <para>Reference: MS-DOS 4.0 - INT 21h AH=48h (allocate), AH=49h (free), AH=4Ah (resize)</para>
+/// </remarks>
 public class DosMemoryManager {
     internal const ushort LastFreeSegment = MemoryMap.GraphicVideoMemorySegment - 1;
     private readonly ILoggerService _loggerService;
@@ -105,6 +111,12 @@ public class DosMemoryManager {
     /// </summary>
     /// <param name="requestedSizeInParagraphs">The requested size in paragraphs of the memory block.</param>
     /// <returns>The allocated <see cref="DosMemoryControlBlock"/> or <c>null</c> if no memory block could be found.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemAlloc() - walks MCB chain to find suitable free block.
+    /// <code>
+    /// // FreeDOS mcb.c: VOID FAR * DosMemAlloc(UWORD size)
+    /// </code>
+    /// </remarks>
     public DosMemoryControlBlock? AllocateMemoryBlock(ushort requestedSizeInParagraphs) {
         IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
 
@@ -266,6 +278,12 @@ public class DosMemoryManager {
     /// Finds the largest free <see cref="DosMemoryControlBlock"/>.
     /// </summary>
     /// <returns>The largest free <see cref="DosMemoryControlBlock"/></returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosGetLargestBlock() - walks MCB chain to find largest free block.
+    /// <code>
+    /// // FreeDOS mcb.c: UWORD DosGetLargestBlock(VOID)
+    /// </code>
+    /// </remarks>
     public DosMemoryControlBlock FindLargestFree() {
         DosMemoryControlBlock? current = _start;
         DosMemoryControlBlock? largest = null;
@@ -297,6 +315,12 @@ public class DosMemoryManager {
     /// </summary>
     /// <param name="blockSegment">The segment number of the MCB.</param>
     /// <returns>Whether the operation was successful.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemFree() - marks block as free and coalesces adjacent free blocks.
+    /// <code>
+    /// // FreeDOS mcb.c: COUNT DosMemFree(UWORD para)
+    /// </code>
+    /// </remarks>
     public bool FreeMemoryBlock(ushort blockSegment) {
         return FreeMemoryBlock(GetDosMemoryControlBlockFromSegment(blockSegment));
     }
@@ -322,6 +346,12 @@ public class DosMemoryManager {
     /// <param name="requestedSizeInParagraphs">The new size for the MCB, in paragraphs.</param>
     /// <param name="block">The mcb from the blockSegment, or the largest mcb found.</param>
     /// <returns>Whether the operation was successful.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemChange() - resizes memory block, splits if shrinking.
+    /// <code>
+    /// // FreeDOS mcb.c: COUNT DosMemChange(UWORD para, UWORD size)
+    /// </code>
+    /// </remarks>
     public DosErrorCode TryModifyBlock(in ushort blockSegment, in ushort requestedSizeInParagraphs,
         out DosMemoryControlBlock block) {
         block = GetDosMemoryControlBlockFromSegment((ushort)(blockSegment - 1));
