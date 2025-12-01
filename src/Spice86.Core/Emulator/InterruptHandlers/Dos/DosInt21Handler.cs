@@ -1538,6 +1538,12 @@ public class DosInt21Handler : InterruptHandler {
                 ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
         }
 
+        // For LoadAndExecute mode, save the parent's return address from the interrupt stack.
+        // The INT instruction pushed FLAGS, CS, IP onto the stack:
+        // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
+        ushort parentReturnIP = Stack.Peek16(0);
+        ushort parentReturnCS = Stack.Peek16(2);
+
         // Read the parameter block from ES:BX
         uint paramBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
 
@@ -1590,6 +1596,42 @@ public class DosInt21Handler : InterruptHandler {
 
         if (result.Success) {
             SetCarryFlag(false, calledFromVm);
+            
+            // For LoadAndExecute mode, we need to modify the interrupt stack so that
+            // when IRET executes, it transfers control to the child's entry point.
+            // The child's CS:IP has been set by Exec(), so we poke them onto the stack.
+            if (loadType == DosExecLoadType.LoadAndExecute) {
+                // Save parent's return address in child's PSP for later termination
+                DosProgramSegmentPrefix? childPsp = _dosPspTracker.GetCurrentPsp();
+                if (childPsp is not null) {
+                    // Save parent return address as terminate address (offset 0x0A in PSP)
+                    // This is where INT 21h AH=4Ch will return to
+                    childPsp.TerminateAddress = ((uint)parentReturnCS << 16) | parentReturnIP;
+                    
+                    // Save current INT 23h and INT 24h vectors to child PSP
+                    childPsp.BreakAddress = ((uint)_interruptVectorTable[0x23].Segment << 16) | 
+                                            _interruptVectorTable[0x23].Offset;
+                    childPsp.CriticalErrorAddress = ((uint)_interruptVectorTable[0x24].Segment << 16) | 
+                                                    _interruptVectorTable[0x24].Offset;
+                    
+                    if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                        LoggerService.Debug(
+                            "EXEC: Saved parent return {ParentCS:X4}:{ParentIP:X4} to child PSP terminate address",
+                            parentReturnCS, parentReturnIP);
+                    }
+                }
+                
+                // Modify the interrupt stack to return to child's entry point
+                // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
+                Stack.Poke16(0, State.IP);  // Child's IP
+                Stack.Poke16(2, State.CS);  // Child's CS
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                    LoggerService.Debug(
+                        "EXEC: Modified stack to return to child at {ChildCS:X4}:{ChildIP:X4}",
+                        State.CS, State.IP);
+                }
+            }
         } else {
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
@@ -1702,9 +1744,20 @@ public class DosInt21Handler : InterruptHandler {
         if (!shouldContinue) {
             // No parent to return to - stop emulation
             State.IsRunning = false;
+        } else {
+            // There's a parent to return to.
+            // TerminateProcess has set CS:IP to the parent's return address.
+            // We need to modify the interrupt stack so that IRET returns there.
+            // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
+            Stack.Poke16(0, State.IP);  // Parent's IP
+            Stack.Poke16(2, State.CS);  // Parent's CS
+            
+            if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                LoggerService.Debug(
+                    "TERMINATE: Modified stack to return to parent at {CS:X4}:{IP:X4}",
+                    State.CS, State.IP);
+            }
         }
-        // If shouldContinue is true, the CPU state (CS:IP) was set to the parent's
-        // return address by TerminateProcess, so execution will continue there.
     }
 
     /// <summary>
