@@ -473,10 +473,13 @@ public class DosProcessManager : DosFileLoader {
             _state.SS = ss;
             _state.SP = sp;
             
-            // For child processes (not the first program), subtract 4 from IP because the 
-            // callback instruction's Execute method calls MoveIpAndSetNextNode after our
-            // handler returns, which adds 4 to State.IP.
-            // The first program doesn't need this adjustment since it's not loaded via callback.
+            // For child processes (not the first program), subtract 4 from IP.
+            // When INT 21h AH=4Bh (EXEC) loads a child via the callback mechanism,
+            // the Grp4Callback instruction's Execute method calls MoveIpAndSetNextNode
+            // after the handler returns, which adds 4 (the callback instruction length)
+            // to State.IP. By pre-subtracting 4, the child starts at the correct entry point.
+            // The first program is loaded directly by ProgramExecutor, not via callback,
+            // so it doesn't need this adjustment.
             ushort adjustedIP = isFirstProgram ? ip : (ushort)(ip - 4);
             SetEntryPoint(cs, adjustedIP);
             _state.InterruptFlag = true;

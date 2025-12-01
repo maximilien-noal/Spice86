@@ -1621,14 +1621,15 @@ public class DosInt21Handler : InterruptHandler {
                     }
                 }
                 
-                // The child will execute via MoveIpAndSetNextNode after this callback returns.
-                // DosProcessManager.SetEntryPoint was called with (ip - 4), so after MoveIpAndSetNextNode
-                // adds 4, State.IP will be the correct entry point and execution continues there.
+                // The child will execute via the CFG CPU's next node mechanism.
+                // DosProcessManager.SetEntryPoint was called with (ip - 4) to compensate for
+                // the callback instruction length. After MoveIpAndSetNextNode adds 4 to State.IP,
+                // it will be the correct entry point and execution continues there.
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                     LoggerService.Debug(
-                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4} (adjusted for callback mechanism)",
-                        State.CS, (ushort)(State.IP + 4));  // +4 because IP is currently entry-4
+                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4} (IP pre-adjusted by -4 for callback)",
+                        State.CS, (ushort)(State.IP + 4));
                 }
             }
         } else {
