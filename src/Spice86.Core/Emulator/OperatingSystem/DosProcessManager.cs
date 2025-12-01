@@ -494,7 +494,16 @@ public class DosProcessManager : DosFileLoader {
             _state.ES = pspSegment;
             _state.SS = ss;
             _state.SP = sp;
-            SetEntryPoint(cs, ip);
+            
+            // When called from INT 21h, the callback instruction's Execute() method 
+            // calls MoveIpAndSetNextNode() after returning, which adds the callback
+            // instruction length (4 bytes) to State.IP. To ensure the child starts
+            // at the correct entry point, we set IP to (entry - 4) so that after
+            // the callback adds 4, we get the intended entry point.
+            // This is consistent with how the callback mechanism works for all interrupts.
+            const ushort CallbackInstructionLength = 4;
+            ushort adjustedIp = (ushort)(ip - CallbackInstructionLength);
+            SetEntryPoint(cs, adjustedIp);
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -606,12 +615,6 @@ public class DosProcessManager : DosFileLoader {
         ushort programEntryPointSegment = _pspTracker.GetProgramEntryPointSegment();
         uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(programEntryPointSegment, ComOffset);
         _memory.LoadData(physicalStartAddress, com);
-        
-        if (_loggerService.IsEnabled(LogEventLevel.Information)) {
-            _loggerService.Information(
-                "LoadComFileInternal: Loaded {Size} bytes at physical {PhysAddr:X5}, entry={Seg:X4}:{Off:X4}",
-                com.Length, physicalStartAddress, programEntryPointSegment, ComOffset);
-        }
 
         cs = programEntryPointSegment;
         ip = ComOffset;

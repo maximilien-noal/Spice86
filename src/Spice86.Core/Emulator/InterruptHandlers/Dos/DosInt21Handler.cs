@@ -1604,26 +1604,20 @@ public class DosInt21Handler : InterruptHandler {
         if (result.Success) {
             SetCarryFlag(false, calledFromVm);
             
-            // For LoadAndExecute mode, we need to set up the stack so that when
-            // the INT 21h callback's IRET executes, it jumps to the child's entry
-            // point. Since Exec() has already switched SS:SP to the child's stack,
-            // we need to push the child's entry point onto the child's stack.
-            // IRET will pop IP, CS, FLAGS from the current stack (now child's).
-            if (loadType == DosExecLoadType.LoadAndExecute) {
-                // Push the child's entry point onto the child's stack
-                // Stack order for IRET: SP+0=IP, SP+2=CS, SP+4=FLAGS
-                // The child should start with interrupts enabled
-                Stack.Push16((ushort)(State.Flags.FlagRegister | 0x0200)); // FLAGS with IF=1
-                Stack.Push16(State.CS);  // Child's entry CS  
-                Stack.Push16(State.IP);  // Child's entry IP
-                
-                if (LoggerService.IsEnabled(LogEventLevel.Information)) {
-                    LoggerService.Information(
-                        "EXEC: Pushed child entry {ChildCS:X4}:{ChildIP:X4} onto child stack SS:SP={SS:X4}:{SP:X4}",
-                        State.CS, State.IP, State.SS, State.SP);
-                }
-            }
+            // For LoadAndExecute mode, Exec() has already set CS:IP to the child's entry point.
+            // The callback mechanism will handle the transition - no additional stack manipulation needed.
+            // The child will start executing at its entry point when the current interrupt returns.
+            //
+            // Note: We do NOT push anything onto the stack here. The child's PSP already has:
+            // - TerminateAddress (INT 22h) pointing to parent's return address
+            // - The parent's SS:SP saved for TSR use
+            // The child will use INT 21h AH=4Ch to terminate, which handles returning to parent.
         } else {
+            SetCarryFlag(true, calledFromVm);
+            State.AX = (ushort)result.ErrorCode;
+            LogDosError(calledFromVm);
+        }
+    }
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
             LogDosError(calledFromVm);
