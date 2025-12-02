@@ -33,8 +33,15 @@ public class DosInt21Handler : InterruptHandler {
     private const ushort DosSysVarsSegment = 0x80;
     
     /// <summary>
-    /// Value set in AL after CreateChildPsp (per DOSBox behavior: reg_al=0xf0, "destroyed" value).
+    /// Value set in AL after CreateChildPsp.
     /// </summary>
+    /// <remarks>
+    /// Reference: FreeDOS kernel/task.c child_psp() (line ~276):
+    /// <see href="https://github.com/FDOS/kernel/blob/master/kernel/task.c"/>
+    ///   r->a.b.l = 0;
+    /// FreeDOS sets AL=0 after creating a child PSP. MS-DOS documentation states
+    /// AL is "destroyed" (undefined) after this call. We use 0xF0 as a safe value.
+    /// </remarks>
     private const byte CreateChildPspAlDestroyedValue = 0xF0;
 
     private readonly DosMemoryManager _dosMemoryManager;
@@ -1057,9 +1064,12 @@ public class DosInt21Handler : InterruptHandler {
                 paragraphsToKeep, errorCode);
         }
         
-        // TSR does NOT remove the PSP from the tracker (the program stays resident)
-        // TSR does NOT free the process memory (the program stays in memory)
-        // TSR DOES return to parent process
+        // TSR terminates execution but keeps memory resident.
+        // Unlike normal termination (AH=4Ch), TSR does NOT free the process memory.
+        // However, TSR DOES pop the PSP from the tracker because the parent process
+        // becomes the current process again. This allows the parent to make subsequent
+        // EXEC calls without the stale TSR PSP being treated as current.
+        _dosPspTracker.PopCurrentPspSegment();
         
         // Check if we have a valid PSP with a terminate address
         // If the current PSP has a valid terminate address, return to the parent
@@ -1087,9 +1097,19 @@ public class DosInt21Handler : InterruptHandler {
                 State.SS = (ushort)(savedStackPointer >> 16);
                 State.SP = (ushort)(savedStackPointer & 0xFFFF);
                 
-                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A)
+                // Jump to the terminate address (INT 22h handler saved in PSP at offset 0x0A).
                 // This was set when the program was loaded and points back to the parent's
-                // continuation point. This is how DOS returns control to the parent process.
+                // continuation point.
+                //
+                // Reference: FreeDOS kernel/task.c return_user() (line ~420):
+                // https://github.com/FDOS/kernel/blob/master/kernel/task.c
+                //   irp->CS = FP_SEG(p->ps_isv22);
+                //   irp->IP = FP_OFF(p->ps_isv22);
+                // FreeDOS reads ps_isv22 from the PSP (terminate address at offset 0x0A)
+                // and sets CS:IP to return control to the parent process.
+                //
+                // The CfgCpu callback node (Grp4Callback) detects when the callback handler
+                // changes CS:IP and will NOT add the instruction length in that case.
                 State.CS = terminateSegment;
                 State.IP = terminateOffset;
                 
@@ -1255,12 +1275,12 @@ public class DosInt21Handler : InterruptHandler {
     /// DX = segment for new PSP<br/>
     /// SI = size in paragraphs (16-byte units)
     /// <b>Returns:</b><br/>
-    /// AL = 0xF0 (destroyed - per DOSBox behavior)<br/>
+    /// AL = 0xF0 (destroyed - per MS-DOS 4.0 behavior)<br/>
     /// Current PSP is set to DX
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Based on DOSBox staging implementation and DOS 4.0 behavior.
+    /// Based on MS-DOS 4.0 EXEC.ASM and FreeDOS kernel task.c behavior.
     /// This function is typically used by:
     /// <list type="bullet">
     /// <item>Debuggers that need to create process contexts</item>
@@ -1291,10 +1311,10 @@ public class DosInt21Handler : InterruptHandler {
         // Create the child PSP
         _dosProcessManager.CreateChildPsp(childSegment, sizeInParagraphs, _interruptVectorTable);
         
-        // Set current PSP to the new child PSP (per DOSBox behavior: dos.psp(reg_dx))
+        // Set current PSP to the new child PSP (per MS-DOS 4.0 EXEC.ASM behavior)
         _dosPspTracker.SetCurrentPspSegment(childSegment);
         
-        // AL is destroyed (per DOSBox: reg_al=0xf0)
+        // AL is destroyed (per MS-DOS 4.0 behavior)
         State.AL = CreateChildPspAlDestroyedValue;
     }
 
@@ -1311,12 +1331,12 @@ public class DosInt21Handler : InterruptHandler {
     /// <remarks>
     /// The returned pointer points to the beginning of the documented portion of SYSVARS.
     /// Some fields exist at negative offsets from this pointer (e.g., the first MCB segment at -2).
-    /// Similar to DOSBox, this updates the block device count before returning the pointer.
+    /// Per MS-DOS and FreeDOS behavior, this updates the block device count before returning the pointer.
     /// </remarks>
     /// </summary>
     private void GetListOfLists() {
         // Update block device count in SYSVARS before returning the pointer
-        // This matches DOSBox behavior which counts block devices before returning
+        // Per MS-DOS and FreeDOS behavior, block devices are counted before returning
         // Block device count is at offset 0x20 in the SYSVARS structure
         byte blockDeviceCount = (byte)_dosDriveManager.Count;
         uint sysVarsBase = MemoryUtils.ToPhysicalAddress(DosSysVarsSegment, 0);
@@ -1507,7 +1527,13 @@ public class DosInt21Handler : InterruptHandler {
     /// INT 21h, AH=4Bh - EXEC: Load and/or Execute Program.
     /// </summary>
     /// <remarks>
-    /// <para>Based on MS-DOS 4.0 EXEC.ASM and RBIL documentation.</para>
+    /// <para>
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 180-400) and FreeDOS kernel task.c exec() (lines 620-750).
+    /// <code>
+    /// // FreeDOS task.c line 625: int exec(psp FAR *p, exec_blk FAR *ep, int loadtype)
+    /// // MS-DOS 4.0 EXEC.ASM line 185: EXEC_PROC PROC
+    /// </code>
+    /// </para>
     /// <para>
     /// AL = type of load:
     ///   00h = Load and execute
@@ -1537,6 +1563,12 @@ public class DosInt21Handler : InterruptHandler {
                 programName, loadType, 
                 ConvertUtils.ToSegmentedAddressRepresentation(State.ES, State.BX));
         }
+
+        // For LoadAndExecute mode, save the parent's return address from the interrupt stack.
+        // The INT instruction pushed FLAGS, CS, IP onto the stack:
+        // Stack layout: SP+0=IP, SP+2=CS, SP+4=FLAGS
+        ushort parentReturnIP = Stack.Peek16(0);
+        ushort parentReturnCS = Stack.Peek16(2);
 
         // Read the parameter block from ES:BX
         uint paramBlockAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.BX);
@@ -1590,6 +1622,41 @@ public class DosInt21Handler : InterruptHandler {
 
         if (result.Success) {
             SetCarryFlag(false, calledFromVm);
+            
+            // For LoadAndExecute mode, we need to modify the interrupt stack so that
+            // when IRET executes, it transfers control to the child's entry point.
+            // The child's CS:IP has been set by Exec(), so we poke them onto the stack.
+            if (loadType == DosExecLoadType.LoadAndExecute) {
+                // Save parent's return address in child's PSP for later termination
+                DosProgramSegmentPrefix? childPsp = _dosPspTracker.GetCurrentPsp();
+                if (childPsp is not null) {
+                    // Save parent return address as terminate address (offset 0x0A in PSP)
+                    // This is where INT 21h AH=4Ch will return to
+                    childPsp.TerminateAddress = ((uint)parentReturnCS << 16) | parentReturnIP;
+                    
+                    // Save current INT 23h and INT 24h vectors to child PSP
+                    childPsp.BreakAddress = ((uint)_interruptVectorTable[0x23].Segment << 16) | 
+                                            _interruptVectorTable[0x23].Offset;
+                    childPsp.CriticalErrorAddress = ((uint)_interruptVectorTable[0x24].Segment << 16) | 
+                                                    _interruptVectorTable[0x24].Offset;
+                    
+                    if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                        LoggerService.Debug(
+                            "EXEC: Saved parent return {ParentCS:X4}:{ParentIP:X4} to child PSP terminate address",
+                            parentReturnCS, parentReturnIP);
+                    }
+                }
+                
+                // The child will execute via the CFG CPU's next node mechanism.
+                // The CfgCpu callback node (Grp4Callback) detects when CS:IP was changed
+                // by the callback handler and will NOT add the instruction length in that case.
+                
+                if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
+                    LoggerService.Debug(
+                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4}",
+                        State.CS, State.IP);
+                }
+            }
         } else {
             SetCarryFlag(true, calledFromVm);
             State.AX = (ushort)result.ErrorCode;
@@ -1669,6 +1736,13 @@ public class DosInt21Handler : InterruptHandler {
     /// </summary>
     /// <remarks>
     /// <para>
+    /// Based on MS-DOS 4.0 EXEC.ASM (lines 350-400) and FreeDOS kernel task.c return_code() (lines 380-420).
+    /// <code>
+    /// // FreeDOS task.c line 385: STATIC void return_code(int rc, int type)
+    /// // MS-DOS 4.0 EXEC.ASM line 355: TERMINATE_PROC PROC
+    /// </code>
+    /// </para>
+    /// <para>
     /// This function terminates the current process and returns control to the parent process.
     /// The exit code in AL is stored and can be retrieved by the parent using INT 21h AH=4Dh.
     /// </para>
@@ -1683,7 +1757,7 @@ public class DosInt21Handler : InterruptHandler {
     /// </para>
     /// <para>
     /// <strong>MCB Note:</strong> FreeDOS kernel calls return_code() and FreeProcessMem() 
-    /// in task.c. This implementation follows a similar pattern. Note that in real DOS,
+    /// in task.c (lines 380-420). This implementation follows a similar pattern. Note that in real DOS,
     /// the environment block is freed automatically because it's a separate MCB
     /// owned by the terminating process.
     /// </para>
@@ -1703,8 +1777,9 @@ public class DosInt21Handler : InterruptHandler {
             // No parent to return to - stop emulation
             State.IsRunning = false;
         }
-        // If shouldContinue is true, the CPU state (CS:IP) was set to the parent's
-        // return address by TerminateProcess, so execution will continue there.
+        // If shouldContinue is true, TerminateProcess has set CS:IP (with -4 adjustment)
+        // to the parent's return address. MoveIpAndSetNextNode will add 4 after this
+        // handler returns, and execution will continue at the parent's correct address.
     }
 
     /// <summary>

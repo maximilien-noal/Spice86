@@ -12,6 +12,25 @@ using Spice86.Shared.Utils;
 /// <summary>
 /// Implements DOS memory operations, such as allocating and releasing MCBs.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Memory Control Block (MCB) chain management follows the FreeDOS kernel implementation.
+/// </para>
+/// <para>
+/// <strong>FreeDOS Kernel (kernel/mcb.c)</strong>:
+/// <see href="https://github.com/FDOS/kernel/blob/master/kernel/mcb.c"/>
+/// - DosMemAlloc() (line ~100): Allocates memory block from MCB chain
+/// - DosMemFree() (line ~200): Frees memory block and coalesces adjacent free blocks
+/// - DosMemChange() (line ~250): Resizes memory block, splits if shrinking
+/// - DosGetLargestBlock() (line ~300): Finds largest free block in MCB chain
+/// </para>
+/// <para>
+/// <strong>MS-DOS 4.0</strong>:
+/// - INT 21h AH=48h: Allocate Memory Block
+/// - INT 21h AH=49h: Free Memory Block
+/// - INT 21h AH=4Ah: Resize Memory Block
+/// </para>
+/// </remarks>
 public class DosMemoryManager {
     internal const ushort LastFreeSegment = MemoryMap.GraphicVideoMemorySegment - 1;
     private readonly ILoggerService _loggerService;
@@ -105,6 +124,12 @@ public class DosMemoryManager {
     /// </summary>
     /// <param name="requestedSizeInParagraphs">The requested size in paragraphs of the memory block.</param>
     /// <returns>The allocated <see cref="DosMemoryControlBlock"/> or <c>null</c> if no memory block could be found.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemAlloc() - walks MCB chain to find suitable free block.
+    /// <code>
+    /// // FreeDOS mcb.c: VOID FAR * DosMemAlloc(UWORD size)
+    /// </code>
+    /// </remarks>
     public DosMemoryControlBlock? AllocateMemoryBlock(ushort requestedSizeInParagraphs) {
         IEnumerable<DosMemoryControlBlock> candidates = FindCandidatesForAllocation(requestedSizeInParagraphs);
 
@@ -266,6 +291,12 @@ public class DosMemoryManager {
     /// Finds the largest free <see cref="DosMemoryControlBlock"/>.
     /// </summary>
     /// <returns>The largest free <see cref="DosMemoryControlBlock"/></returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosGetLargestBlock() - walks MCB chain to find largest free block.
+    /// <code>
+    /// // FreeDOS mcb.c: UWORD DosGetLargestBlock(VOID)
+    /// </code>
+    /// </remarks>
     public DosMemoryControlBlock FindLargestFree() {
         DosMemoryControlBlock? current = _start;
         DosMemoryControlBlock? largest = null;
@@ -297,6 +328,12 @@ public class DosMemoryManager {
     /// </summary>
     /// <param name="blockSegment">The segment number of the MCB.</param>
     /// <returns>Whether the operation was successful.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemFree() - marks block as free and coalesces adjacent free blocks.
+    /// <code>
+    /// // FreeDOS mcb.c: COUNT DosMemFree(UWORD para)
+    /// </code>
+    /// </remarks>
     public bool FreeMemoryBlock(ushort blockSegment) {
         return FreeMemoryBlock(GetDosMemoryControlBlockFromSegment(blockSegment));
     }
@@ -322,6 +359,12 @@ public class DosMemoryManager {
     /// <param name="requestedSizeInParagraphs">The new size for the MCB, in paragraphs.</param>
     /// <param name="block">The mcb from the blockSegment, or the largest mcb found.</param>
     /// <returns>Whether the operation was successful.</returns>
+    /// <remarks>
+    /// Based on FreeDOS kernel mcb.c DosMemChange() - resizes memory block, splits if shrinking.
+    /// <code>
+    /// // FreeDOS mcb.c: COUNT DosMemChange(UWORD para, UWORD size)
+    /// </code>
+    /// </remarks>
     public DosErrorCode TryModifyBlock(in ushort blockSegment, in ushort requestedSizeInParagraphs,
         out DosMemoryControlBlock block) {
         block = GetDosMemoryControlBlockFromSegment((ushort)(blockSegment - 1));
@@ -634,6 +677,15 @@ public class DosMemoryManager {
 
     private DosMemoryControlBlock GetDosMemoryControlBlockFromSegment(ushort blockSegment) {
         return new DosMemoryControlBlock(_memory, MemoryUtils.ToPhysicalAddress(blockSegment, 0));
+    }
+
+    /// <summary>
+    /// Gets the MCB at the specified segment address.
+    /// </summary>
+    /// <param name="mcbSegment">The segment where the MCB is located.</param>
+    /// <returns>The MCB at the specified segment.</returns>
+    public DosMemoryControlBlock GetMcbAtSegment(ushort mcbSegment) {
+        return GetDosMemoryControlBlockFromSegment(mcbSegment);
     }
 
     private bool JoinBlocks(DosMemoryControlBlock? block, bool onlyIfFree) {

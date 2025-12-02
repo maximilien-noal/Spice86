@@ -47,7 +47,10 @@ public class Spice86Creator {
             OverrideSupplier = overrideSupplier,
             Xms = enableXms,
             Ems = enableEms,
-            CyclesBudgeter = new StaticCyclesBudgeter(staticCycleBudget)
+            CyclesBudgeter = new StaticCyclesBudgeter(staticCycleBudget),
+            // Set ProgramEntryPointSegment to match CLI default (0x170)
+            // This avoids wraparound issues when calculating InitialPspSegment (ProgramEntryPointSegment - 0x10)
+            ProgramEntryPointSegment = 0x170
         };
 
         _maxCycles = maxCycles;
