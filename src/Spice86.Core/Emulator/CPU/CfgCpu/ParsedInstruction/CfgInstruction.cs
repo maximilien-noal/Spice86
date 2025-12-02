@@ -47,7 +47,7 @@ public abstract class CfgInstruction : CfgNode, ICfgInstruction {
     /// To call after constructor to calculate instruction length
     /// </summary>
     private void UpdateLength() {
-        Length = (byte)FieldsInOrder.Sum(field => field.Length);
+        Length = (byte)FieldsInOrder.Sum(x => x.Length);
     }
 
     /// <summary>

@@ -65,7 +65,7 @@ public sealed class Machine : IDisposable {
     /// The emulated CPU state.
     /// </summary>
     public State CpuState { get; }
-
+    
     /// <summary>
     /// The in memory stack used by the CPU
     /// </summary>
@@ -92,7 +92,7 @@ public sealed class Machine : IDisposable {
     public Joystick Joystick { get; }
 
     /// <summary>
-    /// An IBM PC Keyboard (PS/2 Controller)
+    /// Gets the controller used to manage keyboard input via the Intel 8042 interface.
     /// </summary>
     public Intel8042Controller KeyboardController { get; }
 
@@ -315,7 +315,6 @@ public sealed class Machine : IDisposable {
             if (disposing) {
                 MidiDevice.Dispose();
                 SoundBlaster.Dispose();
-                GravisUltraSound.Dispose();
                 OPL3FM.Dispose();
                 PcSpeaker.Dispose();
                 SoftwareMixer.Dispose();

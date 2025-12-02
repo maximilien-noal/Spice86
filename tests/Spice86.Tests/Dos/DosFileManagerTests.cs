@@ -26,9 +26,8 @@ using Spice86.Core.Emulator.OperatingSystem.Enums;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
 using Spice86.Core.Emulator.VM;
 using Spice86.Core.Emulator.VM.Breakpoint;
-using Spice86.Logging;
+using Spice86.Core.Emulator.VM.CpuSpeedLimit;
 using Spice86.Shared.Interfaces;
-using Spice86.ViewModels;
 
 using Xunit;
 
@@ -134,7 +133,7 @@ public class DosFileManagerTests {
             loggerService, executionFlowRecorder);
 
         IInstructionExecutor instructionExecutor = cpu;
-        IFunctionHandlerProvider functionHandlerProvider = cpu;
+        IFunctionHandlerProvider functionHandlerProvider =  cpu;
 
         SoftwareMixer softwareMixer = new(loggerService, configuration.AudioEngine);
         PcSpeaker pcSpeaker = new(softwareMixer, state, ioPortDispatcher, pauseHandler, loggerService, dualPic,
@@ -155,31 +154,27 @@ public class DosFileManagerTests {
             biosDataArea, vgaRom,
             bootUpInTextMode: configuration.InitializeDOS is true);
 
-        // For testing purposes, create minimal keyboard setup
-        SystemBiosInt15Handler systemBiosInt15Handler = new SystemBiosInt15Handler(configuration, memory,
-            functionHandlerProvider, stack, state, a20Gate, biosDataArea, dualPic, ioPortDispatcher,
-            initializeResetVector: false, loggerService);
 
-        using HeadlessGui headlessGui = new HeadlessGui();
-        using InputEventQueue inputEventQueue = new InputEventQueue(headlessGui, headlessGui);
-        Intel8042Controller keyboardController = new Intel8042Controller(
+        InputEventHub inputEventQueue = new();
+        SystemBiosInt15Handler systemBiosInt15Handler = new(configuration, memory,
+            functionHandlerProvider, stack, state, a20Gate,
+            biosDataArea, dualPic, ioPortDispatcher, configuration.InitializeDOS is not false, loggerService);
+        Intel8042Controller intel8042Controller = new(
             state, ioPortDispatcher, a20Gate, dualPic,
             configuration.FailOnUnhandledPort, pauseHandler, loggerService, inputEventQueue);
-
         BiosKeyboardBuffer biosKeyboardBuffer = new BiosKeyboardBuffer(memory, biosDataArea);
-        BiosKeyboardInt9Handler biosKeyboardInt9Handler =
-            new BiosKeyboardInt9Handler(memory, stack, state, functionHandlerProvider,
-            dualPic, systemBiosInt15Handler, keyboardController, biosKeyboardBuffer, loggerService);
-
+        BiosKeyboardInt9Handler biosKeyboardInt9Handler = new(memory, biosDataArea,
+            stack, state, functionHandlerProvider, dualPic, systemBiosInt15Handler,
+            intel8042Controller, biosKeyboardBuffer, loggerService);
         KeyboardInt16Handler keyboardInt16Handler = new KeyboardInt16Handler(
             memory, biosDataArea, functionHandlerProvider, stack, state, loggerService,
-            biosKeyboardBuffer);
+        biosKeyboardInt9Handler.BiosKeyboardBuffer);
 
-        DosTables dosTables = new DosTables();
+
         Dos dos = new Dos(configuration, memory, functionHandlerProvider, stack, state,
             biosKeyboardBuffer, keyboardInt16Handler, biosDataArea,
             vgaFunctionality, new Dictionary<string, string> { { "BLASTER", soundBlaster.BlasterString } },
-            loggerService, null!, dosTables);  // ioPortDispatcher
+            loggerService, ioPortDispatcher, new DosTables());
 
         return dos.FileManager;
     }
