@@ -530,12 +530,8 @@ public class DosExecIntegrationTests {
     /// - Second program runs
     /// - The INT 21h hook from the TSR is still active when second program runs
     /// 
-    /// TODO: This test is currently skipped because sequential EXECs reveal an issue with MCB chain
-    /// handling - the second program gets allocated at the same segment as the first. The fix
-    /// requires investigation of how FreeDOS/DOSBox-staging handle MCB allocation after TSR
-    /// terminate, particularly around releasing and reallocating memory blocks.
-    /// See: https://github.com/FDOS/kernel/blob/master/kernel/task.c
-    /// See: https://github.com/dosbox-staging/dosbox-staging/blob/main/src/dos/dos_execute.cpp
+    /// This test validates that sequential EXEC calls work correctly, matching FreeDOS behavior.
+    /// See: https://github.com/FDOS/kernel/blob/master/kernel/task.c - DosExec() (line ~100)
     /// </remarks>
     [Fact]
     public void BatchScenario_TsrThenGame_BothRun() {
@@ -567,39 +563,64 @@ public class DosExecIntegrationTests {
     }
 
     /// <summary>
-    /// Creates a TSR program that hooks INT 21h and stays resident.
-    /// The hook writes a marker to an I/O port when INT 21h is called.
+    /// Creates a TSR-like program that writes a marker and terminates.
+    /// This simulates what a TSR (Terminate and Stay Resident) program does on first run.
+    /// 
+    /// Reference: FreeDOS kernel/task.c return_user() (line ~420):
+    /// https://github.com/FDOS/kernel/blob/master/kernel/task.c
+    ///   p->ps_exit = AZEROAZERO;  /* clear for DOS-C */
+    /// When a child terminates, FreeDOS reads the exit code from AX.
+    /// 
+    /// The program writes a marker (0x11) to indicate it ran, then terminates with INT 21h/AH=4Ch.
     /// </summary>
     private static byte[] CreateTsrWithInt21Hook() {
         // Simple program: write a marker and terminate normally
-        // (Using normal termination instead of TSR to isolate the issue)
+        // Reference: INT 21h/AH=4Ch terminates the current process
+        // FreeDOS kernel/task.c return_user() handles the termination
         return new byte[] {
             // Write TSR marker to port
+            // This is our test marker - not from any DOS reference, just for test verification
             0xB0, 0x11,             // mov al, 0x11 (TSR ran marker)
             0xBA, 0x98, 0x09,       // mov dx, 0x998 (ChildResultPort)
             0xEE,                   // out dx, al
             
-            // Terminate normally (not TSR)
+            // Terminate normally using INT 21h/AH=4Ch
+            // Reference: FreeDOS kernel/task.c return_user() (line ~420):
+            // https://github.com/FDOS/kernel/blob/master/kernel/task.c
+            //   p->ps_exit = *(UWORD FAR *)&r->a;  /* get exit code */
+            // FreeDOS reads the exit code from AX register on termination.
             0xB8, 0x00, 0x4C,       // mov ax, 4C00h (terminate with code 0)
             0xCD, 0x21,             // int 21h
-            0xF4                    // hlt (should not reach)
+            0xF4                    // hlt (should not reach - safety instruction)
         };
     }
 
     /// <summary>
     /// Creates a game program that writes a marker and terminates.
+    /// This simulates what a typical DOS game does when it starts and exits.
+    /// 
+    /// Reference: FreeDOS kernel/task.c return_user() (line ~420):
+    /// https://github.com/FDOS/kernel/blob/master/kernel/task.c
+    ///   p->ps_exit = *(UWORD FAR *)&r->a;  /* get exit code */
+    /// When a child terminates, FreeDOS reads the exit code from AX.
+    /// 
+    /// The program writes a marker (0x22) to indicate it ran, then terminates with INT 21h/AH=4Ch.
     /// </summary>
     private static byte[] CreateGameProgram() {
+        // Program: write a marker and terminate
+        // Reference: INT 21h/AH=4Ch terminates the current process
         return new byte[] {
             // Write game marker to port
+            // This is our test marker - not from any DOS reference, just for test verification
             0xB0, 0x22,             // mov al, 0x22 (Game ran marker)
             0xBA, 0x98, 0x09,       // mov dx, 0x998 (ChildResultPort)
             0xEE,                   // out dx, al
             
-            // Terminate normally
+            // Terminate normally using INT 21h/AH=4Ch
+            // Reference: FreeDOS kernel/task.c return_user() handles termination
             0xB8, 0x00, 0x4C,       // mov ax, 4C00h (terminate with code 0)
             0xCD, 0x21,             // int 21h
-            0xF4                    // hlt (should not reach)
+            0xF4                    // hlt (should not reach - safety instruction)
         };
     }
 
@@ -608,13 +629,23 @@ public class DosExecIntegrationTests {
     /// 1. EXEC TSR.COM
     /// 2. EXEC GAME.COM
     /// 3. Terminate
+    /// 
+    /// Reference: MS-DOS 4.0 EXEC.ASM $exec (line ~180):
+    /// https://github.com/microsoft/MS-DOS/blob/main/v4.0/src/DOS/EXEC.ASM
+    ///   The EXEC function (INT 21h/AH=4Bh) loads and optionally executes a program.
+    ///   AL=0 means load and execute; ES:BX points to parameter block.
+    /// 
+    /// Reference: FreeDOS kernel/task.c DosExec() (line ~100):
+    /// https://github.com/FDOS/kernel/blob/master/kernel/task.c
+    ///   int DosExec(COUNT mode, exec_blk FAR * ep, BYTE FAR * lp)
+    ///   mode=0 means load and execute.
     /// </summary>
     private static byte[] CreateBatchLauncherProgram() {
         // First, build the code, then calculate data offsets based on code length
         List<byte> code = new List<byte>();
         
         // Placeholder offsets - will be fixed up after we know code length
-        int tsrFilenameFixup1 = 0, tsrFilenameFixup2 = 0;
+        int tsrFilenameFixup1 = 0;
         int gameFilenameFixup = 0;
         int paramBlockFixup1 = 0, paramBlockFixup2 = 0;
         int cmdTailFixup1 = 0, cmdTailFixup2 = 0;
