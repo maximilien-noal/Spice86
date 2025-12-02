@@ -417,7 +417,6 @@ public class DosProcessManager : DosFileLoader {
     /// </summary>
     private DosExecResult LoadProgram(byte[] fileBytes, string hostPath, string? arguments,
         ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType) {
-        
         // Determine if this is an EXE or COM file
         bool isExe = false;
         DosExeFile? exeFile = null;
@@ -431,30 +430,19 @@ public class DosProcessManager : DosFileLoader {
         // For the first program, we use InitialPspSegment; for child processes, we use MCB allocation
         ushort pspSegment;
         DosMemoryControlBlock? memBlock;
-        bool isFirstProgram = _pspTracker.PspCount == 0;
         
-        if (isFirstProgram) {
-            // First program - use the configured initial PSP segment
-            if (isExe && exeFile is not null) {
-                memBlock = _memoryManager.ReserveSpaceForExe(exeFile, _pspTracker.InitialPspSegment);
-            } else {
-                memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
-            }
-            pspSegment = _pspTracker.InitialPspSegment;
+        // EXE - use MCB allocation to find free memory
+        if (isExe && exeFile is not null) {
+            // Pass 0 to let memory manager find the best available block
+            memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
         } else {
-            // Child process - use MCB allocation to find free memory
-            if (isExe && exeFile is not null) {
-                // Pass 0 to let memory manager find the best available block
-                memBlock = _memoryManager.ReserveSpaceForExe(exeFile, 0);
-            } else {
-                memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
-            }
-            
-            if (memBlock is null) {
-                return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
-            }
-            pspSegment = memBlock.DataBlockSegment;
+            memBlock = _memoryManager.AllocateMemoryBlock(ComFileMemoryParagraphs);
         }
+            
+        if (memBlock is null) {
+            return DosExecResult.Failed(DosErrorCode.InsufficientMemory);
+        }
+        pspSegment = memBlock.DataBlockSegment;
 
         if (memBlock is null) {
             if (_loggerService.IsEnabled(LogEventLevel.Error)) {
@@ -477,9 +465,7 @@ public class DosProcessManager : DosFileLoader {
         //   q->ps_stack = (BYTE FAR *)user_r;
         // FreeDOS saves the parent's stack pointer to ps_stack (PSP offset 0x2E) before
         // transferring control to the child process.
-        if (!isFirstProgram) {
-            psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
-        }
+        psp.StackPointer = ((uint)_state.SS << 16) | _state.SP;
 
         // Set the disk transfer area address
         _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
@@ -502,27 +488,11 @@ public class DosProcessManager : DosFileLoader {
             _state.SS = ss;
             _state.SP = sp;
             
-            // For child processes (not the first program), subtract 4 from IP.
-            // When INT 21h AH=4Bh (EXEC) loads a child via the callback mechanism,
-            // the Grp4Callback instruction's Execute method calls MoveIpAndSetNextNode
-            // after the handler returns, which adds 4 (the callback instruction length)
-            // to State.IP. By pre-subtracting 4, the child starts at the correct entry point.
-            // The first program is loaded directly by ProgramExecutor, not via callback,
-            // so it doesn't need this adjustment.
-            //
             // Reference: FreeDOS kernel/task.c load_transfer() (line ~355):
             // https://github.com/FDOS/kernel/blob/master/kernel/task.c
             //   irp->CS = FP_SEG(exp->exec.start_addr);
             //   irp->IP = FP_OFF(exp->exec.start_addr);
             // FreeDOS sets CS:IP directly from the exe header's entry point.
-            //
-            // Reference: MS-DOS 4.0 EXEC.ASM exec_go: (line ~690):
-            // https://github.com/microsoft/MS-DOS/blob/main/v4.0/src/DOS/EXEC.ASM
-            //   PUSH DS    ; fake long call to entry
-            //   PUSH SI    ; IP from exec block
-            //   ... retf
-            // MS-DOS pushes CS:IP for a far return to the entry point.
-            //
             // The CfgCpu callback node (Grp4Callback) detects when the callback handler
             // changes CS:IP and will NOT add the instruction length in that case.
             SetEntryPoint(cs, ip);
@@ -652,57 +622,6 @@ public class DosProcessManager : DosFileLoader {
     }
 
     /// <summary>
-    /// Loads the first program using pre-allocated memory block.
-    /// </summary>
-    /// <remarks>
-    /// This is used for the first program where memory was reserved BEFORE allocating the environment
-    /// block to prevent the environment from taking the memory at InitialPspSegment.
-    /// </remarks>
-    private DosExecResult LoadProgramWithPreallocatedMemory(byte[] fileBytes, string hostPath, string? arguments,
-        ushort parentPspSegment, ushort envSegment, DosExecLoadType loadType, 
-        DosMemoryControlBlock memBlock, DosExeFile? exeFile, bool isExe) {
-        
-        ushort pspSegment = _pspTracker.InitialPspSegment;
-        
-        // Create and register the PSP
-        DosProgramSegmentPrefix psp = _pspTracker.PushPspSegment(pspSegment);
-
-        // Initialize PSP
-        InitializePsp(psp, parentPspSegment, envSegment, arguments);
-
-        // Set the disk transfer area address
-        _fileManager.SetDiskTransferAreaAddress(pspSegment, DosCommandTail.OffsetInPspSegment);
-
-        // Load the program
-        ushort cs, ip, ss, sp;
-        
-        if (isExe && exeFile is not null) {
-            // For EXE files, memory was already reserved
-            LoadExeFileIntoReservedMemory(exeFile, memBlock, out cs, out ip, out ss, out sp);
-        } else {
-            LoadComFileInternal(fileBytes, out cs, out ip, out ss, out sp);
-        }
-
-        if (loadType == DosExecLoadType.LoadAndExecute) {
-            // Set up CPU state for execution
-            _state.DS = pspSegment;
-            _state.ES = pspSegment;
-            _state.SS = ss;
-            _state.SP = sp;
-            // First program (pre-allocated): no IP adjustment needed (not loaded via callback)
-            SetEntryPoint(cs, ip);
-            _state.InterruptFlag = true;
-            
-            return DosExecResult.Succeeded();
-        } else if (loadType == DosExecLoadType.LoadOnly) {
-            // Return entry point info without executing
-            return DosExecResult.Succeeded(pspSegment, cs, ip, ss, sp);
-        }
-
-        return DosExecResult.Succeeded();
-    }
-
-    /// <summary>
     /// Loads an EXE file into already-reserved memory and returns entry point information.
     /// </summary>
     /// <remarks>
@@ -785,26 +704,22 @@ public class DosProcessManager : DosFileLoader {
     /// Loads a COM file and returns entry point information.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// COM files are loaded at the program entry point segment (PSP + 0x10) with IP = 0x100.
-    /// This places the code 256 bytes after the PSP segment start, leaving room for the PSP header.
-    /// </para>
-    /// <para>
-    /// Reference: This follows standard DOS COM file loading behavior where all segment registers
-    /// (CS, DS, ES, SS) point to the same segment and IP starts at 0x100.
-    /// </para>
+    /// COM files are loaded at PSP:0x100 (offset 0x100 within the PSP segment).
+    /// This is different from EXE files which can specify their own entry point.
     /// </remarks>
     private void LoadComFileInternal(byte[] com, out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
-        // Get the program entry point segment (PSP + 0x10)
-        // Reference: FreeDOS kernel/task.c load_transfer() sets CS to the segment after PSP
-        // https://github.com/FDOS/kernel/blob/master/kernel/task.c
-        ushort programEntryPointSegment = _pspTracker.GetProgramEntryPointSegment();
-        uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(programEntryPointSegment, ComOffset);
+        // Get the current PSP segment directly (not +0x10 which can overflow)
+        ushort pspSegment = _pspTracker.GetCurrentPspSegment();
+
+        // Load at PSP:0x100 (256 bytes after PSP start)
+        uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(pspSegment, ComOffset);
         _memory.LoadData(physicalStartAddress, com);
 
-        cs = programEntryPointSegment;
-        ip = ComOffset;
-        ss = programEntryPointSegment;
+        // For COM files, all segment registers point to the PSP segment
+        // and IP starts at 0x100 (after the PSP header)
+        cs = pspSegment;
+        ip = ComOffset;  // 0x100
+        ss = pspSegment;
         sp = 0xFFFE; // Standard COM file stack
     }
 
@@ -1162,7 +1077,7 @@ public class DosProcessManager : DosFileLoader {
         childPsp.StackPointer = parentPsp.StackPointer;
         
         // Note: We intentionally do NOT register this child PSP with _pspTracker.PushPspSegment().
-        // INT 21h/55h is used by debuggers and overlay managers that manage their own PSP tracking.
+        // INT 21h/55h is used by programs that manage their own PSP tracking.
         // The INT 21h handler (DosInt21Handler.CreateChildPsp) will call SetCurrentPspSegment() to 
         // update the SDA's current PSP, but the PSP is not added to the tracker's internal list. 
         // Reference: FreeDOS kernel task.c - child_psp() creates PSP but caller manages tracking.
