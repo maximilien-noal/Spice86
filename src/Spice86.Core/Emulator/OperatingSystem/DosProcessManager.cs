@@ -522,8 +522,10 @@ public class DosProcessManager : DosFileLoader {
             //   PUSH SI    ; IP from exec block
             //   ... retf
             // MS-DOS pushes CS:IP for a far return to the entry point.
-            ushort adjustedIP = isFirstProgram ? ip : (ip >= 4 ? (ushort)(ip - 4) : ip);
-            SetEntryPoint(cs, adjustedIP);
+            //
+            // The CfgCpu callback node (Grp4Callback) detects when the callback handler
+            // changes CS:IP and will NOT add the instruction length in that case.
+            SetEntryPoint(cs, ip);
             _state.InterruptFlag = true;
             
             return DosExecResult.Succeeded();
@@ -1033,11 +1035,10 @@ public class DosProcessManager : DosFileLoader {
             //   POP DS:[addr_int_terminate+2]
             // MS-DOS pops the return address from stack into INT 22h vector.
             //
-            // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
-            // will add 4 after this handler returns.
+            // The CfgCpu callback node (Grp4Callback) detects when the callback handler
+            // changes CS:IP and will NOT add the instruction length in that case.
             _state.CS = returnAddress.Segment;
-            ushort returnOffset = returnAddress.Offset;
-            _state.IP = returnOffset >= 4 ? (ushort)(returnOffset - 4) : returnOffset;
+            _state.IP = returnAddress.Offset;
             
             return true; // Continue execution at parent
         }

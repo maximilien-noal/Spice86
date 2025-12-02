@@ -1108,14 +1108,14 @@ public class DosInt21Handler : InterruptHandler {
                 // FreeDOS reads ps_isv22 from the PSP (terminate address at offset 0x0A)
                 // and sets CS:IP to return control to the parent process.
                 //
-                // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
-                // will add 4 after this handler returns.
+                // The CfgCpu callback node (Grp4Callback) detects when the callback handler
+                // changes CS:IP and will NOT add the instruction length in that case.
                 State.CS = terminateSegment;
-                State.IP = terminateOffset >= 4 ? (ushort)(terminateOffset - 4) : terminateOffset;
+                State.IP = terminateOffset;
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Verbose)) {
                     LoggerService.Verbose(
-                        "TSR: Returning to parent at {Segment:X4}:{Offset:X4} (pre-adjusted), stack {SS:X4}:{SP:X4}",
+                        "TSR: Returning to parent at {Segment:X4}:{Offset:X4}, stack {SS:X4}:{SP:X4}",
                         terminateSegment, terminateOffset, State.SS, State.SP);
                 }
                 return;
@@ -1648,14 +1648,13 @@ public class DosInt21Handler : InterruptHandler {
                 }
                 
                 // The child will execute via the CFG CPU's next node mechanism.
-                // DosProcessManager.SetEntryPoint was called with (ip - 4) to compensate for
-                // the callback instruction length. After MoveIpAndSetNextNode adds 4 to State.IP,
-                // it will be the correct entry point and execution continues there.
+                // The CfgCpu callback node (Grp4Callback) detects when CS:IP was changed
+                // by the callback handler and will NOT add the instruction length in that case.
                 
                 if (LoggerService.IsEnabled(LogEventLevel.Debug)) {
                     LoggerService.Debug(
-                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4} (IP pre-adjusted by -4 for callback)",
-                        State.CS, (ushort)(State.IP + 4));
+                        "EXEC: Child will start at {ChildCS:X4}:{ChildIP:X4}",
+                        State.CS, State.IP);
                 }
             }
         } else {
