@@ -563,16 +563,19 @@ public class DosExecIntegrationTests {
     }
 
     /// <summary>
-    /// Creates a TSR-like program that writes a marker and terminates.
-    /// This simulates what a TSR (Terminate and Stay Resident) program does on first run.
+    /// Creates a simple program that writes a marker and terminates normally.
+    /// Note: Despite the name, this does NOT actually stay resident or hook INT 21h.
+    /// It just writes a test marker and exits normally with INT 21h/AH=4Ch.
+    /// </summary>
+    /// <remarks>
+    /// This test program:
+    /// 1. Writes 0x11 to port 0x998 to indicate it ran
+    /// 2. Terminates normally with INT 21h/AH=4Ch (exit code 0)
     /// 
     /// Reference: FreeDOS kernel/task.c return_user() (line ~420):
     /// https://github.com/FDOS/kernel/blob/master/kernel/task.c
-    ///   p->ps_exit = AZEROAZERO;  /* clear for DOS-C */
-    /// When a child terminates, FreeDOS reads the exit code from AX.
-    /// 
-    /// The program writes a marker (0x11) to indicate it ran, then terminates with INT 21h/AH=4Ch.
-    /// </summary>
+    /// The termination path in FreeDOS reads the exit code from the AX register.
+    /// </remarks>
     private static byte[] CreateTsrWithInt21Hook() {
         // Simple program: write a marker and terminate normally
         // Reference: INT 21h/AH=4Ch terminates the current process
