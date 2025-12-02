@@ -785,24 +785,26 @@ public class DosProcessManager : DosFileLoader {
     /// Loads a COM file and returns entry point information.
     /// </summary>
     /// <remarks>
-    /// COM files are loaded at PSP:0x100 (offset 0x100 within the PSP segment).
-    /// This is different from EXE files which can specify their own entry point.
-    /// The CS register is set to the PSP segment (not PSP+0x10) to avoid overflow
-    /// issues when the PSP segment is near 0xFFFF.
+    /// <para>
+    /// COM files are loaded at the program entry point segment (PSP + 0x10) with IP = 0x100.
+    /// This places the code 256 bytes after the PSP segment start, leaving room for the PSP header.
+    /// </para>
+    /// <para>
+    /// Reference: This follows standard DOS COM file loading behavior where all segment registers
+    /// (CS, DS, ES, SS) point to the same segment and IP starts at 0x100.
+    /// </para>
     /// </remarks>
     private void LoadComFileInternal(byte[] com, out ushort cs, out ushort ip, out ushort ss, out ushort sp) {
-        // Get the current PSP segment directly (not +0x10 which can overflow)
-        ushort pspSegment = _pspTracker.GetCurrentPspSegment();
-        
-        // Load at PSP:0x100 (256 bytes after PSP start)
-        uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(pspSegment, ComOffset);
+        // Get the program entry point segment (PSP + 0x10)
+        // Reference: FreeDOS kernel/task.c load_transfer() sets CS to the segment after PSP
+        // https://github.com/FDOS/kernel/blob/master/kernel/task.c
+        ushort programEntryPointSegment = _pspTracker.GetProgramEntryPointSegment();
+        uint physicalStartAddress = MemoryUtils.ToPhysicalAddress(programEntryPointSegment, ComOffset);
         _memory.LoadData(physicalStartAddress, com);
 
-        // For COM files, all segment registers point to the PSP segment
-        // and IP starts at 0x100 (after the PSP header)
-        cs = pspSegment;
-        ip = ComOffset;  // 0x100
-        ss = pspSegment;
+        cs = programEntryPointSegment;
+        ip = ComOffset;
+        ss = programEntryPointSegment;
         sp = 0xFFFE; // Standard COM file stack
     }
 
