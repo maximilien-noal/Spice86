@@ -22,9 +22,25 @@ using System.Text;
 /// Implements DOS INT 21h AH=4Bh (EXEC - Load and/or Execute Program) functionality.
 /// </summary>
 /// <remarks>
-/// Based on MS-DOS 4.0 EXEC.ASM (lines 180-400 for EXEC implementation) and 
-/// FreeDOS kernel task.c (lines 450-650 for exec() and child_psp() functions).
-/// See also RBIL documentation for INT 21h/4Bh.
+/// <para>
+/// This implementation is based on the following primary sources:
+/// </para>
+/// <para>
+/// <strong>MS-DOS 4.0 Source Code (EXEC.ASM)</strong>:
+/// <see href="https://github.com/microsoft/MS-DOS/blob/main/v4.0/src/DOS/EXEC.ASM"/>
+/// - $exec (line ~180): Main EXEC dispatcher
+/// - exec_no_azs, exec_common (lines ~200-350): Program loading logic
+/// - exec_set_return (line ~650): Sets up return address for child termination
+/// - exec_go (line ~690): Transfers control to loaded program
+/// </para>
+/// <para>
+/// <strong>FreeDOS Kernel (kernel/task.c)</strong>:
+/// <see href="https://github.com/FDOS/kernel/blob/master/kernel/task.c"/>
+/// - DosExec() (line ~100): Main EXEC function entry point
+/// - load_transfer() (line ~327): Loads program and sets up execution
+/// - child_psp() (line ~227): Creates child PSP structure
+/// - return_user() (line ~415): Handles program termination and return
+/// </para>
 /// </remarks>
 public class DosProcessManager : DosFileLoader {
     private const ushort ComOffset = 0x100;
@@ -494,16 +510,17 @@ public class DosProcessManager : DosFileLoader {
             // The first program is loaded directly by ProgramExecutor, not via callback,
             // so it doesn't need this adjustment.
             //
-            // Reference: FreeDOS kernel/task.c load_transfer() lines 327-365:
+            // Reference: FreeDOS kernel/task.c load_transfer() (line ~355):
+            // https://github.com/FDOS/kernel/blob/master/kernel/task.c
             //   irp->CS = FP_SEG(exp->exec.start_addr);
             //   irp->IP = FP_OFF(exp->exec.start_addr);
-            // FreeDOS sets CS:IP directly from the exe header's entry point. Our callback
-            // mechanism requires the -4 adjustment because Spice86's callback instruction
-            // advances IP after the handler returns.
+            // FreeDOS sets CS:IP directly from the exe header's entry point.
             //
-            // Reference: MS-DOS 4.0 v4.0/src/DOS/EXEC.ASM exec_go: (lines 690-715):
+            // Reference: MS-DOS 4.0 EXEC.ASM exec_go: (line ~690):
+            // https://github.com/microsoft/MS-DOS/blob/main/v4.0/src/DOS/EXEC.ASM
             //   PUSH DS    ; fake long call to entry
-            //   PUSH SI
+            //   PUSH SI    ; IP from exec block
+            //   ... retf
             // MS-DOS pushes CS:IP for a far return to the entry point.
             ushort adjustedIP = isFirstProgram ? ip : (ip >= 4 ? (ushort)(ip - 4) : ip);
             SetEntryPoint(cs, adjustedIP);
@@ -1003,16 +1020,18 @@ public class DosProcessManager : DosFileLoader {
 
             // Set up CPU to continue at the return address stored in PSP offset 0x0A.
             //
-            // Reference: FreeDOS kernel/task.c return_user() lines 415-445:
+            // Reference: FreeDOS kernel/task.c return_user() (line ~420):
+            // https://github.com/FDOS/kernel/blob/master/kernel/task.c
             //   irp->CS = FP_SEG(p->ps_isv22);
             //   irp->IP = FP_OFF(p->ps_isv22);
             // FreeDOS reads the terminate address from ps_isv22 (PSP offset 0x0A) and
-            // sets CS:IP to return to the parent.
+            // sets CS:IP to return to the parent process.
             //
-            // Reference: MS-DOS 4.0 v4.0/src/DOS/EXEC.ASM exec_set_return: (lines 645-655):
+            // Reference: MS-DOS 4.0 EXEC.ASM exec_set_return: (line ~650):
+            // https://github.com/microsoft/MS-DOS/blob/main/v4.0/src/DOS/EXEC.ASM
             //   POP DS:[addr_int_terminate]
             //   POP DS:[addr_int_terminate+2]
-            // MS-DOS saves the return address at interrupt vector 22h location.
+            // MS-DOS pops the return address from stack into INT 22h vector.
             //
             // Subtract 4 from IP because the callback mechanism's MoveIpAndSetNextNode
             // will add 4 after this handler returns.

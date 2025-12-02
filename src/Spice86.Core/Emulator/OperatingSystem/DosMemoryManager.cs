@@ -11,12 +11,25 @@ using Spice86.Shared.Utils;
 
 /// <summary>
 /// Implements DOS memory operations, such as allocating and releasing MCBs.
-/// Based on FreeDOS kernel mcb.c and MS-DOS 4.0 memory management.
 /// </summary>
 /// <remarks>
-/// <para>Memory Control Block (MCB) chain management follows FreeDOS kernel mcb.c implementation.</para>
-/// <para>Reference: FreeDOS kernel mcb.c - DosMemAlloc(), DosMemFree(), DosGetLargestBlock()</para>
-/// <para>Reference: MS-DOS 4.0 - INT 21h AH=48h (allocate), AH=49h (free), AH=4Ah (resize)</para>
+/// <para>
+/// Memory Control Block (MCB) chain management follows the FreeDOS kernel implementation.
+/// </para>
+/// <para>
+/// <strong>FreeDOS Kernel (kernel/mcb.c)</strong>:
+/// <see href="https://github.com/FDOS/kernel/blob/master/kernel/mcb.c"/>
+/// - DosMemAlloc() (line ~100): Allocates memory block from MCB chain
+/// - DosMemFree() (line ~200): Frees memory block and coalesces adjacent free blocks
+/// - DosMemChange() (line ~250): Resizes memory block, splits if shrinking
+/// - DosGetLargestBlock() (line ~300): Finds largest free block in MCB chain
+/// </para>
+/// <para>
+/// <strong>MS-DOS 4.0</strong>:
+/// - INT 21h AH=48h: Allocate Memory Block
+/// - INT 21h AH=49h: Free Memory Block
+/// - INT 21h AH=4Ah: Resize Memory Block
+/// </para>
 /// </remarks>
 public class DosMemoryManager {
     internal const ushort LastFreeSegment = MemoryMap.GraphicVideoMemorySegment - 1;

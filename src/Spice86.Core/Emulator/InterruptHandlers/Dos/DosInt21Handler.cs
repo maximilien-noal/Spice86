@@ -34,11 +34,14 @@ public class DosInt21Handler : InterruptHandler {
     
     /// <summary>
     /// Value set in AL after CreateChildPsp.
-    /// Reference: FreeDOS kernel/task.c child_psp() line 276:
-    ///   r->a.b.l = 0;
-    /// FreeDOS sets AL=0 after creating a child PSP. We use 0xF0 as MS-DOS convention 
-    /// indicates AL is "destroyed" (undefined) after this call.
     /// </summary>
+    /// <remarks>
+    /// Reference: FreeDOS kernel/task.c child_psp() (line ~276):
+    /// <see href="https://github.com/FDOS/kernel/blob/master/kernel/task.c"/>
+    ///   r->a.b.l = 0;
+    /// FreeDOS sets AL=0 after creating a child PSP. MS-DOS documentation states
+    /// AL is "destroyed" (undefined) after this call. We use 0xF0 as a safe value.
+    /// </remarks>
     private const byte CreateChildPspAlDestroyedValue = 0xF0;
 
     private readonly DosMemoryManager _dosMemoryManager;
@@ -1098,7 +1101,8 @@ public class DosInt21Handler : InterruptHandler {
                 // This was set when the program was loaded and points back to the parent's
                 // continuation point.
                 //
-                // Reference: FreeDOS kernel/task.c return_user() lines 415-445:
+                // Reference: FreeDOS kernel/task.c return_user() (line ~420):
+                // https://github.com/FDOS/kernel/blob/master/kernel/task.c
                 //   irp->CS = FP_SEG(p->ps_isv22);
                 //   irp->IP = FP_OFF(p->ps_isv22);
                 // FreeDOS reads ps_isv22 from the PSP (terminate address at offset 0x0A)
